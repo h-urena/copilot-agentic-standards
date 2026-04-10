@@ -1,4 +1,4 @@
-# PR Automation — Reusable Workflow (DOCUMENTATION COPY)
+# PR Automation — Reusable Workflow
 #
 # This file is a documentation reference. The ACTUAL callable reusable workflow is:
 #   .github/workflows/pr-automation.yml

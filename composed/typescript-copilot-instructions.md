@@ -21,9 +21,12 @@ These are universal rules that apply to **every** repository regardless of langu
 ## Branch strategy
 
 - **`main`** is the default, protected branch. All changes merge into `main` via pull request.
-- Use short-lived feature branches: `feat/<ticket>-<short-description>`, `fix/<ticket>-<short-description>`, `docs/<ticket>-<short-description>`.
-- Bugfix branches: `bugfix/<ticket>-<short-description>` — branch from `main`, merge back to `main`.
-- Hotfix branches: `hotfix/<ticket>-<short-description>` — branch from `main`, merge back to `main`.
+- **Every branch must be linked to a GitHub issue.** No issue = no branch = no PR.
+- Branch name format: `<type>/<issue-number>-<short-description>`
+  - Examples: `feat/42-add-oauth-flow`, `fix/123-null-pointer-crash`, `chore/7-update-deps`
+  - Valid types: `feat` `fix` `docs` `style` `refactor` `perf` `test` `build` `ci` `chore` `hotfix` `bugfix`
+  - The slug must be lowercase, hyphen-separated, and start with the issue number.
+- Exempt from the naming rule: `main`, `develop`, `staging`, `release/*`, `dependabot/*`, `renovate/*`.
 - Delete branches after merge.
 
 ## Commit conventions
@@ -41,12 +44,24 @@ These are universal rules that apply to **every** repository regardless of langu
 
 ## Pull requests
 
-- PR title **must** follow Conventional Commits format (e.g., `feat: add user auth middleware`).
+- **Every PR must be linked to a GitHub issue.** Reference it in the PR body with `Closes #N`, `Fixes #N`, or `Resolves #N` so the issue closes automatically on merge.
+- PR title **must** follow Conventional Commits format (e.g., `feat(scope): add user auth middleware`).
 - Every PR must have a description explaining **what** changed and **why**.
 - Squash merge is the default merge strategy. Each PR becomes one commit on `main`.
 - PRs must pass all required status checks before merge.
-- Request at least one reviewer. Do not self-merge unless explicitly permitted.
+- The repo owner is automatically requested as reviewer when a PR is opened.
 - Keep PRs small and focused — one logical change per PR.
+
+## Project board lifecycle
+
+Every issue moves through these statuses automatically via CI:
+
+| Status | Trigger |
+|--------|--------|
+| **Todo** | Issue created and added to the board |
+| **In Progress** | Branch matching the issue number is pushed |
+| **In Review** | PR is opened (owner is auto-assigned as reviewer) |
+| **Done** | PR is approved by the owner |
 
 ## Code review expectations
 

@@ -1,4 +1,4 @@
-# Merge Rules — Reusable Workflow (DOCUMENTATION COPY)
+# Merge Rules — Reusable Workflow
 #
 # This file is a documentation reference. The ACTUAL callable reusable workflow is:
 #   .github/workflows/merge-rules.yml
@@ -12,6 +12,7 @@
 #       with:
 #         require-linear-history: true
 #         commitlint-enabled: true
+#         branch-check-enabled: true
 #
 # Authentication: uses GITHUB_TOKEN automatically. No secrets need to be passed.
 # The caller must declare: permissions: contents: read, pull-requests: read
