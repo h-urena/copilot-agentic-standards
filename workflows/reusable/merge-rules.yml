@@ -1,0 +1,72 @@
+# Merge Rules — Reusable Workflow
+#
+# All merge gates: status checks, squash enforcement, and commit message validation.
+# Consumer repos call this via workflow_call.
+
+name: Merge Rules
+
+on:
+  workflow_call:
+    inputs:
+      require-linear-history:
+        description: "Enforce squash or rebase merge (no merge commits)"
+        type: boolean
+        default: true
+      commitlint-enabled:
+        description: "Validate commit/PR titles against Conventional Commits"
+        type: boolean
+        default: true
+      node-version:
+        description: "Node.js version for commitlint"
+        type: string
+        default: "20"
+
+jobs:
+  commitlint:
+    name: Validate PR title
+    if: ${{ inputs.commitlint-enabled }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install commitlint
+        run: |
+          npm install --save-dev @commitlint/{cli,config-conventional}
+          echo "module.exports = { extends: ['@commitlint/config-conventional'] };" > commitlint.config.js
+
+      - name: Validate PR title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: echo "$PR_TITLE" | npx commitlint --verbose
+
+  squash-check:
+    name: Enforce squash merge
+    if: ${{ inputs.require-linear-history }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check merge method
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: repo } = await github.rest.repos.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            if (!repo.allow_squash_merge) {
+              core.setFailed('Squash merge is not enabled on this repository.');
+            }
+
+            if (repo.allow_merge_commit || repo.allow_rebase_merge) {
+              core.warning(
+                'Non-squash merge methods are enabled. Consider disabling merge commits and rebase merges for a clean linear history.'
+              );
+            }

@@ -1,0 +1,28 @@
+name: Validate Composed Files
+
+on:
+  pull_request:
+    paths:
+      - "instructions/**"
+      - "composed/**"
+      - "scripts/compose.sh"
+  push:
+    branches: [main]
+    paths:
+      - "instructions/**"
+      - "composed/**"
+      - "scripts/compose.sh"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Check composed files are fresh
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate composed files
+        run: ./scripts/validate-composed.sh

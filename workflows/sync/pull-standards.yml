@@ -1,0 +1,118 @@
+# Pull Standards — Sync Workflow
+#
+# Runs weekly (or on-demand) in consumer repos. Checks for updates
+# in copilot-agentic-standards and opens a PR if the local copy is outdated.
+#
+# Copy this file to your repo: .github/workflows/pull-standards.yml
+
+name: Pull Standards
+
+on:
+  schedule:
+    - cron: "0 9 * * 1" # Every Monday at 9:00 UTC
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  STANDARDS_REPO: h-urena/copilot-agentic-standards
+  STANDARDS_BRANCH: main
+  UPDATE_BRANCH: chore/update-standards
+
+jobs:
+  sync:
+    name: Sync standards
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout consumer repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch latest standards
+        run: |
+          set -euo pipefail
+
+          # Clone the standards repo into a temp directory
+          TEMP_DIR=$(mktemp -d)
+          git clone --depth 1 --branch "$STANDARDS_BRANCH" \
+            "https://github.com/${STANDARDS_REPO}.git" "$TEMP_DIR"
+
+          # Detect stack from existing copilot-instructions.md header
+          STACK=""
+          if [ -f .github/copilot-instructions.md ]; then
+            STACK=$(head -5 .github/copilot-instructions.md | grep -oP '(?<=Stack: )\w+' || true)
+          fi
+
+          CHANGED=false
+
+          # Update copilot-instructions.md if a composed file exists for this stack
+          if [ -n "$STACK" ] && [ -f "$TEMP_DIR/composed/${STACK}-copilot-instructions.md" ]; then
+            if ! diff -q ".github/copilot-instructions.md" "$TEMP_DIR/composed/${STACK}-copilot-instructions.md" > /dev/null 2>&1; then
+              cp "$TEMP_DIR/composed/${STACK}-copilot-instructions.md" .github/copilot-instructions.md
+              CHANGED=true
+            fi
+          fi
+
+          # Update code review instructions if present
+          if [ -f "$TEMP_DIR/instructions/code-review.instructions.md" ]; then
+            mkdir -p .github
+            if ! diff -q ".github/code-review.instructions.md" "$TEMP_DIR/instructions/code-review.instructions.md" > /dev/null 2>&1; then
+              cp "$TEMP_DIR/instructions/code-review.instructions.md" .github/code-review.instructions.md
+              CHANGED=true
+            fi
+          fi
+
+          # Update PR templates
+          if [ -d "$TEMP_DIR/templates/pull-request" ]; then
+            mkdir -p .github/PULL_REQUEST_TEMPLATE
+            for tmpl in "$TEMP_DIR"/templates/pull-request/*.md; do
+              fname=$(basename "$tmpl")
+              if ! diff -q ".github/PULL_REQUEST_TEMPLATE/$fname" "$tmpl" > /dev/null 2>&1; then
+                cp "$tmpl" ".github/PULL_REQUEST_TEMPLATE/$fname"
+                CHANGED=true
+              fi
+            done
+          fi
+
+          rm -rf "$TEMP_DIR"
+
+          echo "changed=$CHANGED" >> "$GITHUB_ENV"
+
+      - name: Create PR if changed
+        if: env.changed == 'true'
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout -B "$UPDATE_BRANCH"
+          git add -A
+          git commit -m "chore: update agentic standards from upstream"
+          git push --force origin "$UPDATE_BRANCH"
+
+      - name: Open pull request
+        if: env.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${process.env.UPDATE_BRANCH}`,
+              state: 'open',
+            });
+
+            if (prs.length === 0) {
+              await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'chore: update agentic standards from upstream',
+                body: `Automated PR — syncs Copilot instructions, PR templates, and review checklists from [copilot-agentic-standards](https://github.com/${process.env.STANDARDS_REPO}).`,
+                head: process.env.UPDATE_BRANCH,
+                base: 'main',
+              });
+            }

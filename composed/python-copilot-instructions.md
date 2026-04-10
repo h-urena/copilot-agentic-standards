@@ -1,0 +1,146 @@
+<!-- AUTO-GENERATED — do not edit. Regenerate with: ./scripts/compose.sh python -->
+<!-- Source: instructions/base.md + instructions/stacks/python.md -->
+<!-- Stack: python -->
+
+# Base Copilot Instructions
+
+These are universal rules that apply to **every** repository regardless of language or framework.
+
+---
+
+## General principles
+
+- Write clear, readable, maintainable code. Prefer simplicity over cleverness.
+- Follow the principle of least surprise — code should do what a reader expects.
+- Keep functions small and focused. Each function should do one thing well.
+- Prefer composition over inheritance.
+- Use meaningful, descriptive names for variables, functions, and classes.
+- Do not leave dead code, commented-out code, or TODO comments without a linked issue.
+- Treat compiler/linter warnings as errors.
+
+## Branch strategy
+
+- **`main`** is the default, protected branch. All changes merge into `main` via pull request.
+- Use short-lived feature branches: `feat/<ticket>-<short-description>`, `fix/<ticket>-<short-description>`, `chore/<description>`.
+- Hotfix branches: `hotfix/<ticket>-<short-description>` — branch from `main`, merge back to `main`.
+- Delete branches after merge.
+
+## Commit conventions
+
+- Follow [Conventional Commits](https://www.conventionalcommits.org/):
+  - `feat:` — new feature
+  - `fix:` — bug fix
+  - `docs:` — documentation only
+  - `style:` — formatting, no logic change
+  - `refactor:` — code change that neither fixes a bug nor adds a feature
+  - `test:` — adding or updating tests
+  - `chore:` — maintenance tasks (deps, CI, tooling)
+- Keep the subject line under 72 characters, imperative mood.
+- Reference issue/ticket numbers in the commit body when applicable.
+
+## Pull requests
+
+- PR title **must** follow Conventional Commits format (e.g., `feat: add user auth middleware`).
+- Every PR must have a description explaining **what** changed and **why**.
+- Squash merge is the default merge strategy. Each PR becomes one commit on `main`.
+- PRs must pass all required status checks before merge.
+- Request at least one reviewer. Do not self-merge unless explicitly permitted.
+- Keep PRs small and focused — one logical change per PR.
+
+## Code review expectations
+
+- Review for correctness, readability, security, and performance — in that order.
+- Suggest improvements, don't demand. Use "nit:" prefix for non-blocking suggestions.
+- Approve only when you would be comfortable maintaining the code.
+- Flag any hardcoded secrets, credentials, or PII immediately.
+
+## Security
+
+- Never commit secrets, API keys, tokens, or credentials.
+- Use environment variables or secret managers for sensitive configuration.
+- Validate all external inputs at system boundaries.
+- Follow OWASP Top 10 guidelines.
+- Keep dependencies up to date; enable Dependabot or Renovate.
+
+## Testing
+
+- Write tests for all new features and bug fixes.
+- Aim for meaningful coverage, not 100% line coverage at the expense of useful tests.
+- Tests should be deterministic — no flaky tests allowed.
+- Name tests descriptively: `should <expected behavior> when <condition>`.
+
+## Documentation
+
+- Update README and relevant docs alongside code changes.
+- Document public APIs, configuration options, and non-obvious decisions.
+- Use inline comments sparingly — only for "why", never for "what".
+
+## Dependencies
+
+- Pin dependency versions (exact or range with lockfile).
+- Audit new dependencies before adding: check maintenance status, license, bundle size.
+- Prefer well-maintained, widely-used packages over obscure alternatives.
+- Remove unused dependencies promptly.
+
+## Error handling
+
+- Handle errors explicitly. Do not swallow exceptions silently.
+- Use structured error types/codes rather than string matching.
+- Log errors with sufficient context for debugging (timestamp, request ID, stack trace).
+- Return meaningful error messages to callers; do not expose internal details to end users.
+
+---
+
+# Python Stack Instructions
+
+> Additive to `base.md` — these rules apply on top of the universal standards.
+
+---
+
+## Language and runtime
+
+- Target Python 3.11+ unless the project specifies otherwise.
+- Use type hints on all public function signatures. Use `from __future__ import annotations` for forward references.
+- Prefer f-strings over `%` formatting or `.format()`.
+- Use `pathlib.Path` over `os.path` for file system operations.
+
+## Project structure
+
+- Use `src/` layout: `src/<package_name>/` with an `__init__.py`.
+- Keep tests in a top-level `tests/` directory mirroring the source structure.
+- Use `pyproject.toml` as the single source of project metadata — avoid `setup.py` and `setup.cfg`.
+- Include a `py.typed` marker file for PEP 561 compliance if the package exposes types.
+
+## Code style
+
+- Use Ruff for linting and formatting (replaces flake8, isort, black).
+- Configure Ruff in `pyproject.toml` under `[tool.ruff]`.
+- Maximum line length: 88 characters (Ruff/Black default).
+- Use `snake_case` for functions and variables, `PascalCase` for classes, `UPPER_SNAKE_CASE` for constants.
+
+## Error handling
+
+- Define custom exception classes inheriting from a project-level base exception.
+- Never use bare `except:`. Always catch specific exception types.
+- Use `raise ... from err` to preserve exception chains.
+- Log exceptions with `logger.exception()` to capture stack traces.
+
+## Testing
+
+- Use `pytest` as the test runner.
+- Use `pytest-cov` for coverage reporting.
+- Use fixtures for shared setup; prefer factory fixtures over complex parametrize.
+- Name test files `test_<module>.py` and test functions `test_<behavior>_when_<condition>`.
+
+## Dependencies
+
+- Manage dependencies with `uv`, `pip-tools`, or `poetry`. Pin versions in a lockfile.
+- Use virtual environments (`venv` or managed by `uv`/`poetry`). Never install globally.
+- Separate dev dependencies from runtime dependencies.
+- Use `pip audit` or Dependabot to check for known vulnerabilities.
+
+## Packaging and distribution
+
+- Use `hatch`, `flit`, or `setuptools` with `pyproject.toml` as the build backend.
+- Version using `__version__` in the package `__init__.py` or dynamic versioning via SCM tags.
+- Include `LICENSE`, `README.md`, and `py.typed` in the distribution.

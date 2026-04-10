@@ -1,0 +1,39 @@
+# Example CI — Caller Workflow
+#
+# This file shows how a consumer repo calls the reusable workflows
+# from copilot-agentic-standards. Copy this to your repo as
+# .github/workflows/ci.yml and adjust as needed.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  merge-rules:
+    name: Merge Rules
+    uses: h-urena/copilot-agentic-standards/.github/workflows/merge-rules.yml@main
+    with:
+      require-linear-history: true
+      commitlint-enabled: true
+
+  pr-automation:
+    name: PR Automation
+    uses: h-urena/copilot-agentic-standards/.github/workflows/pr-automation.yml@main
+    with:
+      auto-assign-author: true
+    secrets:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Add your project-specific jobs below
+  # build:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - run: npm ci
+  #     - run: npm test
