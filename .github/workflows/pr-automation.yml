@@ -1,0 +1,58 @@
+# PR Automation
+#
+# Assigns the PR author and posts a welcome comment for first-time contributors.
+# Runs when a PR is opened or reopened.
+
+name: PR Automation
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  auto-assign:
+    name: Assign PR to author
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign author as assignee
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr?.user?.login) return;
+
+            await github.rest.issues.addAssignees({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              assignees: [pr.user.login],
+            });
+
+  welcome-comment:
+    name: Welcome first-time contributor
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post welcome comment on first PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr?.user?.login) return;
+
+            // Search for all PRs by this author; post welcome only on their first
+            const { data } = await github.rest.search.issuesAndPullRequests({
+              q: `repo:${context.repo.owner}/${context.repo.repo} is:pr author:${pr.user.login}`,
+            });
+
+            if (data.total_count === 1) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `Thanks for your first PR @${pr.user.login}! A maintainer will review it shortly.`,
+              });
+            }

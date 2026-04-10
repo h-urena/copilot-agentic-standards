@@ -6,7 +6,7 @@
 
 ## Language and runtime
 
-- Target Python 3.11+ unless the project specifies otherwise.
+- Target the latest stable CPython release unless the project specifies otherwise.
 - Use type hints on all public function signatures. Use `from __future__ import annotations` for forward references.
 - Prefer f-strings over `%` formatting or `.format()`.
 - Use `pathlib.Path` over `os.path` for file system operations.
@@ -34,9 +34,11 @@
 
 ## Testing
 
-- Use `pytest` as the test runner.
+- **Unit tests**: Use `pytest`. Mock external dependencies with `pytest-mock` or `unittest.mock`. Follow the Arrange-Act-Assert pattern.
+- **Integration tests**: Use real infrastructure (database, HTTP) where possible. Use `pytest-docker` or `testcontainers-python` for reproducible environments.
+- **E2E tests**: Use Playwright (`playwright` Python package) for browser automation against a running application.
 - Use `pytest-cov` for coverage reporting.
-- Use fixtures for shared setup; prefer factory fixtures over complex parametrize.
+- Use fixtures for shared setup; prefer factory fixtures over complex `parametrize`.
 - Name test files `test_<module>.py` and test functions `test_<behavior>_when_<condition>`.
 
 ## Dependencies

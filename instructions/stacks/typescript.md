@@ -6,7 +6,7 @@
 
 ## Language and runtime
 
-- Target the latest LTS version of Node.js unless the project specifies otherwise.
+- Target the latest LTS version of Node.js unless the project specifies otherwise. Pin the version using a `.nvmrc` or `.node-version` file at the project root.
 - Use TypeScript strict mode (`"strict": true` in `tsconfig.json`). No exceptions.
 - Prefer `const` over `let`. Never use `var`.
 - Use `unknown` over `any`. If `any` is unavoidable, add a `// eslint-disable-next-line` with justification.
@@ -34,10 +34,10 @@
 
 ## Testing
 
-- Use Vitest or Jest as the test runner.
-- Co-locate test files next to source files or in a mirrored `tests/` directory.
-- Mock external dependencies at module boundaries, not deep internals.
-- Use `describe`/`it` blocks with descriptive names.
+- **Unit tests**: Use Vitest (preferred) or Jest. Mock external dependencies at module boundaries, not deep internals. Use `describe`/`it` blocks with descriptive names.
+- **Integration tests**: Test module interactions and HTTP handlers with real or in-memory infrastructure. Use `supertest` for HTTP-level testing.
+- **E2E tests**: Use Playwright for browser automation against a running application. Keep the suite lean and focused on critical user flows.
+- Co-locate unit/integration test files next to source files, or mirror the source tree in a `tests/` directory. Keep E2E tests in a top-level `e2e/` directory.
 
 ## Dependencies
 

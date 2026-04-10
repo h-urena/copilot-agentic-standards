@@ -10,9 +10,12 @@ on:
   pull_request:
     branches: [main]
 
+# Grant minimum permissions needed by the reusable workflows.
+# GITHUB_TOKEN is used automatically — no secrets need to be configured.
 permissions:
   contents: read
   pull-requests: write
+  issues: write
 
 jobs:
   merge-rules:
@@ -27,8 +30,7 @@ jobs:
     uses: h-urena/copilot-agentic-standards/.github/workflows/pr-automation.yml@main
     with:
       auto-assign-author: true
-    secrets:
-      github-token: ${{ secrets.GITHUB_TOKEN }}
+      enable-labeler: false # set to true once you add .github/labeler.yml
 
   # Add your project-specific jobs below
   # build:

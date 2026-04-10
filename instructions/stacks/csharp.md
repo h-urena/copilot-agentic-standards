@@ -6,7 +6,7 @@
 
 ## Language and runtime
 
-- Target the latest LTS version of .NET (currently .NET 8) unless the project specifies otherwise.
+- Target the latest LTS version of .NET unless the project specifies otherwise.
 - Enable nullable reference types (`<Nullable>enable</Nullable>`) in all projects.
 - Use file-scoped namespaces and top-level statements where appropriate.
 - Prefer `record` types for immutable data transfer objects.
@@ -34,10 +34,11 @@
 
 ## Testing
 
-- Use xUnit as the test framework. Use FluentAssertions for readable assertions.
-- Use the `Fact` and `Theory` attributes. Prefer `Theory` with `InlineData` for parameterized tests.
+- **Unit tests**: Use xUnit. Use FluentAssertions for readable assertions. Use `Fact` and `Theory` attributes.
+- **Integration tests**: Use `WebApplicationFactory<T>` for ASP.NET integration tests. Use `Testcontainers` to spin up real infrastructure (databases, message brokers) in Docker.
+- **E2E tests**: Use Playwright with the .NET binding (`Microsoft.Playwright`) for full browser automation against a running application.
 - Name tests: `MethodName_Should_ExpectedBehavior_When_Condition`.
-- Use `WebApplicationFactory<T>` for integration tests in ASP.NET projects.
+- Prefer `Theory` with `InlineData` or `MemberData` for parameterized tests.
 
 ## Dependencies
 

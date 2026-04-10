@@ -13,11 +13,11 @@
     },
     "playwright": {
       "command": "npx",
-      "args": ["-y", "@anthropic/mcp-server-playwright"]
-    },
-    "typescript": {
-      "command": "npx",
-      "args": ["-y", "typescript-language-server", "--stdio"]
+      "args": ["-y", "@playwright/mcp"]
+    }
+  }
+}
+
     }
   }
 }

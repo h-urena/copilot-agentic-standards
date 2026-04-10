@@ -1,38 +1,23 @@
-# Merge Rules — Reusable Workflow
+# Merge Rules
 #
-# All merge gates: Conventional Commits validation and squash-merge enforcement.
-# Consumer repos call this via workflow_call.
-#
-# Usage in caller workflow:
-#   jobs:
-#     merge-rules:
-#       uses: h-urena/copilot-agentic-standards/.github/workflows/merge-rules.yml@main
-#       with:
-#         require-linear-history: true
-#         commitlint-enabled: true
+# Enforces Conventional Commits on PR titles and squash-merge policy.
+# Runs on every PR targeting main.
 
 name: Merge Rules
 
 on:
-  workflow_call:
-    inputs:
-      require-linear-history:
-        description: "Enforce squash or rebase merge (no merge commits)"
-        type: boolean
-        default: true
-      commitlint-enabled:
-        description: "Validate commit/PR titles against Conventional Commits"
-        type: boolean
-        default: true
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: read
 
 jobs:
   commitlint:
-    name: Validate PR title
-    if: ${{ inputs.commitlint-enabled }}
+    name: Validate PR title (Conventional Commits)
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -55,13 +40,10 @@ jobs:
         run: echo "$PR_TITLE" | npx commitlint --verbose
 
   squash-check:
-    name: Enforce squash merge
-    if: ${{ inputs.require-linear-history }}
+    name: Verify squash merge is enabled
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
-      - name: Check merge method
+      - name: Check repository merge settings
         uses: actions/github-script@v7
         with:
           script: |

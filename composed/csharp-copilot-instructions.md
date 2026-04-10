@@ -64,14 +64,31 @@ These are universal rules that apply to **every** repository regardless of langu
 
 ## Testing
 
+### Test layers — all three are required
+
+- **Unit tests**: Test individual functions, classes, or modules in isolation. Mock all external dependencies. Fast and numerous.
+- **Integration tests**: Test interactions between components or with real infrastructure (database, file system, HTTP). Fewer than unit tests but critical for catching contract violations.
+- **End-to-end (E2E) tests**: Test complete user flows through the deployed application. Slowest — keep the suite lean and focused on critical paths.
+
+### Standards that apply to all test layers
+
 - Write tests for all new features and bug fixes.
-- Aim for meaningful coverage, not 100% line coverage at the expense of useful tests.
-- Tests should be deterministic — no flaky tests allowed.
+- Aim for meaningful coverage, not raw line-coverage percentages. A green badge on dead code paths is worthless.
+- Tests must be deterministic — no flaky tests. A test that fails intermittently is worse than no test.
 - Name tests descriptively: `should <expected behavior> when <condition>`.
+- Never let a test suite be left in a broken state. Fix or delete flaky tests immediately.
+
+## CI and GitHub Actions
+
+- Use `GITHUB_TOKEN` for all same-repo workflow operations. It is automatic, expires after the workflow run, and requires no secrets configuration.
+- Always declare an explicit `permissions:` block in every workflow. Use job-level permissions for maximum granularity. Grant only what is required.
+- For cross-repository or cross-organization write access, prefer a **GitHub App** (installation access token) over a personal access token. For lightweight cases, a **fine-grained PAT** stored as a repository secret is acceptable.
+- Never use classic PATs in workflows — they are over-scoped and deprecated.
+- Pin action versions using the major version tag (e.g., `actions/checkout@v4`), not floating tags like `@latest` or `@main`.
+- Use `lts/*` for language version inputs (Node.js) and the equivalent latest-stable selector for other runtimes — never hardcode a specific version number in workflow files.
 
 ## Documentation
 
-- Update README and relevant docs alongside code changes.
 - Document public APIs, configuration options, and non-obvious decisions.
 - Use inline comments sparingly — only for "why", never for "what".
 
@@ -99,7 +116,7 @@ These are universal rules that apply to **every** repository regardless of langu
 
 ## Language and runtime
 
-- Target the latest LTS version of .NET (currently .NET 8) unless the project specifies otherwise.
+- Target the latest LTS version of .NET unless the project specifies otherwise.
 - Enable nullable reference types (`<Nullable>enable</Nullable>`) in all projects.
 - Use file-scoped namespaces and top-level statements where appropriate.
 - Prefer `record` types for immutable data transfer objects.
@@ -127,10 +144,11 @@ These are universal rules that apply to **every** repository regardless of langu
 
 ## Testing
 
-- Use xUnit as the test framework. Use FluentAssertions for readable assertions.
-- Use the `Fact` and `Theory` attributes. Prefer `Theory` with `InlineData` for parameterized tests.
+- **Unit tests**: Use xUnit. Use FluentAssertions for readable assertions. Use `Fact` and `Theory` attributes.
+- **Integration tests**: Use `WebApplicationFactory<T>` for ASP.NET integration tests. Use `Testcontainers` to spin up real infrastructure (databases, message brokers) in Docker.
+- **E2E tests**: Use Playwright with the .NET binding (`Microsoft.Playwright`) for full browser automation against a running application.
 - Name tests: `MethodName_Should_ExpectedBehavior_When_Condition`.
-- Use `WebApplicationFactory<T>` for integration tests in ASP.NET projects.
+- Prefer `Theory` with `InlineData` or `MemberData` for parameterized tests.
 
 ## Dependencies
 

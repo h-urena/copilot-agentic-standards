@@ -32,10 +32,12 @@ When reviewing a pull request, verify each of the following. Flag any violations
 
 ### Testing
 
-- [ ] New features have corresponding tests.
-- [ ] Bug fixes include a regression test.
+- [ ] New features have unit tests and, where meaningful, integration tests.
+- [ ] Bug fixes include a regression test that would have caught the original issue.
+- [ ] E2E tests are added or updated for changes to user-facing flows.
+- [ ] Test coverage for the changed code has not regressed.
 - [ ] Tests are deterministic — no timeouts, sleeps, or flaky assertions.
-- [ ] Test names describe the expected behavior.
+- [ ] Test names describe the expected behavior, not the implementation.
 
 ### Performance
 
@@ -55,3 +57,9 @@ When reviewing a pull request, verify each of the following. Flag any violations
 - [ ] Branch is up to date with `main` — no merge conflicts.
 - [ ] Commits are clean — no "fix typo" chains (squash merge handles this).
 - [ ] No unrelated changes bundled into the PR.
+
+### CI
+
+- [ ] All required status checks are passing.
+- [ ] No new workflow permissions introduced beyond what is necessary.
+- [ ] No secrets or environment variables are logged in CI output.
