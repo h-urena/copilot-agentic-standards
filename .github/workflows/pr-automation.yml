@@ -1,13 +1,39 @@
 # PR Automation
 #
-# Assigns the PR author and posts a welcome comment for first-time contributors.
-# Runs when a PR is opened or reopened.
+# Dual-trigger:
+#   1. pull_request — runs automatically on PRs in this repo
+#   2. workflow_call — consumer repos call this as a reusable workflow:
+#
+#        permissions:
+#          pull-requests: write
+#          issues: write
+#        jobs:
+#          pr-automation:
+#            uses: h-urena/copilot-agentic-standards/.github/workflows/pr-automation.yml@main
+#            with:
+#              auto-assign-author: true
+#              enable-labeler: false
+#
+# Authentication: uses GITHUB_TOKEN automatically. No secrets need to be passed.
+# IMPORTANT: GITHUB_TOKEN cannot trigger subsequent workflow runs. If you need
+# the auto-created "update standards" PRs to trigger CI, use a fine-grained PAT
+# or GitHub App token in pull-standards.yml instead.
 
 name: PR Automation
 
 on:
   pull_request:
     types: [opened, reopened]
+  workflow_call:
+    inputs:
+      auto-assign-author:
+        description: "Assign the PR author as the assignee"
+        type: boolean
+        default: true
+      enable-labeler:
+        description: "Apply path-based labels via .github/labeler.yml"
+        type: boolean
+        default: false
 
 permissions:
   pull-requests: write
@@ -16,6 +42,7 @@ permissions:
 jobs:
   auto-assign:
     name: Assign PR to author
+    if: ${{ github.event_name != 'workflow_call' || inputs.auto-assign-author }}
     runs-on: ubuntu-latest
     steps:
       - name: Assign author as assignee
@@ -32,6 +59,24 @@ jobs:
               assignees: [pr.user.login],
             });
 
+  label:
+    name: Apply path-based labels
+    # Only runs when explicitly enabled; requires .github/labeler.yml in the caller's repo
+    if: ${{ inputs.enable-labeler == true }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Label PR
+        uses: actions/labeler@v5
+        with:
+          configuration-path: .github/labeler.yml
+          sync-labels: true
+
   welcome-comment:
     name: Welcome first-time contributor
     runs-on: ubuntu-latest
@@ -43,7 +88,7 @@ jobs:
             const pr = context.payload.pull_request;
             if (!pr?.user?.login) return;
 
-            // Search for all PRs by this author; post welcome only on their first
+            // Use search API to count all PRs by this author in this repo
             const { data } = await github.rest.search.issuesAndPullRequests({
               q: `repo:${context.repo.owner}/${context.repo.repo} is:pr author:${pr.user.login}`,
             });

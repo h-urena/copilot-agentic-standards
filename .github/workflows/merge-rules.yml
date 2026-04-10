@@ -1,7 +1,18 @@
 # Merge Rules
 #
-# Enforces Conventional Commits on PR titles and squash-merge policy.
-# Runs on every PR targeting main.
+# Dual-trigger:
+#   1. pull_request — runs automatically on PRs in this repo
+#   2. workflow_call — consumer repos call this as a reusable workflow:
+#
+#        jobs:
+#          merge-rules:
+#            uses: h-urena/copilot-agentic-standards/.github/workflows/merge-rules.yml@main
+#            with:
+#              require-linear-history: true
+#              commitlint-enabled: true
+#
+# Authentication: uses GITHUB_TOKEN automatically. No secrets need to be passed.
+# The caller must declare: permissions: contents: read, pull-requests: read
 
 name: Merge Rules
 
@@ -9,6 +20,16 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, edited]
+  workflow_call:
+    inputs:
+      require-linear-history:
+        description: "Enforce squash merge (no merge commits)"
+        type: boolean
+        default: true
+      commitlint-enabled:
+        description: "Validate PR titles against Conventional Commits"
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -17,6 +38,8 @@ permissions:
 jobs:
   commitlint:
     name: Validate PR title (Conventional Commits)
+    # Always runs on pull_request; on workflow_call, runs unless explicitly disabled
+    if: ${{ github.event_name != 'workflow_call' || inputs.commitlint-enabled }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -41,6 +64,7 @@ jobs:
 
   squash-check:
     name: Verify squash merge is enabled
+    if: ${{ github.event_name != 'workflow_call' || inputs.require-linear-history }}
     runs-on: ubuntu-latest
     steps:
       - name: Check repository merge settings
@@ -55,6 +79,13 @@ jobs:
             if (!repo.allow_squash_merge) {
               core.setFailed(
                 'Squash merge is not enabled. Enable it under Settings → General → Pull Requests.'
+              );
+            }
+
+            if (repo.allow_merge_commit || repo.allow_rebase_merge) {
+              core.warning(
+                'Non-squash merge methods are enabled. Disable merge commits and rebase ' +
+                'merges to enforce a clean linear history.'
               );
             }
 

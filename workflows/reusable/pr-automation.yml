@@ -1,12 +1,11 @@
-# PR Automation — Reusable Workflow
+# PR Automation — Reusable Workflow (DOCUMENTATION COPY)
 #
-# Auto-assign PR author, apply path-based labels, and welcome first-time contributors.
-# Consumer repos call this via workflow_call.
+# This file is a documentation reference. The ACTUAL callable reusable workflow is:
+#   .github/workflows/pr-automation.yml
 #
-# This workflow uses the built-in GITHUB_TOKEN. No secrets need to be passed.
-# The caller must grant pull-requests: write and issues: write permissions.
+# That file supports both pull_request (for this repo) and workflow_call (for consumers).
+# Consumer repos call it as:
 #
-# Usage in caller workflow (see workflows/examples/example-ci.yml):
 #   permissions:
 #     pull-requests: write
 #     issues: write
@@ -15,7 +14,9 @@
 #       uses: h-urena/copilot-agentic-standards/.github/workflows/pr-automation.yml@main
 #       with:
 #         auto-assign-author: true
-#         enable-labeler: true  # requires .github/labeler.yml in your repo
+#         enable-labeler: false  # set true once .github/labeler.yml exists
+#
+# Authentication: uses GITHUB_TOKEN automatically. No secrets need to be passed.
 
 name: PR Automation
 

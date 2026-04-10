@@ -21,7 +21,8 @@ These are universal rules that apply to **every** repository regardless of langu
 ## Branch strategy
 
 - **`main`** is the default, protected branch. All changes merge into `main` via pull request.
-- Use short-lived feature branches: `feat/<ticket>-<short-description>`, `fix/<ticket>-<short-description>`, `chore/<description>`.
+- Use short-lived feature branches: `feat/<ticket>-<short-description>`, `fix/<ticket>-<short-description>`, `docs/<ticket>-<short-description>`.
+- Bugfix branches: `bugfix/<ticket>-<short-description>` — branch from `main`, merge back to `main`.
 - Hotfix branches: `hotfix/<ticket>-<short-description>` — branch from `main`, merge back to `main`.
 - Delete branches after merge.
 
@@ -64,11 +65,11 @@ These are universal rules that apply to **every** repository regardless of langu
 
 ## Testing
 
-### Test layers — all three are required
+### Test layers
 
-- **Unit tests**: Test individual functions, classes, or modules in isolation. Mock all external dependencies. Fast and numerous.
-- **Integration tests**: Test interactions between components or with real infrastructure (database, file system, HTTP). Fewer than unit tests but critical for catching contract violations.
-- **End-to-end (E2E) tests**: Test complete user flows through the deployed application. Slowest — keep the suite lean and focused on critical paths.
+- **Unit tests**: Test individual public functions, public classes, or public modules in isolation. Mock all external dependencies. Aim for production-level code coverage and critical logic.
+- **Integration tests**: Incorporate them if possible: test production interactions between components or with real infrastructure (database, file system, HTTP). Critical for catching contract violations.
+- **End-to-end (E2E) tests**: Incorporate them if possible: test complete user flows through the deployed application. Keep the suite lean and focused exclusively on critical paths.
 
 ### Standards that apply to all test layers
 
@@ -76,7 +77,7 @@ These are universal rules that apply to **every** repository regardless of langu
 - Aim for meaningful coverage, not raw line-coverage percentages. A green badge on dead code paths is worthless.
 - Tests must be deterministic — no flaky tests. A test that fails intermittently is worse than no test.
 - Name tests descriptively: `should <expected behavior> when <condition>`.
-- Never let a test suite be left in a broken state. Fix or delete flaky tests immediately.
+- Never let a test suite be left in a broken state. Fix or delete flaky tests immediately as part of the same PR.
 
 ## CI and GitHub Actions
 
@@ -89,6 +90,7 @@ These are universal rules that apply to **every** repository regardless of langu
 
 ## Documentation
 
+- Update README and relevant docs alongside code changes.
 - Document public APIs, configuration options, and non-obvious decisions.
 - Use inline comments sparingly — only for "why", never for "what".
 
@@ -105,6 +107,7 @@ These are universal rules that apply to **every** repository regardless of langu
 - Use structured error types/codes rather than string matching.
 - Log errors with sufficient context for debugging (timestamp, request ID, stack trace).
 - Return meaningful error messages to callers; do not expose internal details to end users.
+- No problems stated in the 'Problems' tab should be ignored. If a problem is not actionable, it should be suppressed with a comment explaining why. Otherwise, all problems should be addressed before merging.
 
 ---
 
@@ -130,7 +133,7 @@ These are universal rules that apply to **every** repository regardless of langu
 
 ## Code style
 
-- Use ESLint with the project's shared config (extending `@typescript-eslint/recommended`).
+- Use ESLint with `@typescript-eslint/recommended` as the base config. Migrate to ESLint's flat config format (`eslint.config.ts`) for new projects.
 - Use Prettier for formatting. Do not mix formatting rules into ESLint.
 - Prefer named exports over default exports.
 - Use `interface` for object shapes that may be extended; use `type` for unions, intersections, and mapped types.
@@ -144,10 +147,12 @@ These are universal rules that apply to **every** repository regardless of langu
 
 ## Testing
 
-- **Unit tests**: Use Vitest (preferred) or Jest. Mock external dependencies at module boundaries, not deep internals. Use `describe`/`it` blocks with descriptive names.
-- **Integration tests**: Test module interactions and HTTP handlers with real or in-memory infrastructure. Use `supertest` for HTTP-level testing.
-- **E2E tests**: Use Playwright for browser automation against a running application. Keep the suite lean and focused on critical user flows.
-- Co-locate unit/integration test files next to source files, or mirror the source tree in a `tests/` directory. Keep E2E tests in a top-level `e2e/` directory.
+- **Unit tests**: Use **Vitest** for all new TypeScript projects. It has native TypeScript/ESM support (no `ts-jest` wrapper), a Jest-compatible API (`describe`/`it`/`expect`), and runs significantly faster. Use Jest only if a project is already committed to it — the migration cost is low, but don't migrate just to migrate.
+  - Use `vi.mock()` for module mocking, `vi.spyOn()` for spying.
+  - Use `@vitest/coverage-v8` for coverage reports (faster than istanbul).
+- **Integration tests**: Use `supertest` for HTTP-level integration tests against Express/Fastify/Hono handlers. Use `@testcontainers/testcontainers` to spin up real infrastructure (databases, queues) in Docker for true integration coverage.
+- **E2E tests**: Use `@playwright/test` for browser automation. Keep the suite lean — critical user flows only. Run E2E against a deployed preview environment, not localhost.
+- Co-locate unit/integration test files next to source files (`*.test.ts`) or mirror structure in `tests/`. Keep E2E tests in a top-level `e2e/` directory.
 
 ## Dependencies
 

@@ -21,7 +21,8 @@ These are universal rules that apply to **every** repository regardless of langu
 ## Branch strategy
 
 - **`main`** is the default, protected branch. All changes merge into `main` via pull request.
-- Use short-lived feature branches: `feat/<ticket>-<short-description>`, `fix/<ticket>-<short-description>`, `chore/<description>`.
+- Use short-lived feature branches: `feat/<ticket>-<short-description>`, `fix/<ticket>-<short-description>`, `docs/<ticket>-<short-description>`.
+- Bugfix branches: `bugfix/<ticket>-<short-description>` — branch from `main`, merge back to `main`.
 - Hotfix branches: `hotfix/<ticket>-<short-description>` — branch from `main`, merge back to `main`.
 - Delete branches after merge.
 
@@ -64,11 +65,11 @@ These are universal rules that apply to **every** repository regardless of langu
 
 ## Testing
 
-### Test layers — all three are required
+### Test layers
 
-- **Unit tests**: Test individual functions, classes, or modules in isolation. Mock all external dependencies. Fast and numerous.
-- **Integration tests**: Test interactions between components or with real infrastructure (database, file system, HTTP). Fewer than unit tests but critical for catching contract violations.
-- **End-to-end (E2E) tests**: Test complete user flows through the deployed application. Slowest — keep the suite lean and focused on critical paths.
+- **Unit tests**: Test individual public functions, public classes, or public modules in isolation. Mock all external dependencies. Aim for production-level code coverage and critical logic.
+- **Integration tests**: Incorporate them if possible: test production interactions between components or with real infrastructure (database, file system, HTTP). Critical for catching contract violations.
+- **End-to-end (E2E) tests**: Incorporate them if possible: test complete user flows through the deployed application. Keep the suite lean and focused exclusively on critical paths.
 
 ### Standards that apply to all test layers
 
@@ -76,7 +77,7 @@ These are universal rules that apply to **every** repository regardless of langu
 - Aim for meaningful coverage, not raw line-coverage percentages. A green badge on dead code paths is worthless.
 - Tests must be deterministic — no flaky tests. A test that fails intermittently is worse than no test.
 - Name tests descriptively: `should <expected behavior> when <condition>`.
-- Never let a test suite be left in a broken state. Fix or delete flaky tests immediately.
+- Never let a test suite be left in a broken state. Fix or delete flaky tests immediately as part of the same PR.
 
 ## CI and GitHub Actions
 
@@ -89,6 +90,7 @@ These are universal rules that apply to **every** repository regardless of langu
 
 ## Documentation
 
+- Update README and relevant docs alongside code changes.
 - Document public APIs, configuration options, and non-obvious decisions.
 - Use inline comments sparingly — only for "why", never for "what".
 
@@ -105,6 +107,7 @@ These are universal rules that apply to **every** repository regardless of langu
 - Use structured error types/codes rather than string matching.
 - Log errors with sufficient context for debugging (timestamp, request ID, stack trace).
 - Return meaningful error messages to callers; do not expose internal details to end users.
+- No problems stated in the 'Problems' tab should be ignored. If a problem is not actionable, it should be suppressed with a comment explaining why. Otherwise, all problems should be addressed before merging.
 
 ---
 

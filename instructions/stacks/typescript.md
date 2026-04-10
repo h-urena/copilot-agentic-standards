@@ -20,7 +20,7 @@
 
 ## Code style
 
-- Use ESLint with the project's shared config (extending `@typescript-eslint/recommended`).
+- Use ESLint with `@typescript-eslint/recommended` as the base config. Migrate to ESLint's flat config format (`eslint.config.ts`) for new projects.
 - Use Prettier for formatting. Do not mix formatting rules into ESLint.
 - Prefer named exports over default exports.
 - Use `interface` for object shapes that may be extended; use `type` for unions, intersections, and mapped types.
@@ -34,10 +34,12 @@
 
 ## Testing
 
-- **Unit tests**: Use Vitest (preferred) or Jest. Mock external dependencies at module boundaries, not deep internals. Use `describe`/`it` blocks with descriptive names.
-- **Integration tests**: Test module interactions and HTTP handlers with real or in-memory infrastructure. Use `supertest` for HTTP-level testing.
-- **E2E tests**: Use Playwright for browser automation against a running application. Keep the suite lean and focused on critical user flows.
-- Co-locate unit/integration test files next to source files, or mirror the source tree in a `tests/` directory. Keep E2E tests in a top-level `e2e/` directory.
+- **Unit tests**: Use **Vitest** for all new TypeScript projects. It has native TypeScript/ESM support (no `ts-jest` wrapper), a Jest-compatible API (`describe`/`it`/`expect`), and runs significantly faster. Use Jest only if a project is already committed to it — the migration cost is low, but don't migrate just to migrate.
+  - Use `vi.mock()` for module mocking, `vi.spyOn()` for spying.
+  - Use `@vitest/coverage-v8` for coverage reports (faster than istanbul).
+- **Integration tests**: Use `supertest` for HTTP-level integration tests against Express/Fastify/Hono handlers. Use `@testcontainers/testcontainers` to spin up real infrastructure (databases, queues) in Docker for true integration coverage.
+- **E2E tests**: Use `@playwright/test` for browser automation. Keep the suite lean — critical user flows only. Run E2E against a deployed preview environment, not localhost.
+- Co-locate unit/integration test files next to source files (`*.test.ts`) or mirror structure in `tests/`. Keep E2E tests in a top-level `e2e/` directory.
 
 ## Dependencies
 

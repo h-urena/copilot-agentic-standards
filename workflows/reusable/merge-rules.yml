@@ -1,15 +1,20 @@
-# Merge Rules — Reusable Workflow
+# Merge Rules — Reusable Workflow (DOCUMENTATION COPY)
 #
-# All merge gates: Conventional Commits validation and squash-merge enforcement.
-# Consumer repos call this via workflow_call.
+# This file is a documentation reference. The ACTUAL callable reusable workflow is:
+#   .github/workflows/merge-rules.yml
 #
-# Usage in caller workflow:
+# That file supports both pull_request (for this repo) and workflow_call (for consumers).
+# Consumer repos call it as:
+#
 #   jobs:
 #     merge-rules:
 #       uses: h-urena/copilot-agentic-standards/.github/workflows/merge-rules.yml@main
 #       with:
 #         require-linear-history: true
 #         commitlint-enabled: true
+#
+# Authentication: uses GITHUB_TOKEN automatically. No secrets need to be passed.
+# The caller must declare: permissions: contents: read, pull-requests: read
 
 name: Merge Rules
 
