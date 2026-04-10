@@ -67,8 +67,15 @@ jobs:
       - name: Move issue to In Progress
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GH_PROJECT_TOKEN }}
+          # Fall back to GITHUB_TOKEN so the action never crashes when the secret is absent.
+          # The script itself exits early if GH_PROJECT_TOKEN is not configured.
+          github-token: ${{ secrets.GH_PROJECT_TOKEN || github.token }}
           script: |
+            if ('${{ secrets.GH_PROJECT_TOKEN }}' === '') {
+              core.warning('GH_PROJECT_TOKEN secret is not configured. Skipping project board update. Add a fine-grained PAT with Projects write permission as a repository secret.');
+              return;
+            }
+
             const PROJECT_OWNER  = '${{ inputs.project-owner  || env.PROJECT_OWNER  }}' || context.repo.owner;
             const PROJECT_NUMBER = parseInt('${{ inputs.project-number || env.PROJECT_NUMBER }}' || '4', 10);
 
@@ -161,8 +168,13 @@ jobs:
       - name: Request review and move to In Review
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GH_PROJECT_TOKEN }}
+          github-token: ${{ secrets.GH_PROJECT_TOKEN || github.token }}
           script: |
+            if ('${{ secrets.GH_PROJECT_TOKEN }}' === '') {
+              core.warning('GH_PROJECT_TOKEN secret is not configured. Skipping project board update. Add a fine-grained PAT with Projects write permission as a repository secret.');
+              return;
+            }
+
             const PROJECT_OWNER  = '${{ inputs.project-owner  || env.PROJECT_OWNER  }}' || context.repo.owner;
             const PROJECT_NUMBER = parseInt('${{ inputs.project-number || env.PROJECT_NUMBER }}' || '4', 10);
             const REPO_OWNER     = '${{ inputs.repo-owner     || env.REPO_OWNER     }}' || context.repo.owner;
@@ -281,8 +293,13 @@ jobs:
       - name: Move linked issues to Done
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GH_PROJECT_TOKEN }}
+          github-token: ${{ secrets.GH_PROJECT_TOKEN || github.token }}
           script: |
+            if ('${{ secrets.GH_PROJECT_TOKEN }}' === '') {
+              core.warning('GH_PROJECT_TOKEN secret is not configured. Skipping project board update. Add a fine-grained PAT with Projects write permission as a repository secret.');
+              return;
+            }
+
             const PROJECT_OWNER  = '${{ inputs.project-owner  || env.PROJECT_OWNER  }}' || context.repo.owner;
             const PROJECT_NUMBER = parseInt('${{ inputs.project-number || env.PROJECT_NUMBER }}' || '4', 10);
 
