@@ -16,3 +16,7 @@ updates:
     commit-message:
       prefix: "chore(ci)"
     open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"

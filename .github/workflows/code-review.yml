@@ -1,0 +1,268 @@
+name: Automated Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_call:
+    inputs:
+      pr-number:
+        description: "PR number to review (required when called from another workflow)"
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    name: Tiered Review
+    runs-on: ubuntu-latest
+    # Skip automated bot PRs — Dependabot and alike don't need this review
+    if: ${{ github.actor != 'dependabot[bot]' && !endsWith(github.actor, '[bot]') }}
+
+    steps:
+      - name: Run tiered code review
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber =
+              context.payload.pull_request?.number ??
+              ${{ inputs.pr-number || 0 }};
+
+            if (!prNumber) {
+              core.setFailed('Could not determine PR number.');
+              return;
+            }
+
+            const owner = context.repo.owner;
+            const repo  = context.repo.repo;
+
+            // ── 1. Gather PR metadata ────────────────────────────────────────
+            const { data: pr } = await github.rest.pulls.get({
+              owner, repo, pull_number: prNumber,
+            });
+
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner, repo, pull_number: prNumber, per_page: 100,
+            });
+
+            const prTitle       = pr.title ?? '';
+            const prBody        = pr.body  ?? '';
+            const totalChanges  = files.reduce((n, f) => n + f.changes, 0);
+            const allPatches    = files.map(f => f.patch ?? '').join('\n');
+            const addedLines    = files.flatMap(f =>
+              (f.patch ?? '').split('\n').filter(l => l.startsWith('+') && !l.startsWith('+++'))
+            );
+
+            const isTestFile = p =>
+              /\.(test|spec)\.[jt]sx?$/.test(p) ||
+              /[\\/](tests?|__tests__)[\\/]/.test(p) ||
+              /[\\/]test[\\/]/.test(p) ||
+              p.endsWith('_test.py') ||
+              p.includes('Tests/');
+
+            const isSensitivePath = p =>
+              /[\\/](auth|oauth|jwt|token|payment|billing|checkout|secret|credential)/i.test(p) ||
+              /\.(env|pem|key|pfx|p12)$/.test(p) ||
+              /[\\/](admin|sudo|privilege)/i.test(p);
+
+            const sourceFiles  = files.filter(f => !isTestFile(f.filename));
+            const testFiles    = files.filter(f =>  isTestFile(f.filename));
+            const sensitiveFiles = sourceFiles.filter(f => isSensitivePath(f.filename));
+
+            // ── 2. Run checks ────────────────────────────────────────────────
+
+            // 🚨 Critical checks (trigger REQUEST_CHANGES)
+            const critical = [];
+
+            // Conventional Commits: type(scope)?: description
+            const CC_RE = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .{1,100}$/;
+            if (!CC_RE.test(prTitle)) {
+              critical.push(
+                `**PR title does not follow [Conventional Commits](https://www.conventionalcommits.org/).**\n` +
+                `  - Current: \`${prTitle}\`\n` +
+                `  - Expected format: \`type(scope): description\`  e.g. \`feat(auth): add OAuth2 flow\``
+              );
+            }
+
+            // Hardcoded secrets / credentials
+            const SECRET_PATTERNS = [
+              { re: /password\s*=\s*["'][^"']{4,}/i,      label: 'hardcoded password' },
+              { re: /api[_-]?key\s*=\s*["'][^"']{8,}/i,   label: 'hardcoded API key' },
+              { re: /secret\s*=\s*["'][^"']{8,}/i,        label: 'hardcoded secret' },
+              { re: /ghp_[A-Za-z0-9]{36}/,                label: 'GitHub PAT (ghp_)' },
+              { re: /AKIA[0-9A-Z]{16}/,                   label: 'AWS access key' },
+              { re: /sk-[A-Za-z0-9]{20,}/,                label: 'OpenAI/Stripe-style secret key' },
+              { re: /-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----/, label: 'private key block' },
+            ];
+            const foundSecrets = [];
+            for (const { re, label } of SECRET_PATTERNS) {
+              if (addedLines.some(l => re.test(l))) foundSecrets.push(label);
+            }
+            if (foundSecrets.length) {
+              critical.push(
+                `**Potential hardcoded secret(s) detected in added lines:**\n` +
+                foundSecrets.map(s => `  - ${s}`).join('\n')
+              );
+            }
+
+            // PII patterns outside test files
+            const PII_PATTERNS = [
+              { re: /\b[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}\b/i, label: 'email address' },
+              { re: /\b\d{3}-\d{2}-\d{4}\b/,                         label: 'SSN pattern (XXX-XX-XXXX)' },
+              { re: /\b\+?1?\s?\(?\d{3}\)?[\s.\-]\d{3}[\s.\-]\d{4}\b/, label: 'phone number' },
+              { re: /\b4[0-9]{12}(?:[0-9]{3})?\b/,                    label: 'Visa card number pattern' },
+            ];
+            const piiFiles = sourceFiles
+              .filter(f => !isTestFile(f.filename))
+              .filter(f => {
+                const addedInFile = (f.patch ?? '').split('\n')
+                  .filter(l => l.startsWith('+') && !l.startsWith('+++'));
+                return PII_PATTERNS.some(({ re }) => addedInFile.some(l => re.test(l)));
+              })
+              .map(f => `\`${f.filename}\``);
+
+            if (piiFiles.length) {
+              critical.push(
+                `**Possible PII pattern(s) found in non-test source files:**\n` +
+                piiFiles.map(p => `  - ${p}`).join('\n') + '\n' +
+                `  > Verify no real personal data is committed. Use fixtures or anonymised values in tests.`
+              );
+            }
+
+            // Security-sensitive paths changed
+            if (sensitiveFiles.length) {
+              critical.push(
+                `**Security-sensitive file(s) modified — human review required:**\n` +
+                sensitiveFiles.map(f => `  - \`${f.filename}\``).join('\n') + '\n' +
+                `  > Changes to auth, token, payment, or credential code carry elevated risk.`
+              );
+            }
+
+            // ── 💡 Suggestions (COMMENT only) ───────────────────────────────
+            const suggestions = [];
+
+            if (prBody.trim().length < 20) {
+              suggestions.push(
+                `**PR description is missing or too short.**\n` +
+                `  > Add context: what changed, why, and any testing notes.`
+              );
+            }
+
+            const DEBUG_PATTERNS = [
+              { re: /^\+\s*console\.(log|debug|info|warn|error)\(/, label: '`console.log` / debug call' },
+              { re: /^\+\s*print\(["']debug/i,                       label: '`print()` debug statement' },
+              { re: /^\+\s*debugger\b/,                              label: '`debugger` statement' },
+              { re: /^\+\s*binding\.pry\b/,                          label: '`binding.pry` breakpoint' },
+            ];
+            const debugHits = DEBUG_PATTERNS
+              .filter(({ re }) => allPatches.split('\n').some(l => re.test(l)))
+              .map(({ label }) => label);
+            if (debugHits.length) {
+              suggestions.push(
+                `**Debug statement(s) detected in changed lines:**\n` +
+                debugHits.map(l => `  - ${l}`).join('\n')
+              );
+            }
+
+            if (sourceFiles.length > 0 && testFiles.length === 0) {
+              suggestions.push(
+                `**No test files changed alongside source code.**\n` +
+                `  > Consider adding or updating unit/integration tests.`
+              );
+            }
+
+            if (totalChanges > 400) {
+              suggestions.push(
+                `**Large PR — ${totalChanges} lines changed.**\n` +
+                `  > Consider splitting into smaller, focused PRs for easier review.`
+              );
+            }
+
+            const hasCommentedCode = addedLines.some(l =>
+              /^\+\s*(\/\/|#)\s*(TODO|FIXME|HACK|TEMP|xxx|disabled|commented.?out)/i.test(l) ||
+              /^\+\s*\/\/\s*[a-zA-Z].*[;{}]/.test(l)
+            );
+            if (hasCommentedCode) {
+              suggestions.push(
+                `**Commented-out code detected.**\n` +
+                `  > Remove dead code; use version control to recover it if needed.`
+              );
+            }
+
+            // ── ✅ Passing checks ────────────────────────────────────────────
+            const passing = [];
+
+            if (CC_RE.test(prTitle))          passing.push('PR title follows Conventional Commits');
+            if (!foundSecrets.length)          passing.push('No hardcoded secret patterns detected');
+            if (!piiFiles.length)              passing.push('No PII patterns detected in source code');
+            if (!sensitiveFiles.length)        passing.push('No security-sensitive files modified');
+            if (prBody.trim().length >= 20)    passing.push('PR description provided');
+            if (!debugHits.length)             passing.push('No debug statements in changed lines');
+            if (sourceFiles.length === 0 || testFiles.length > 0)
+                                               passing.push('Test files updated alongside source code');
+            if (totalChanges <= 400)           passing.push(`PR size is reasonable (${totalChanges} lines)`);
+
+            // ── 3. Build review body ─────────────────────────────────────────
+            const hasCritical = critical.length > 0;
+
+            let body = `## Automated Code Review\n\n`;
+
+            // Summary table
+            body += `| Tier | Count |\n|------|-------|\n`;
+            body += `| 🚨 Requires Action | ${critical.length} |\n`;
+            body += `| 💡 Suggestions | ${suggestions.length} |\n`;
+            body += `| ✅ Passing | ${passing.length} |\n\n`;
+
+            if (hasCritical) {
+              body += `---\n\n### 🚨 Requires Action\n\n`;
+              body += `> These items **must be addressed** before this PR can merge.\n\n`;
+              critical.forEach((c, i) => { body += `${i + 1}. ${c}\n\n`; });
+            }
+
+            if (suggestions.length) {
+              body += `---\n\n### 💡 Suggestions\n\n`;
+              body += `> Non-blocking — improvements worth considering.\n\n`;
+              suggestions.forEach((s, i) => { body += `${i + 1}. ${s}\n\n`; });
+            }
+
+            if (passing.length) {
+              body += `---\n\n### ✅ Passing\n\n`;
+              passing.forEach(p => { body += `- ${p}\n`; });
+            }
+
+            body += `\n---\n*Automated review by \`code-review.yml\`. Last run: ${new Date().toISOString()}*`;
+
+            // ── 4. Dismiss stale bot REQUEST_CHANGES reviews ─────────────────
+            const { data: existingReviews } = await github.rest.pulls.listReviews({
+              owner, repo, pull_number: prNumber,
+            });
+            for (const r of existingReviews) {
+              if (
+                r.user.login === 'github-actions[bot]' &&
+                r.state === 'CHANGES_REQUESTED'
+              ) {
+                await github.rest.pulls.dismissReview({
+                  owner, repo, pull_number: prNumber,
+                  review_id: r.id,
+                  message: 'Superseded by updated automated review.',
+                });
+              }
+            }
+
+            // ── 5. Post review ───────────────────────────────────────────────
+            const event = hasCritical ? 'REQUEST_CHANGES' : 'COMMENT';
+
+            await github.rest.pulls.createReview({
+              owner, repo, pull_number: prNumber,
+              body,
+              event,
+            });
+
+            core.info(`Review posted: ${event} | 🚨 ${critical.length} | 💡 ${suggestions.length} | ✅ ${passing.length}`);
+
+            if (hasCritical) {
+              core.setFailed(`Code review found ${critical.length} critical item(s) requiring action.`);
+            }

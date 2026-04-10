@@ -76,10 +76,22 @@ jobs:
               repo: context.repo.repo,
             });
 
-            if (!repo.allow_squash_merge) {
+            // Guard against restricted tokens (e.g. Dependabot PRs) that return
+            // allow_squash_merge as undefined rather than a boolean. Only hard-fail
+            // when the API explicitly returns false.
+            if (repo.allow_squash_merge === false) {
               core.setFailed(
                 'Squash merge is not enabled. Enable it under Settings → General → Pull Requests.'
               );
+              return;
+            }
+
+            if (repo.allow_squash_merge === undefined) {
+              core.warning(
+                'Could not verify squash-merge setting (token may have restricted permissions). ' +
+                'Ensure only squash merge is enabled under Settings → General → Pull Requests.'
+              );
+              return;
             }
 
             if (repo.allow_merge_commit || repo.allow_rebase_merge) {
