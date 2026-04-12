@@ -19,12 +19,24 @@ permissions:
   contents: read
 
 jobs:
+  shellcheck:
+    name: Lint shell scripts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run shellcheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './scripts'
+
   validate:
     name: Check composed files are fresh
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Make scripts executable
         run: chmod +x scripts/compose.sh scripts/validate-composed.sh
