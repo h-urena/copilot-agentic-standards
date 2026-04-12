@@ -75,10 +75,16 @@ mkdir -p "$REPO_PATH/.github"
 cp "$COMPOSED_FILE" "$REPO_PATH/.github/copilot-instructions.md"
 echo "  ✓ .github/copilot-instructions.md"
 
-# 2. Code review instructions
+# 2. Code review instructions (generic + stack-specific)
 if [ -f "$ROOT_DIR/instructions/code-review.instructions.md" ]; then
   cp "$ROOT_DIR/instructions/code-review.instructions.md" "$REPO_PATH/.github/code-review.instructions.md"
   echo "  ✓ .github/code-review.instructions.md"
+fi
+
+STACK_REVIEW="$ROOT_DIR/instructions/code-review-${STACK}.instructions.md"
+if [ -f "$STACK_REVIEW" ]; then
+  cp "$STACK_REVIEW" "$REPO_PATH/.github/code-review-${STACK}.instructions.md"
+  echo "  ✓ .github/code-review-${STACK}.instructions.md"
 fi
 
 # 3. PR templates
