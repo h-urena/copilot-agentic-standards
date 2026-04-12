@@ -1,0 +1,386 @@
+# Project Board Automation
+#
+# Moves issue cards on the GitHub Project board automatically as work progresses:
+#
+#   Todo        — issue created (default on board add)
+#   In Progress — branch pushed that matches feat|fix|.../ISSUE-slug
+#   In Review   — PR opened → repo owner assigned as reviewer
+#   Done        — PR approved by the owner
+#
+# ── Setup required ────────────────────────────────────────────────────────────
+# Add a repository secret named PR_TOKEN containing a fine-grained PAT
+# with these permissions:
+#   Repository scope:  Pull requests → Read-only
+#   User scope:        Projects → Read and write
+#
+# Do NOT use a classic PAT — fine-grained only.
+#
+# ── Consumer repo usage ───────────────────────────────────────────────────────
+# jobs:
+#   board:
+#     uses: h-urena/copilot-agentic-standards/.github/workflows/project-automation.yml@main
+#     secrets:
+#       PR_TOKEN: ${{ secrets.PR_TOKEN }}
+#     with:
+#       project-number: 4
+#       project-owner: your-github-login
+#       repo-owner: your-github-login
+
+name: Project Board Automation
+
+on:
+  push:
+    branches-ignore: [main, master, develop, staging]
+  pull_request:
+    types: [opened, reopened, review_requested]
+  pull_request_review:
+    types: [submitted]
+  workflow_call:
+    secrets:
+      PR_TOKEN:
+        required: true
+    inputs:
+      project-number:
+        description: "GitHub Project number (visible in the project URL)"
+        required: true
+        type: number
+      project-owner:
+        description: "GitHub login that owns the project (user or org)"
+        required: true
+        type: string
+      repo-owner:
+        description: "GitHub login of the repo owner / required reviewer"
+        required: true
+        type: string
+
+permissions:
+  pull-requests: read
+  contents: read
+
+jobs:
+  # ── Move linked issue to "In Progress" when a branch is pushed ────────────
+  branch-to-in-progress:
+    name: Branch pushed → In Progress
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move issue to In Progress
+        uses: actions/github-script@v7
+        with:
+          # Fall back to GITHUB_TOKEN so the action never crashes when the secret is absent.
+          # The script itself exits early if PR_TOKEN is not configured.
+          github-token: ${{ secrets.PR_TOKEN || github.token }}
+          script: |
+            if ('${{ secrets.PR_TOKEN }}' === '') {
+              core.warning('PR_TOKEN secret is not configured. Skipping project board update. Add a fine-grained PAT with Projects write permission as a repository secret.');
+              return;
+            }
+
+            const PROJECT_OWNER  = '${{ inputs.project-owner  || env.PROJECT_OWNER  }}' || context.repo.owner;
+            const PROJECT_NUMBER = parseInt('${{ inputs.project-number || env.PROJECT_NUMBER }}' || '4', 10);
+
+            const branch = context.ref.replace('refs/heads/', '');
+
+            // Extract issue number from: feat/42-slug  fix/7-some-thing
+            const match = branch.match(/^[a-z]+\/(\d+)-/);
+            if (!match) {
+              core.info(`Branch '${branch}' has no issue number — skipping.`);
+              return;
+            }
+            const issueNumber = parseInt(match[1], 10);
+            core.info(`Detected issue #${issueNumber} from branch '${branch}'.`);
+
+            await moveIssueOnBoard({ issueNumber, statusName: 'In Progress', PROJECT_OWNER, PROJECT_NUMBER });
+
+            async function moveIssueOnBoard({ issueNumber, statusName, PROJECT_OWNER, PROJECT_NUMBER }) {
+              const owner = context.repo.owner;
+              const repo  = context.repo.repo;
+
+              // 1. Resolve issue node ID
+              const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: issueNumber });
+              const issueNodeId = issue.node_id;
+
+              // 2. Find project ID and status field
+              const projectData = await github.graphql(`
+                query($login: String!, $number: Int!) {
+                  user(login: $login) {
+                    projectV2(number: $number) {
+                      id
+                      fields(first: 20) {
+                        nodes {
+                          ... on ProjectV2SingleSelectField {
+                            id name
+                            options { id name }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }`, { login: PROJECT_OWNER, number: PROJECT_NUMBER });
+
+              const project = projectData.user.projectV2;
+              const statusField = project.fields.nodes.find(f => f.name === 'Status');
+              if (!statusField) { core.warning('No Status field found in project.'); return; }
+
+              const option = statusField.options.find(o => o.name === statusName);
+              if (!option) { core.warning(`Status option '${statusName}' not found.`); return; }
+
+              // 3. Find or add item in project
+              let itemId;
+              try {
+                const addResult = await github.graphql(`
+                  mutation($projectId: ID!, $contentId: ID!) {
+                    addProjectV2ItemById(input: { projectId: $projectId contentId: $contentId }) {
+                      item { id }
+                    }
+                  }`, { projectId: project.id, contentId: issueNodeId });
+                itemId = addResult.addProjectV2ItemById.item.id;
+              } catch (e) {
+                core.warning(`Could not add item to project: ${e.message}`);
+                return;
+              }
+
+              // 4. Set status
+              await github.graphql(`
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId
+                    itemId: $itemId
+                    fieldId: $fieldId
+                    value: { singleSelectOptionId: $optionId }
+                  }) { projectV2Item { id } }
+                }`, {
+                  projectId: project.id,
+                  itemId,
+                  fieldId: statusField.id,
+                  optionId: option.id,
+                });
+
+              core.info(`Issue #${issueNumber} moved to '${statusName}' on project board.`);
+            }
+
+  # ── Move linked issue to "In Review" when PR is opened ────────────────────
+  pr-to-in-review:
+    name: PR opened → In Review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request review and move to In Review
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PR_TOKEN || github.token }}
+          script: |
+            if ('${{ secrets.PR_TOKEN }}' === '') {
+              core.warning('PR_TOKEN secret is not configured. Skipping project board update. Add a fine-grained PAT with Projects write permission as a repository secret.');
+              return;
+            }
+
+            const PROJECT_OWNER  = '${{ inputs.project-owner  || env.PROJECT_OWNER  }}' || context.repo.owner;
+            const PROJECT_NUMBER = parseInt('${{ inputs.project-number || env.PROJECT_NUMBER }}' || '4', 10);
+            const REPO_OWNER     = '${{ inputs.repo-owner     || env.REPO_OWNER     }}' || context.repo.owner;
+
+            const pr       = context.payload.pull_request;
+            const prNumber = pr.number;
+            const prAuthor = pr.user.login;
+            const body     = pr.body ?? '';
+            const branch   = pr.head.ref;
+
+            // Request review from repo owner if they're not the author
+            if (prAuthor !== REPO_OWNER) {
+              try {
+                await github.rest.pulls.requestReviewers({
+                  owner: context.repo.owner,
+                  repo:  context.repo.repo,
+                  pull_number: prNumber,
+                  reviewers: [REPO_OWNER],
+                });
+                core.info(`Review requested from ${REPO_OWNER}.`);
+              } catch (err) {
+                core.warning(`Could not request review from ${REPO_OWNER}: ${err.message}`);
+              }
+            }
+
+            // Extract linked issue numbers
+            const issueNumbers = extractLinkedIssues(body, branch);
+            core.info(`Linked issues: ${issueNumbers.join(', ') || 'none'}`);
+
+            for (const issueNumber of issueNumbers) {
+              await moveIssueOnBoard({ issueNumber, statusName: 'In Review', PROJECT_OWNER, PROJECT_NUMBER });
+            }
+
+            function extractLinkedIssues(body, branch) {
+              const nums = new Set();
+              // PR body: Closes/Fixes/Resolves #N
+              const bodyMatches = body.matchAll(/(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi);
+              for (const m of bodyMatches) nums.add(parseInt(m[1], 10));
+              // Branch name: feat/42-slug
+              const branchMatch = branch.match(/^[a-z]+\/(\d+)-/);
+              if (branchMatch) nums.add(parseInt(branchMatch[1], 10));
+              return [...nums];
+            }
+
+            async function moveIssueOnBoard({ issueNumber, statusName, PROJECT_OWNER, PROJECT_NUMBER }) {
+              const owner = context.repo.owner;
+              const repo  = context.repo.repo;
+
+              const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: issueNumber });
+              const issueNodeId = issue.node_id;
+
+              const projectData = await github.graphql(`
+                query($login: String!, $number: Int!) {
+                  user(login: $login) {
+                    projectV2(number: $number) {
+                      id
+                      fields(first: 20) {
+                        nodes {
+                          ... on ProjectV2SingleSelectField {
+                            id name
+                            options { id name }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }`, { login: PROJECT_OWNER, number: PROJECT_NUMBER });
+
+              const project = projectData.user.projectV2;
+              const statusField = project.fields.nodes.find(f => f.name === 'Status');
+              if (!statusField) { core.warning('No Status field found in project.'); return; }
+
+              const option = statusField.options.find(o => o.name === statusName);
+              if (!option) { core.warning(`Status option '${statusName}' not found.`); return; }
+
+              let itemId;
+              try {
+                const addResult = await github.graphql(`
+                  mutation($projectId: ID!, $contentId: ID!) {
+                    addProjectV2ItemById(input: { projectId: $projectId contentId: $contentId }) {
+                      item { id }
+                    }
+                  }`, { projectId: project.id, contentId: issueNodeId });
+                itemId = addResult.addProjectV2ItemById.item.id;
+              } catch (e) {
+                core.warning(`Could not add item to project: ${e.message}`);
+                return;
+              }
+
+              await github.graphql(`
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId
+                    itemId: $itemId
+                    fieldId: $fieldId
+                    value: { singleSelectOptionId: $optionId }
+                  }) { projectV2Item { id } }
+                }`, {
+                  projectId: project.id,
+                  itemId,
+                  fieldId: statusField.id,
+                  optionId: option.id,
+                });
+
+              core.info(`Issue #${issueNumber} moved to '${statusName}' on project board.`);
+            }
+
+  # ── Move linked issue to "Done" when PR is approved ───────────────────────
+  approval-to-done:
+    name: PR approved → Done
+    if: >
+      github.event_name == 'pull_request_review' &&
+      github.event.review.state == 'approved'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move linked issues to Done
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PR_TOKEN || github.token }}
+          script: |
+            if ('${{ secrets.PR_TOKEN }}' === '') {
+              core.warning('PR_TOKEN secret is not configured. Skipping project board update. Add a fine-grained PAT with Projects write permission as a repository secret.');
+              return;
+            }
+
+            const PROJECT_OWNER  = '${{ inputs.project-owner  || env.PROJECT_OWNER  }}' || context.repo.owner;
+            const PROJECT_NUMBER = parseInt('${{ inputs.project-number || env.PROJECT_NUMBER }}' || '4', 10);
+
+            const body   = context.payload.pull_request.body ?? '';
+            const branch = context.payload.pull_request.head.ref;
+            const issueNumbers = extractLinkedIssues(body, branch);
+            core.info(`Linked issues: ${issueNumbers.join(', ') || 'none'}`);
+
+            for (const issueNumber of issueNumbers) {
+              await moveIssueOnBoard({ issueNumber, statusName: 'Done', PROJECT_OWNER, PROJECT_NUMBER });
+            }
+
+            function extractLinkedIssues(body, branch) {
+              const nums = new Set();
+              const bodyMatches = body.matchAll(/(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi);
+              for (const m of bodyMatches) nums.add(parseInt(m[1], 10));
+              const branchMatch = branch.match(/^[a-z]+\/(\d+)-/);
+              if (branchMatch) nums.add(parseInt(branchMatch[1], 10));
+              return [...nums];
+            }
+
+            async function moveIssueOnBoard({ issueNumber, statusName, PROJECT_OWNER, PROJECT_NUMBER }) {
+              const owner = context.repo.owner;
+              const repo  = context.repo.repo;
+
+              const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: issueNumber });
+              const issueNodeId = issue.node_id;
+
+              const projectData = await github.graphql(`
+                query($login: String!, $number: Int!) {
+                  user(login: $login) {
+                    projectV2(number: $number) {
+                      id
+                      fields(first: 20) {
+                        nodes {
+                          ... on ProjectV2SingleSelectField {
+                            id name
+                            options { id name }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }`, { login: PROJECT_OWNER, number: PROJECT_NUMBER });
+
+              const project = projectData.user.projectV2;
+              const statusField = project.fields.nodes.find(f => f.name === 'Status');
+              if (!statusField) { core.warning('No Status field found in project.'); return; }
+
+              const option = statusField.options.find(o => o.name === statusName);
+              if (!option) { core.warning(`Status option '${statusName}' not found.`); return; }
+
+              let itemId;
+              try {
+                const addResult = await github.graphql(`
+                  mutation($projectId: ID!, $contentId: ID!) {
+                    addProjectV2ItemById(input: { projectId: $projectId contentId: $contentId }) {
+                      item { id }
+                    }
+                  }`, { projectId: project.id, contentId: issueNodeId });
+                itemId = addResult.addProjectV2ItemById.item.id;
+              } catch (e) {
+                core.warning(`Could not add item to project: ${e.message}`);
+                return;
+              }
+
+              await github.graphql(`
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId
+                    itemId: $itemId
+                    fieldId: $fieldId
+                    value: { singleSelectOptionId: $optionId }
+                  }) { projectV2Item { id } }
+                }`, {
+                  projectId: project.id,
+                  itemId,
+                  fieldId: statusField.id,
+                  optionId: option.id,
+                });
+
+              core.info(`Issue #${issueNumber} moved to '${statusName}' on project board.`);
+            }
+
