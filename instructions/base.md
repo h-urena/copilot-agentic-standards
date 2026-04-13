@@ -57,7 +57,7 @@ Every issue moves through these statuses automatically via CI:
 | **Todo** | Issue created and added to the board |
 | **In Progress** | Branch matching the issue number is pushed |
 | **In Review** | PR is opened (owner is auto-assigned as reviewer) |
-| **Done** | PR is approved by the owner |
+| **Done** | PR is approved → card moves to Done and squash auto-merge is armed; fires once all required checks pass |
 
 ## Code review expectations
 
