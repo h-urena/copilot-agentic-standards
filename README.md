@@ -77,11 +77,11 @@ CI runs `scripts/validate-composed.sh` to ensure composed files are never stale:
 
 ## Supported stacks
 
-| Stack | Instruction file | MCP config |
-|-------|-----------------|------------|
-| TypeScript | `instructions/stacks/typescript.md` | `mcp/typescript.mcp.json` |
-| Python | `instructions/stacks/python.md` | `mcp/python.mcp.json` |
-| C# | `instructions/stacks/csharp.md` | — |
+| Stack | Instruction file | Code review checklist | MCP config |
+|-------|-----------------|----------------------|------------|
+| TypeScript | `instructions/stacks/typescript.md` | `instructions/code-review-typescript.instructions.md` | `mcp/typescript.mcp.json` |
+| Python | `instructions/stacks/python.md` | `instructions/code-review-python.instructions.md` | `mcp/python.mcp.json` |
+| C# | `instructions/stacks/csharp.md` | `instructions/code-review-csharp.instructions.md` | `mcp/csharp.mcp.json` |
 
 ## Workflows
 

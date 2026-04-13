@@ -97,6 +97,7 @@ echo "  ✓ .github/workflows/pull-standards.yml"
 # 5. MCP config
 MCP_FILE="$ROOT_DIR/mcp/${STACK}.mcp.json"
 if [ -f "$MCP_FILE" ]; then
+  mkdir -p "$REPO_PATH/.vscode"
   # Merge with base MCP config
   if command -v jq > /dev/null 2>&1 && [ -f "$ROOT_DIR/mcp/base.mcp.json" ]; then
     jq -s '.[0] * .[1]' "$ROOT_DIR/mcp/base.mcp.json" "$MCP_FILE" > "$REPO_PATH/.vscode/mcp.json"
@@ -104,6 +105,13 @@ if [ -f "$MCP_FILE" ]; then
     cp "$MCP_FILE" "$REPO_PATH/.vscode/mcp.json"
   fi
   echo "  ✓ .vscode/mcp.json"
+fi
+
+# 6. Dependabot config (only if target repo doesn't already have one)
+DEPENDABOT_TMPL="$ROOT_DIR/templates/dependabot.yml"
+if [ -f "$DEPENDABOT_TMPL" ] && [ ! -f "$REPO_PATH/.github/dependabot.yml" ]; then
+  cp "$DEPENDABOT_TMPL" "$REPO_PATH/.github/dependabot.yml"
+  echo "  ✓ .github/dependabot.yml"
 fi
 
 echo ""
