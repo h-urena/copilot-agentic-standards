@@ -5,7 +5,7 @@
 #   Todo        — issue created (default on board add)
 #   In Progress — branch pushed that matches feat|fix|.../ISSUE-slug
 #   In Review   — PR opened → repo owner assigned as reviewer
-#   Done        — PR approved by the owner
+#   Done        — PR approved by the owner OR merged
 #
 # ── Setup required ────────────────────────────────────────────────────────────
 # Add a repository secret named PR_TOKEN containing a fine-grained PAT
@@ -34,7 +34,7 @@ on:
   push:
     branches-ignore: [main, master, develop, staging]
   pull_request:
-    types: [opened, reopened, review_requested]
+    types: [opened, reopened, review_requested, closed]
   pull_request_review:
     types: [submitted]
   workflow_call:
@@ -354,12 +354,15 @@ jobs:
               core.info(`Issue #${issueNumber} moved to '${statusName}' on project board.`);
             }
 
-  # ── Move linked issue to "Done" when PR is approved ───────────────────────
+  # ── Move linked issue to "Done" when PR is approved or merged ───────────────
   approval-to-done:
-    name: PR approved → Done
+    name: PR approved/merged → Done
     if: >
-      github.event_name == 'pull_request_review' &&
-      github.event.review.state == 'approved'
+      (github.event_name == 'pull_request_review' &&
+       github.event.review.state == 'approved') ||
+      (github.event_name == 'pull_request' &&
+       github.event.action == 'closed' &&
+       github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     steps:
       - name: Move linked issues to Done
