@@ -8,12 +8,13 @@
 #   Done        — PR approved by the owner OR merged
 #
 # ── Setup required ────────────────────────────────────────────────────────────
-# Add a repository secret named PR_TOKEN containing a fine-grained PAT
-# with these permissions:
-#   Repository scope:  Pull requests → Read-only
-#   User scope:        Projects → Read and write
+# Add a repository secret named PR_TOKEN containing a classic PAT
+# with the following scope:
+#   project   — required for GitHub Projects v2 GraphQL API (addProjectV2ItemById)
 #
-# Do NOT use a classic PAT — fine-grained only.
+# NOTE: Fine-grained PATs cannot be used here. The Projects v2 GraphQL API
+# requires the `project` scope which is only available on classic PATs for
+# personal (non-organisation) accounts.
 #
 # ── Consumer repo usage ───────────────────────────────────────────────────────
 # jobs:
