@@ -69,12 +69,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Add issue to project board as Todo
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.PR_TOKEN || github.token }}
           script: |
             if ('${{ secrets.PR_TOKEN }}' === '') {
-              core.setFailed('PR_TOKEN secret is not configured. Add a fine-grained PAT with Projects read+write permission as a repository secret named PR_TOKEN.');
+              core.setFailed('PR_TOKEN secret is not configured. Add a classic PAT with the project scope as a repository secret named PR_TOKEN. See workflow header comment for setup instructions.');
               return;
             }
 
@@ -146,14 +146,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Move issue to In Progress
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           # Fall back to GITHUB_TOKEN so the action never crashes when the secret is absent.
           # The script itself exits early if PR_TOKEN is not configured.
           github-token: ${{ secrets.PR_TOKEN || github.token }}
           script: |
             if ('${{ secrets.PR_TOKEN }}' === '') {
-              core.setFailed('PR_TOKEN secret is not configured. Add a fine-grained PAT with Projects read+write permission as a repository secret named PR_TOKEN.');
+              core.setFailed('PR_TOKEN secret is not configured. Add a classic PAT with the project scope as a repository secret named PR_TOKEN. See workflow header comment for setup instructions.');
               return;
             }
 
@@ -240,16 +240,16 @@ jobs:
   # ── Move linked issue to "In Review" when PR is opened ────────────────────
   pr-to-in-review:
     name: PR opened → In Review
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
     runs-on: ubuntu-latest
     steps:
       - name: Request review and move to In Review
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.PR_TOKEN || github.token }}
           script: |
             if ('${{ secrets.PR_TOKEN }}' === '') {
-              core.setFailed('PR_TOKEN secret is not configured. Add a fine-grained PAT with Projects read+write permission as a repository secret named PR_TOKEN.');
+              core.setFailed('PR_TOKEN secret is not configured. Add a classic PAT with the project scope as a repository secret named PR_TOKEN. See workflow header comment for setup instructions.');
               return;
             }
 
@@ -365,14 +365,22 @@ jobs:
        github.event.action == 'closed' &&
        github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
+    permissions:
+      contents: write      # required for enablePullRequestAutoMerge
+      pull-requests: write # required for enablePullRequestAutoMerge
+      issues: read
+    permissions:
+      contents: write      # required for enablePullRequestAutoMerge
+      pull-requests: write # required for enablePullRequestAutoMerge
+      issues: read
     steps:
       - name: Move linked issues to Done
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.PR_TOKEN || github.token }}
           script: |
             if ('${{ secrets.PR_TOKEN }}' === '') {
-              core.setFailed('PR_TOKEN secret is not configured. Add a fine-grained PAT with Projects read+write permission as a repository secret named PR_TOKEN.');
+              core.setFailed('PR_TOKEN secret is not configured. Add a classic PAT with the project scope as a repository secret named PR_TOKEN. See workflow header comment for setup instructions.');
               return;
             }
 
@@ -467,4 +475,27 @@ jobs:
                 });
             }
 
-
+      # Enable squash auto-merge using GITHUB_TOKEN (not PR_TOKEN — requires contents:write).
+      # Only arms auto-merge on the PR; GitHub fires the actual merge once all required
+      # status checks pass. Skipped on the pull_request:closed safety-net trigger.
+      - name: Enable squash auto-merge
+        if: github.event_name == 'pull_request_review'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr?.node_id) return;
+            try {
+              await github.graphql(`
+                mutation($prId: ID!) {
+                  enablePullRequestAutoMerge(input: {
+                    pullRequestId: $prId
+                    mergeMethod: SQUASH
+                  }) {
+                    pullRequest { number }
+                  }
+                }`, { prId: pr.node_id });
+              core.info(`Squash auto-merge enabled for PR #${pr.number} — will merge once required checks pass.`);
+            } catch (err) {
+              core.warning(`Could not enable auto-merge: ${err.message}`);
+            }
