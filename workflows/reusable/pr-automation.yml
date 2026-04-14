@@ -42,7 +42,7 @@ jobs:
       issues: write
     steps:
       - name: Assign author as assignee
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const pr = context.payload.pull_request;
@@ -80,7 +80,7 @@ jobs:
       issues: write
     steps:
       - name: Post welcome comment on first PR
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const pr = context.payload.pull_request;
