@@ -97,6 +97,7 @@ echo "  ✓ .github/workflows/pull-standards.yml"
 # 5. MCP config
 MCP_FILE="$ROOT_DIR/mcp/${STACK}.mcp.json"
 if [ -f "$MCP_FILE" ]; then
+  mkdir -p "$REPO_PATH/.vscode"
   # Merge with base MCP config
   if command -v jq > /dev/null 2>&1 && [ -f "$ROOT_DIR/mcp/base.mcp.json" ]; then
     jq -s '.[0] * .[1]' "$ROOT_DIR/mcp/base.mcp.json" "$MCP_FILE" > "$REPO_PATH/.vscode/mcp.json"
