@@ -40,13 +40,13 @@ compose_stack() {
 
 EOF
 
-  cat "$INSTRUCTIONS_DIR/base.md" >> "$output_file"
-
-  echo "" >> "$output_file"
-  echo "---" >> "$output_file"
-  echo "" >> "$output_file"
-
-  cat "$stack_file" >> "$output_file"
+  {
+    cat "$INSTRUCTIONS_DIR/base.md"
+    echo ""
+    echo "---"
+    echo ""
+    cat "$stack_file"
+  } >> "$output_file"
 
   echo "  ✓ composed/${stack}-copilot-instructions.md"
 }
