@@ -18,6 +18,7 @@ These are universal rules that apply to **every** repository regardless of langu
 - Do not leave dead code, commented-out code, or TODO comments without a linked issue.
 - Treat compiler/linter warnings as errors.
 
+
 ## Agentic workflow
 
 Before making any code change, always execute these steps in order:
