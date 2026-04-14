@@ -5,15 +5,13 @@ on:
     paths:
       - "instructions/**"
       - "composed/**"
-      - "scripts/compose.sh"
-      - "scripts/validate-composed.sh"
+      - "scripts/**"
   push:
     branches: [main]
     paths:
       - "instructions/**"
       - "composed/**"
-      - "scripts/compose.sh"
-      - "scripts/validate-composed.sh"
+      - "scripts/**"
 
 permissions:
   contents: read
@@ -24,19 +22,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Run shellcheck
-        uses: ludeeus/action-shellcheck@master
+        uses: ludeeus/action-shellcheck@2.0.0
         with:
-          scandir: './scripts'
+          scandir: "./scripts"
 
   validate:
     name: Check composed files are fresh
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Make scripts executable
         run: chmod +x scripts/compose.sh scripts/validate-composed.sh
