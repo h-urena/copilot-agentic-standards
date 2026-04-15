@@ -148,6 +148,7 @@ Every issue moves through these statuses automatically via CI:
 
 - Target the latest LTS version of Node.js unless the project specifies otherwise. Pin the version using a `.nvmrc` or `.node-version` file at the project root.
 - Use TypeScript strict mode (`"strict": true` in `tsconfig.json`). No exceptions.
+- Set `moduleResolution` to `bundler` (for Vite/esbuild projects) or `NodeNext` (for Node.js services). The legacy `node` mode causes subtle import resolution bugs.
 - Prefer `const` over `let`. Never use `var`.
 - Use `unknown` over `any`. If `any` is unavoidable, add a `// eslint-disable-next-line` with justification.
 
@@ -166,11 +167,25 @@ Every issue moves through these statuses automatically via CI:
 - Use `interface` for object shapes that may be extended; use `type` for unions, intersections, and mapped types.
 - Prefer `async/await` over raw Promises. Never mix callbacks and promises.
 
+## Runtime validation
+
+- Validate all external inputs (HTTP bodies, query params, API responses, config) with **Zod** (or Valibot) at the system boundary. TypeScript types are erased at runtime; they do not protect against malformed data.
+- Co-locate Zod schemas with the route or handler that uses them.
+- Validate environment variables at startup with a Zod schema (e.g., `t3-env` or a hand-rolled `z.object({...}).parse(process.env)`). Never access `process.env.THING` at arbitrary call sites.
+
 ## Error handling
 
 - Use typed error classes extending `Error` for domain-specific errors.
 - Always type catch variables: `catch (error: unknown)` and narrow before using.
+- Use a `Result<T, E>` type (e.g., `neverthrow`'s `Result`) for recoverable errors ("user not found", "validation failed") instead of throwing. Reserve exceptions for truly unexpected conditions.
+- Model state with discriminated unions (`{ status: 'loading' } | { status: 'error'; error: Error } | { status: 'success'; data: T }`) — avoid parallel nullable fields or boolean flag combinations.
 - In Express/Fastify, use centralized error-handling middleware — do not catch in every route.
+
+## Logging and observability
+
+- Use **`pino`** for structured JSON logging in Node.js services. Never use `console.log` in production code paths.
+- Pass a child logger with request-scoped context (request ID, user ID) through the call chain — use `logger.child({ requestId })` per request.
+- Log at appropriate levels. Never log PII, tokens, or full request/response bodies.
 
 ## Testing
 
