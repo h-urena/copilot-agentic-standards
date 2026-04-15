@@ -30,7 +30,7 @@ applyTo: "**/*.cs"
 
 ## Configuration and DI
 
-- [ ] `IOptions<T>` or `IOptionsSnapshot<T>` is used to consume structured configuration — not `IConfiguration["Key"]` inline.
+- [ ] `IOptions<T>`, `IOptionsSnapshot<T>`, or `IOptionsMonitor<T>` is used to consume structured configuration — not `IConfiguration["Key"]` inline.
 - [ ] No `ServiceLocator` pattern (no `IServiceProvider.GetService<T>()` at call sites) — inject dependencies through constructors.
 - [ ] `record` types are used for immutable DTOs, command/query objects, and configuration models.
 
