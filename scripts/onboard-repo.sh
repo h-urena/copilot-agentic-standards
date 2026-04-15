@@ -113,6 +113,14 @@ if [ -f "$MCP_FILE" ]; then
   echo "  ✓ .vscode/mcp.json"
 fi
 
+# 6. Dependabot config (only if target repo doesn't already have one — idempotent)
+DEPENDABOT_TMPL="$ROOT_DIR/templates/dependabot.yml"
+if [ -f "$DEPENDABOT_TMPL" ] && [ ! -f "$REPO_PATH/.github/dependabot.yml" ]; then
+  mkdir -p "$REPO_PATH/.github"
+  cp "$DEPENDABOT_TMPL" "$REPO_PATH/.github/dependabot.yml"
+  echo "  ✓ .github/dependabot.yml"
+fi
+
 echo ""
 echo "Done! Review the changes and commit them:"
 echo "  cd $REPO_PATH"
