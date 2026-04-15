@@ -27,7 +27,7 @@ applyTo: "**/*.py"
 ## Async
 
 - [ ] `async def` is used at every IO boundary (network, filesystem, database).
-- [ ] No `asyncio.sleep(0)` used as a yield — use `asyncio.sleep(0)` only when intentional cooperative yield is needed.
+- [ ] `asyncio.sleep(0)` is only used for an intentional cooperative yield; it must not appear as an incidental placeholder or workaround for missing `await` chains.
 - [ ] `asyncio.gather` or `TaskGroup` (Python 3.11+) is used for concurrent tasks, not sequential `await` chains.
 - [ ] No blocking calls (e.g., `time.sleep`, sync file IO, `requests.get`) inside `async def` functions.
 

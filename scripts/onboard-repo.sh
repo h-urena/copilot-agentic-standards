@@ -7,7 +7,7 @@
 #
 # What it does:
 #   1. Copies the composed copilot-instructions.md to .github/
-#   2. Copies code-review.instructions.md to .github/
+#   2. Copies code-review.instructions.md and stack-specific code-review-<stack>.instructions.md to .github/
 #   3. Copies PR templates to .github/PULL_REQUEST_TEMPLATE/
 #   4. Copies the pull-standards sync workflow to .github/workflows/
 #   5. Copies MCP config if one exists for the stack
