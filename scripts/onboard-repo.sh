@@ -7,7 +7,7 @@
 #
 # What it does:
 #   1. Copies the composed copilot-instructions.md to .github/
-#   2. Copies code-review.instructions.md to .github/
+#   2. Copies code-review.instructions.md and stack-specific code-review-<stack>.instructions.md to .github/
 #   3. Copies PR templates to .github/PULL_REQUEST_TEMPLATE/
 #   4. Copies the pull-standards sync workflow to .github/workflows/
 #   5. Copies MCP config if one exists for the stack
@@ -75,10 +75,16 @@ mkdir -p "$REPO_PATH/.github"
 cp "$COMPOSED_FILE" "$REPO_PATH/.github/copilot-instructions.md"
 echo "  ✓ .github/copilot-instructions.md"
 
-# 2. Code review instructions
+# 2. Code review instructions (generic + stack-specific)
 if [ -f "$ROOT_DIR/instructions/code-review.instructions.md" ]; then
   cp "$ROOT_DIR/instructions/code-review.instructions.md" "$REPO_PATH/.github/code-review.instructions.md"
   echo "  ✓ .github/code-review.instructions.md"
+fi
+
+STACK_REVIEW="$ROOT_DIR/instructions/code-review-${STACK}.instructions.md"
+if [ -f "$STACK_REVIEW" ]; then
+  cp "$STACK_REVIEW" "$REPO_PATH/.github/code-review-${STACK}.instructions.md"
+  echo "  ✓ .github/code-review-${STACK}.instructions.md"
 fi
 
 # 3. PR templates
@@ -97,6 +103,7 @@ echo "  ✓ .github/workflows/pull-standards.yml"
 # 5. MCP config
 MCP_FILE="$ROOT_DIR/mcp/${STACK}.mcp.json"
 if [ -f "$MCP_FILE" ]; then
+  mkdir -p "$REPO_PATH/.vscode"
   # Merge with base MCP config
   if command -v jq > /dev/null 2>&1 && [ -f "$ROOT_DIR/mcp/base.mcp.json" ]; then
     jq -s '.[0] * .[1]' "$ROOT_DIR/mcp/base.mcp.json" "$MCP_FILE" > "$REPO_PATH/.vscode/mcp.json"

@@ -18,6 +18,18 @@ These are universal rules that apply to **every** repository regardless of langu
 - Do not leave dead code, commented-out code, or TODO comments without a linked issue.
 - Treat compiler/linter warnings as errors.
 
+
+## Agentic workflow
+
+Before making any code change, always execute these steps in order:
+
+1. **Create a GitHub issue** describing the problem or feature. Use `gh issue create` with a clear title and body.
+2. **Create a branch** from `main` following the naming format `<type>/<issue-number>-<short-slug>` (e.g. `feat/42-add-oauth-flow`). Use `git checkout -b`.
+3. **Make the changes** on that branch — never commit directly to `main`.
+4. **Open a PR** that references the issue with `Closes #N` in the body.
+
+Do not skip or defer any of these steps, even for small or "obvious" fixes.
+
 ## Branch strategy
 
 - **`main`** is the default, protected branch. All changes merge into `main` via pull request.
@@ -61,7 +73,7 @@ Every issue moves through these statuses automatically via CI:
 | **Todo** | Issue created and added to the board |
 | **In Progress** | Branch matching the issue number is pushed |
 | **In Review** | PR is opened (owner is auto-assigned as reviewer) |
-| **Done** | PR is approved by the owner |
+| **Done** | PR is approved → card moves to Done and squash auto-merge is armed; fires once all required checks pass |
 
 ## Code review expectations
 
@@ -99,7 +111,7 @@ Every issue moves through these statuses automatically via CI:
 - Use `GITHUB_TOKEN` for all same-repo workflow operations. It is automatic, expires after the workflow run, and requires no secrets configuration.
 - Always declare an explicit `permissions:` block in every workflow. Use job-level permissions for maximum granularity. Grant only what is required.
 - For cross-repository or cross-organization write access, prefer a **GitHub App** (installation access token) over a personal access token. For lightweight cases, a **fine-grained PAT** stored as a repository secret is acceptable.
-- Never use classic PATs in workflows — they are over-scoped and deprecated.
+- Never use classic PATs in workflows — they are over-scoped and deprecated. **Exception:** GitHub Projects v2 (`addProjectV2ItemById`) requires the `project` scope, which is only available on classic PATs for personal (non-organisation) accounts. In that specific case, a classic PAT with only the `project` scope is acceptable and should be stored as a repository secret.
 - Pin action versions using the major version tag (e.g., `actions/checkout@v4`), not floating tags like `@latest` or `@main`.
 - Use `lts/*` for language version inputs (Node.js) and the equivalent latest-stable selector for other runtimes — never hardcode a specific version number in workflow files.
 

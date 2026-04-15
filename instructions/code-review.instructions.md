@@ -1,3 +1,7 @@
+---
+applyTo: "**"
+---
+
 # Code Review Instructions
 
 > Used by Copilot as a pre-PR automated checklist. Place this file (or include its contents) in `.github/` as `code-review.instructions.md`.
