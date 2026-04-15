@@ -2,6 +2,9 @@ version: 2
 
 updates:
   # Keep GitHub Actions up to date automatically.
+  # versioning-strategy is not applicable to github-actions (Dependabot always pins to the latest
+  # available SHA/tag for the major version). For package ecosystems below, set
+  # versioning-strategy to "increase" (bump minimum) or "lockfile-only" (only update lockfile).
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -28,6 +31,7 @@ updates:
   #   schedule:
   #     interval: "weekly"
   #     day: "monday"
+  #   versioning-strategy: "increase"   # bump minimum required version in package.json
   #   commit-message:
   #     prefix: "chore(deps)"
   #   open-pull-requests-limit: 10
@@ -43,6 +47,7 @@ updates:
   #   schedule:
   #     interval: "weekly"
   #     day: "monday"
+  #   versioning-strategy: "increase"   # bump minimum version in pyproject.toml / requirements
   #   commit-message:
   #     prefix: "chore(deps)"
   #   open-pull-requests-limit: 10
@@ -53,6 +58,7 @@ updates:
   #   schedule:
   #     interval: "weekly"
   #     day: "monday"
+  #   versioning-strategy: "increase"   # bump minimum version in .csproj / Directory.Packages.props
   #   commit-message:
   #     prefix: "chore(deps)"
   #   open-pull-requests-limit: 10
