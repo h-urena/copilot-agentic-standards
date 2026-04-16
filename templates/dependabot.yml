@@ -22,6 +22,9 @@ updates:
       github-actions:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   # Uncomment and adjust for your stack:
 
@@ -31,15 +34,17 @@ updates:
   #   schedule:
   #     interval: "weekly"
   #     day: "monday"
-  #   versioning-strategy: "increase"   # bump minimum required version in package.json
+  #   versioning-strategy: "lockfile-only"  # lockfile is source of truth; no package.json range changes
   #   commit-message:
   #     prefix: "chore(deps)"
   #   open-pull-requests-limit: 10
   #   groups:
   #     production-deps:
   #       dependency-type: "production"
+  #       update-types: ["minor", "patch"]  # major bumps get individual PRs
   #     dev-deps:
   #       dependency-type: "development"
+  #       update-types: ["minor", "patch"]
 
   # pip / uv / poetry
   # - package-ecosystem: "pip"
@@ -47,7 +52,7 @@ updates:
   #   schedule:
   #     interval: "weekly"
   #     day: "monday"
-  #   versioning-strategy: "increase"   # bump minimum version in pyproject.toml / requirements
+  #   versioning-strategy: "lockfile-only"  # lockfile is source of truth; no pyproject.toml range changes
   #   commit-message:
   #     prefix: "chore(deps)"
   #   open-pull-requests-limit: 10
@@ -58,7 +63,7 @@ updates:
   #   schedule:
   #     interval: "weekly"
   #     day: "monday"
-  #   versioning-strategy: "increase"   # bump minimum version in .csproj / Directory.Packages.props
+  #   versioning-strategy: "lockfile-only"  # lockfile is source of truth; no .csproj range changes
   #   commit-message:
   #     prefix: "chore(deps)"
   #   open-pull-requests-limit: 10
