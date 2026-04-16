@@ -40,7 +40,6 @@
 - Define custom exception classes inheriting from a project-level base exception.
 - Never use bare `except:`. Always catch specific exception types.
 - Use `raise ... from err` to preserve exception chains.
-- Log exceptions with `logger.exception()` to capture stack traces.
 
 ## Logging and observability
 
