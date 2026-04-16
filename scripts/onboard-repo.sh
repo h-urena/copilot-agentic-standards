@@ -135,7 +135,7 @@ fi
 REMOTE_URL="$(git -C "$REPO_PATH" remote get-url origin 2>/dev/null || true)"
 REPO_OWNER=""
 if [ -n "$REMOTE_URL" ]; then
-  # Handle both HTTPS (github.com/owner/repo) and SSH (git@github.com:owner/repo)
+  # Handle both HTTPS (github.com/owner/repo) and SSH (user:host/owner/repo) remote URL formats
   REPO_OWNER="$(echo "$REMOTE_URL" | sed -E 's|.*[:/]([^/]+)/[^/]+(.git)?$|\1|')"
 fi
 
@@ -169,7 +169,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 echo "Run the following commands from inside the target repo (requires admin access):"
 echo ""
-echo "  REPO_FULL=\"\$(git -C \"$REPO_PATH\" remote get-url origin | sed -E 's|.*[:/]([^/]+/[^/]+)(.git)?\$|\\1|')\""
+printf '%s\n' "  REPO_FULL=\"\$(git -C \"$REPO_PATH\" remote get-url origin | sed -E 's|.*[:/]([^/]+/[^/]+)(.git)?\$|\\1|')\""
 echo "  DEFAULT_BRANCH=\"\$(git -C \"$REPO_PATH\" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|.*/||' || echo main)\""
 echo ""
 echo "  gh api repos/\${REPO_FULL}/branches/\${DEFAULT_BRANCH}/protection \\"
