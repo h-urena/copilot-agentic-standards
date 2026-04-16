@@ -3,8 +3,9 @@ version: 2
 updates:
   # Keep GitHub Actions up to date automatically.
   # versioning-strategy is not applicable to github-actions (Dependabot always pins to the latest
-  # available SHA/tag for the major version). For package ecosystems below, set
-  # versioning-strategy to "increase" (bump minimum) or "lockfile-only" (only update lockfile).
+  # available SHA/tag for the major version). For package ecosystems below, use
+  # versioning-strategy: "lockfile-only" so the lockfile remains the source of truth and
+  # package manifest ranges are never changed automatically.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -56,6 +57,11 @@ updates:
   #   commit-message:
   #     prefix: "chore(deps)"
   #   open-pull-requests-limit: 10
+  #   groups:
+  #     python-deps:
+  #       patterns:
+  #         - "*"
+  #       update-types: ["minor", "patch"]  # major bumps get individual PRs
 
   # nuget
   # - package-ecosystem: "nuget"
