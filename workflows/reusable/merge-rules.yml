@@ -41,12 +41,12 @@ jobs:
       pull-requests: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Setup Node.js (LTS)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: lts/*
 
@@ -67,7 +67,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Check merge method
+      - name: Check repository merge settings
         uses: actions/github-script@v9
         with:
           script: |
