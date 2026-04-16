@@ -47,7 +47,7 @@ jobs:
       - name: Make scripts executable
         run: chmod +x scripts/compose.sh scripts/validate-composed.sh
 
-      - name: Validate composed files
+      - name: Ensure composed files match their source instructions
         run: ./scripts/validate-composed.sh
 
   lint-json:
