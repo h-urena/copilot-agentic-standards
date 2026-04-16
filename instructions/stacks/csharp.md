@@ -53,7 +53,7 @@
 - Use `ILogger<T>` for structured logging with message templates: `_logger.LogInformation("Processing {OrderId}", orderId)`. Never use `Console.WriteLine` or string interpolation in log calls.
 - In ASP.NET, use global exception-handling middleware returning RFC 7807 `ProblemDetails` responses. Do not scatter `try/catch` in every endpoint.
 
-## EF Core
+## EF Core data access patterns
 
 - Use `.AsNoTracking()` on all read-only queries. Tracked queries are reserved for operations that call `SaveChangesAsync`.
 - Never build queries with raw string concatenation. Use `FromSqlRaw` with parameters or `FromSqlInterpolated`.

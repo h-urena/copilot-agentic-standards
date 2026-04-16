@@ -29,7 +29,7 @@
 - Maximum line length: 88 characters (Ruff/Black default).
 - Use `snake_case` for functions and variables, `PascalCase` for classes, `UPPER_SNAKE_CASE` for constants.
 
-## Async
+## Async and concurrency
 
 - Use `asyncio` for IO-bound concurrency. Define `async def` at every IO boundary (network, filesystem, database).
 - Use `asyncio.TaskGroup` (Python 3.11+) or `asyncio.gather` for concurrent tasks — do not `await` IO calls sequentially when they can run in parallel.
@@ -40,7 +40,6 @@
 - Define custom exception classes inheriting from a project-level base exception.
 - Never use bare `except:`. Always catch specific exception types.
 - Use `raise ... from err` to preserve exception chains.
-- Log caught exceptions with `logger.exception()` to capture the full stack trace.
 
 ## Logging and observability
 
