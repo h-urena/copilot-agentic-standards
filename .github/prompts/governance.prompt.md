@@ -92,6 +92,7 @@ All checks must be green before merging:
 - `Validate branch name`
 - `Check composed files are fresh`
 - `Lint shell scripts`
+- `Tiered Review` (automated code review — must not have REQUEST_CHANGES findings)
 
 If any check fails, fix it on the branch and push again. Do **not** bypass checks.
 
