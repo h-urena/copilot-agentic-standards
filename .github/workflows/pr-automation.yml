@@ -49,7 +49,7 @@ jobs:
     if: ${{ github.event_name != 'workflow_call' || inputs.auto-assign-author }}
     runs-on: ubuntu-latest
     steps:
-      - name: Assign author as assignee
+      - name: Auto-assign PR to its author
         uses: actions/github-script@v9
         with:
           script: |

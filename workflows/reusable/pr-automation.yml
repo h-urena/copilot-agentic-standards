@@ -41,7 +41,7 @@ jobs:
       pull-requests: write
       issues: write
     steps:
-      - name: Assign author as assignee
+      - name: Auto-assign PR to its author
         uses: actions/github-script@v9
         with:
           script: |
