@@ -13,9 +13,6 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "UTC"
-    labels:
-      - "chore"
-      - "dependencies"
     commit-message:
       prefix: "chore(ci)"
     open-pull-requests-limit: 5
