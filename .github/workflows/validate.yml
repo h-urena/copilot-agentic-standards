@@ -6,12 +6,20 @@ on:
       - "instructions/**"
       - "composed/**"
       - "scripts/**"
+      - "mcp/**"
+      - ".github/workflows/**"
+      - "workflows/**"
+      - "templates/**"
   push:
     branches: [main]
     paths:
       - "instructions/**"
       - "composed/**"
       - "scripts/**"
+      - "mcp/**"
+      - ".github/workflows/**"
+      - "workflows/**"
+      - "templates/**"
 
 permissions:
   contents: read
@@ -41,3 +49,41 @@ jobs:
 
       - name: Validate composed files
         run: ./scripts/validate-composed.sh
+
+  lint-json:
+    name: Validate MCP JSON configs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Validate all MCP JSON files parse correctly
+        run: |
+          fail=0
+          for f in mcp/*.json; do
+            if ! jq empty "$f" 2>&1; then
+              echo "INVALID: $f" >&2
+              fail=1
+            else
+              echo "OK: $f"
+            fi
+          done
+          exit "$fail"
+
+  lint-yaml:
+    name: Validate YAML syntax
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install yamllint
+        run: pip install --quiet yamllint
+
+      - name: Lint all YAML files
+        run: |
+          yamllint -d "{extends: relaxed, rules: {line-length: {max: 120}}}" \
+            .github/workflows/ \
+            workflows/ \
+            templates/dependabot.yml \
+            .github/dependabot.yml

@@ -25,7 +25,7 @@ fi
 STALE=false
 
 if [ -d "$TEMP_DIR/composed-before" ]; then
-  for file in "$COMPOSED_DIR"/*.md; do
+  for file in "$COMPOSED_DIR"/*.md "$COMPOSED_DIR"/*.json; do
     [ -f "$file" ] || continue
     fname=$(basename "$file")
     before="$TEMP_DIR/composed-before/$fname"

@@ -1,0 +1,4 @@
+# CODEOWNERS
+# Every file requires review from the repo owner before merging.
+# Enable "Require review from Code Owners" in branch protection settings.
+* @h-urena
