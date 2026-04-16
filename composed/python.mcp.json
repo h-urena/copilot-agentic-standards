@@ -20,7 +20,7 @@
     "python": {
       "command": "uvx",
       "args": [
-        "mcp-server-python"
+        "mcp-server-python==1.9.4"
       ]
     }
   }
