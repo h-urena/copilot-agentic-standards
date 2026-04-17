@@ -86,6 +86,41 @@ jobs:
             done
           fi
 
+          # Update MCP config (.vscode/mcp.json) from the composed stack file
+          if [ -n "$STACK" ] && [ -f "$TEMP_DIR/composed/${STACK}.mcp.json" ]; then
+            if ! diff -q ".vscode/mcp.json" "$TEMP_DIR/composed/${STACK}.mcp.json" > /dev/null 2>&1; then
+              mkdir -p .vscode
+              cp "$TEMP_DIR/composed/${STACK}.mcp.json" .vscode/mcp.json
+              CHANGED=true
+            fi
+          fi
+
+          # Update agent prompts (.github/prompts/*.prompt.md)
+          if [ -d "$TEMP_DIR/.github/prompts" ]; then
+            mkdir -p .github/prompts
+            for prompt in "$TEMP_DIR/.github/prompts"/*.prompt.md; do
+              [ -f "$prompt" ] || continue
+              fname=$(basename "$prompt")
+              if ! diff -q ".github/prompts/$fname" "$prompt" > /dev/null 2>&1; then
+                cp "$prompt" ".github/prompts/$fname"
+                CHANGED=true
+              fi
+            done
+          fi
+
+          # Update domain instruction files (.github/*.instructions.md, excluding code-review files
+          # already handled above and the copilot-instructions.md handled at the top)
+          DOMAIN_INSTRUCTIONS="api-design.instructions.md db-patterns.instructions.md auth-patterns.instructions.md"
+          for instr_file in $DOMAIN_INSTRUCTIONS; do
+            if [ -f "$TEMP_DIR/instructions/$instr_file" ]; then
+              mkdir -p .github
+              if ! diff -q ".github/$instr_file" "$TEMP_DIR/instructions/$instr_file" > /dev/null 2>&1; then
+                cp "$TEMP_DIR/instructions/$instr_file" ".github/$instr_file"
+                CHANGED=true
+              fi
+            fi
+          done
+
           rm -rf "$TEMP_DIR"
 
           echo "changed=$CHANGED" >> "$GITHUB_ENV"
@@ -120,7 +155,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title: 'chore: update agentic standards from upstream',
-                body: `Automated PR — syncs Copilot instructions, PR templates, and review checklists from [copilot-agentic-standards](https://github.com/${process.env.STANDARDS_REPO}).`,
+                body: `Automated PR — syncs Copilot instructions, PR templates, code-review checklists, MCP config, agent prompts, and domain instruction files from [copilot-agentic-standards](https://github.com/${process.env.STANDARDS_REPO}).`,
                 head: process.env.UPDATE_BRANCH,
                 base: 'main',
               });
