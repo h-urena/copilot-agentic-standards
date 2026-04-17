@@ -50,11 +50,15 @@ Examples:
 ## Step 5 — Run local validation
 
 ```bash
+# Lint all shell scripts for POSIX compliance and quoting issues
 shellcheck scripts/*.sh
+
+# Re-compose all stacks and verify committed files match (exits non-zero if stale)
+./scripts/compose.sh all
 ./scripts/validate-composed.sh
 ```
 
-Fix any errors before continuing.
+Fix any errors before continuing. If `validate-composed.sh` reports stale files, commit the regenerated output before pushing.
 
 ## Step 6 — Commit using Conventional Commits
 
