@@ -17,3 +17,4 @@ You are working on the **copilot-agentic-standards** repo — the single source 
 4. Workflow files must use `workflow_call` trigger for reusable workflows.
 5. Follow conventional commits: `feat:`, `fix:`, `docs:`, `chore:`. Add a `scope` when applicable (e.g., `feat(frontend): add UI component`).
 6. Shell scripts must pass `shellcheck` and use `set -euo pipefail`.
+7. **Before making ANY change**, follow the full governance workflow in `.github/prompts/governance.prompt.md`. Never push directly to `main` — all changes require an issue, a branch, a PR, and passing CI.

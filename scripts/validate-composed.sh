@@ -25,7 +25,7 @@ fi
 STALE=false
 
 if [ -d "$TEMP_DIR/composed-before" ]; then
-  for file in "$COMPOSED_DIR"/*.md; do
+  for file in "$COMPOSED_DIR"/*.md "$COMPOSED_DIR"/*.json; do
     [ -f "$file" ] || continue
     fname=$(basename "$file")
     before="$TEMP_DIR/composed-before/$fname"
@@ -33,6 +33,13 @@ if [ -d "$TEMP_DIR/composed-before" ]; then
     if [ ! -f "$before" ]; then
       echo "NEW: composed/$fname (not previously committed)"
       STALE=true
+    elif [[ "$fname" == *.json ]]; then
+      # Semantic JSON comparison — tolerates formatting differences (BOM, indent style)
+      if ! diff -q <(jq -c . "$before") <(jq -c . "$file") > /dev/null 2>&1; then
+        echo "STALE: composed/$fname"
+        diff --unified <(jq . "$before") <(jq . "$file") || true
+        STALE=true
+      fi
     elif ! diff -q "$before" "$file" > /dev/null 2>&1; then
       echo "STALE: composed/$fname"
       diff --unified "$before" "$file" || true
