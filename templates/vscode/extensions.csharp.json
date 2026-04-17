@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "github.copilot",
+    "github.copilot-chat",
+    "streetsidesoftware.code-spell-checker",
+    "ms-dotnettools.csharp",
+    "ms-dotnettools.csdevkit",
+    "ms-dotnettools.vscodedotnet-runtime",
+    "formulahendry.dotnet-test-explorer"
+  ]
+}

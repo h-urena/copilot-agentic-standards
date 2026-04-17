@@ -1,0 +1,41 @@
+version: 2
+
+updates:
+  # Keep GitHub Actions up to date automatically.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    commit-message:
+      prefix: "chore(ci)"
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # nuget — lockfile is source of truth; .csproj version ranges are not changed automatically.
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    versioning-strategy: "lockfile-only"
+    commit-message:
+      prefix: "chore(deps)"
+    open-pull-requests-limit: 10
+    groups:
+      nuget-deps:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
