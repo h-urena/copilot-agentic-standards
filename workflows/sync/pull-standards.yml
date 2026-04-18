@@ -108,16 +108,16 @@ jobs:
             done
           fi
 
-          # Update domain instruction files (.github/*.instructions.md, excluding code-review files
-          # already handled above and the copilot-instructions.md handled at the top)
-          DOMAIN_INSTRUCTIONS="api-design.instructions.md db-patterns.instructions.md auth-patterns.instructions.md"
-          for instr_file in $DOMAIN_INSTRUCTIONS; do
-            if [ -f "$TEMP_DIR/instructions/$instr_file" ]; then
-              mkdir -p .github
-              if ! diff -q ".github/$instr_file" "$TEMP_DIR/instructions/$instr_file" > /dev/null 2>&1; then
-                cp "$TEMP_DIR/instructions/$instr_file" ".github/$instr_file"
-                CHANGED=true
-              fi
+          # Update domain instruction files (.github/*.instructions.md),
+          # skipping code-review files already handled above
+          for instr_file in "$TEMP_DIR/instructions/"*.instructions.md; do
+            [ -f "$instr_file" ] || continue
+            fname=$(basename "$instr_file")
+            case "$fname" in code-review*.instructions.md) continue ;; esac
+            mkdir -p .github
+            if ! diff -q ".github/$fname" "$instr_file" > /dev/null 2>&1; then
+              cp "$instr_file" ".github/$fname"
+              CHANGED=true
             fi
           done
 
