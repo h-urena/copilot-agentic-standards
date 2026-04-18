@@ -50,8 +50,9 @@ jobs:
 
           # Update copilot-instructions.md if a composed file exists for this stack
           if [ -n "$STACK" ] && [ -f "$TEMP_DIR/composed/${STACK}-copilot-instructions.md" ]; then
-            if ! diff -q ".github/copilot-instructions.md" "$TEMP_DIR/composed/${STACK}-copilot-instructions.md" > /dev/null 2>&1; then
-              cp "$TEMP_DIR/composed/${STACK}-copilot-instructions.md" .github/copilot-instructions.md
+            src="$TEMP_DIR/composed/${STACK}-copilot-instructions.md"
+            if ! diff -q ".github/copilot-instructions.md" "$src" > /dev/null 2>&1; then
+              cp "$src" .github/copilot-instructions.md
               CHANGED=true
             fi
           fi
@@ -59,17 +60,21 @@ jobs:
           # Update code review instructions if present
           if [ -f "$TEMP_DIR/instructions/code-review.instructions.md" ]; then
             mkdir -p .github
-            if ! diff -q ".github/code-review.instructions.md" "$TEMP_DIR/instructions/code-review.instructions.md" > /dev/null 2>&1; then
-              cp "$TEMP_DIR/instructions/code-review.instructions.md" .github/code-review.instructions.md
+            src="$TEMP_DIR/instructions/code-review.instructions.md"
+            if ! diff -q ".github/code-review.instructions.md" "$src" > /dev/null 2>&1; then
+              cp "$src" .github/code-review.instructions.md
               CHANGED=true
             fi
           fi
 
           # Update stack-specific code review instructions if present
-          if [ -n "$STACK" ] && [ -f "$TEMP_DIR/instructions/code-review-${STACK}.instructions.md" ]; then
+          if [ -n "$STACK" ] && \
+             [ -f "$TEMP_DIR/instructions/code-review-${STACK}.instructions.md" ]; then
             mkdir -p .github
-            if ! diff -q ".github/code-review-${STACK}.instructions.md" "$TEMP_DIR/instructions/code-review-${STACK}.instructions.md" > /dev/null 2>&1; then
-              cp "$TEMP_DIR/instructions/code-review-${STACK}.instructions.md" ".github/code-review-${STACK}.instructions.md"
+            src="$TEMP_DIR/instructions/code-review-${STACK}.instructions.md"
+            dst=".github/code-review-${STACK}.instructions.md"
+            if ! diff -q "$dst" "$src" > /dev/null 2>&1; then
+              cp "$src" "$dst"
               CHANGED=true
             fi
           fi
@@ -151,11 +156,14 @@ jobs:
             });
 
             if (prs.length === 0) {
+              const repo = `https://github.com/${process.env.STANDARDS_REPO}`;
               await github.rest.pulls.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title: 'chore: update agentic standards from upstream',
-                body: `Automated PR — syncs Copilot instructions, PR templates, code-review checklists, MCP config, agent prompts, and domain instruction files from [copilot-agentic-standards](https://github.com/${process.env.STANDARDS_REPO}).`,
+                body: `Automated PR — syncs Copilot instructions, PR templates, ` +
+                  `code-review checklists, MCP config, agent prompts, and ` +
+                  `domain instruction files from [copilot-agentic-standards](${repo}).`,
                 head: process.env.UPDATE_BRANCH,
                 base: 'main',
               });
