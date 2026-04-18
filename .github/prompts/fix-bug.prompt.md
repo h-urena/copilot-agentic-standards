@@ -1,5 +1,5 @@
 ---
-mode: agent
+agent: agent
 description: "Diagnose and fix a bug systematically: reproduce with a failing test, trace to the root cause, apply the minimal fix, add a regression test, and open a PR."
 ---
 
@@ -24,7 +24,7 @@ dotnet test --filter "Should_<Behaviour>_When_<Condition>"
 
 Do not proceed to Step 3 until this failing test exists.
 
-## Step 2 — Root-cause analysis
+## Step 2 — Identify the root cause before writing any fix
 
 Trace the execution path from the symptom to the root cause:
 
@@ -43,7 +43,7 @@ Trace the execution path from the symptom to the root cause:
 
 **Do not move to Step 3 until you can state the root cause clearly.**
 
-## Step 3 — Apply the minimal fix
+## Step 3 — Apply a targeted fix scoped to the confirmed root cause
 
 - Change **only** the code required to fix the root cause.
 - Do not refactor, rename, or clean up unrelated code in the same commit.
@@ -55,7 +55,7 @@ Trace the execution path from the symptom to the root cause:
 - Python: use `is None` checks; avoid bare `except`; use `raise ... from err` for chained exceptions.
 - C#: use `ArgumentNullException.ThrowIfNull()`; check `CancellationToken` propagation for async bugs.
 
-## Step 4 — Add / update tests
+## Step 4 — Confirm the fix holds and add regression coverage
 
 - The failing test from Step 1 must now pass.
 - Add tests for any **additional edge cases** surfaced during root-cause analysis.
@@ -69,7 +69,7 @@ vitest run
 dotnet test
 ```
 
-## Step 5 — Verify
+## Step 5 — Verify fix correctness and no regressions
 
 - [ ] The failing test from Step 1 now passes
 - [ ] No existing tests are broken
@@ -77,7 +77,7 @@ dotnet test
 - [ ] The fix does not introduce new linting errors: `ruff check` / `eslint` / `dotnet build -warnaserror`
 - [ ] The root cause is clearly understood (not just symptoms patched)
 
-## Step 6 — Commit and open a PR
+## Step 6 — Record the fix and open it for peer review
 
 ```bash
 git add -A

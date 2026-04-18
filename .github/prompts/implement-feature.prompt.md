@@ -1,5 +1,5 @@
 ---
-mode: agent
+agent: agent
 description: "Implement a feature end-to-end: explore the issue, design a solution, write production code, add tests, self-review, and open a PR — all following project standards."
 ---
 
@@ -7,14 +7,14 @@ description: "Implement a feature end-to-end: explore the issue, design a soluti
 
 You are a software development agent. Work through the steps below in order. Do not skip steps.
 
-## Step 1 — Understand the scope
+## Step 1 — Understand feature scope and affected modules
 
 - Read the linked issue carefully. If acceptance criteria are missing or ambiguous, ask before writing any code.
 - Identify which stack(s) are involved (TypeScript, Python, C# — or a combination).
 - Identify the modules, services, or layers that need to change.
 - If the change could affect a public API contract, list the endpoints or types that will change.
 
-## Step 2 — Design before coding
+## Step 2 — Produce a written design plan before modifying any file
 
 Write 3–7 bullet points describing your approach before touching any files:
 
@@ -25,7 +25,7 @@ Write 3–7 bullet points describing your approach before touching any files:
 
 If the design requires an architectural decision, pause and create an ADR (in `docs/decisions/` or equivalent) before proceeding.
 
-## Step 3 — Implement
+## Step 3 — Implement following stack-specific standards
 
 Follow the copilot instructions for the relevant stack(s):
 
@@ -54,7 +54,7 @@ Follow the copilot instructions for the relevant stack(s):
 - No `.Result` / `.Wait()`.
 - `using` / `await using` for all `IDisposable`.
 
-## Step 4 — Write tests
+## Step 4 — Ensure feature is covered by unit, integration, and E2E tests
 
 Write tests **alongside** the implementation, not after.
 
@@ -80,7 +80,7 @@ Write tests **alongside** the implementation, not after.
 - TypeScript: `vitest` + `@vitest/coverage-v8` + `supertest`
 - C#: `xUnit` + `FluentAssertions` + `WebApplicationFactory<T>`
 
-## Step 5 — Self-review
+## Step 5 — Verify all acceptance criteria are met before committing
 
 Before committing, verify every item:
 
@@ -92,7 +92,7 @@ Before committing, verify every item:
 - [ ] All tests pass: `pytest` / `vitest run` / `dotnet test`
 - [ ] No untracked `TODO`s introduced without a linked issue
 
-## Step 6 — Commit and open a PR
+## Step 6 — Record the implementation and open it for peer review
 
 Follow the governance workflow:
 

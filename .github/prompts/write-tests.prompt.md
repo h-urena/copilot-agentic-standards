@@ -1,5 +1,5 @@
 ---
-mode: agent
+agent: agent
 description: "Write a comprehensive test suite for existing production code — covering unit, integration, and edge cases — using the conventions of the relevant stack."
 ---
 
@@ -22,7 +22,7 @@ Before writing any test, read the target module(s) and produce a coverage plan:
 
 Present this plan before writing the first test file.
 
-## Step 2 — Unit tests
+## Step 2 — Write isolated unit tests for all public interfaces
 
 **Rules for all stacks**
 - Mock **all** external dependencies — no real network calls, no real DB, no real filesystem.
@@ -84,7 +84,7 @@ result.Name.Should().Be("Alice");
 act.Should().ThrowAsync<NotFoundException>();
 ```
 
-## Step 3 — Integration tests (where appropriate)
+## Step 3 — Cover infrastructure boundaries with real-container integration tests
 
 Use integration tests for:
 - Database queries (SQL semantics, constraints, migrations)
@@ -101,7 +101,7 @@ Use integration tests for:
 - TypeScript: `testcontainers` npm package; use `supertest` for HTTP.
 - C#: `Testcontainers.PostgreSql` / `Testcontainers.MsSql`; `WebApplicationFactory<T>` for API tests.
 
-## Step 4 — Assert meaningfully
+## Step 4 — Assert on behaviour and side effects, not just truthiness
 
 Prefer:
 - Specific value assertions over `toBeTruthy()` / `Assert.True(x != null)`
@@ -113,7 +113,7 @@ Avoid:
 - Snapshots for logic tests (fragile, opaque failures)
 - `time.sleep` / `Thread.Sleep` in tests — use async patterns or test doubles for time
 
-## Step 5 — Validate
+## Step 5 — Validate test suite quality and completeness
 
 - [ ] All new tests pass: `pytest -x` / `vitest run` / `dotnet test`
 - [ ] No flaky async tests (all promises awaited, all async fixtures resolved)
@@ -122,7 +122,7 @@ Avoid:
 - [ ] Coverage for the target module is meaningful (not just line coverage — branch coverage matters)
 - [ ] No test-only code leaks into production (no `if process.env.NODE_ENV === 'test'` hacks)
 
-## Step 6 — Commit
+## Step 6 — Record test coverage additions with a scoped commit
 
 ```bash
 git add -A
