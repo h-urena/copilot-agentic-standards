@@ -1,5 +1,5 @@
 ---
-mode: agent
+agent: agent
 description: "Full governance workflow — execute before making any change to this repository."
 ---
 

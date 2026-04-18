@@ -1,11 +1,11 @@
 ---
-mode: agent
+agent: agent
 description: "Senior Agentic Standards Auditor — run against any branch diff to validate compliance."
 ---
 
 # Senior Agentic Standards Audit
 
-## Step 1 — Generate the diff
+## Step 1 — Generate the branch diff for analysis
 
 ```bash
 git --no-pager diff main...HEAD > audit_diff.txt
@@ -94,7 +94,7 @@ Apply all fixes directly. Do not just report — fix.
 
 ---
 
-## Step 2 — Cleanup
+## Step 2 — Remove temporary audit artifacts
 
 ```bash
 rm audit_diff.txt
