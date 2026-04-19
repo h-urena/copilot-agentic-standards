@@ -25,7 +25,7 @@ Write 3–7 bullet points describing your approach before touching any files:
 
 If the design requires an architectural decision, pause and create an ADR (in `docs/decisions/` or equivalent) before proceeding.
 
-## Step 3 — Implement following stack-specific standards
+## Step 3 — Produce standards-conformant code from the design plan
 
 Follow the copilot instructions for the relevant stack(s):
 
