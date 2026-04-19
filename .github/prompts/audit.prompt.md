@@ -1,11 +1,11 @@
 ---
-mode: agent
+agent: agent
 description: "Senior Agentic Standards Auditor — run against any branch diff to validate compliance."
 ---
 
 # Senior Agentic Standards Audit
 
-## Step 1 — Generate the diff
+## Step 1 — Generate the branch diff for analysis
 
 ```bash
 git --no-pager diff main...HEAD > audit_diff.txt
@@ -35,6 +35,8 @@ Every `.yml` change **must** use the absolute latest action versions. Flag anyth
 **Modern syntax:** Enforce `$GITHUB_OUTPUT`. Flag `set-output`, `save-state`, and `get-state` as deprecated.
 
 **Shell:** All `.sh` blocks must start with `set -euo pipefail`. All variables must be quoted.
+
+**Line length:** All `.yml` files are linted with `yamllint` at max 120 characters per line. Flag any line exceeding 120 characters — break long shell lines with `\` continuations and extract long strings into variables.
 
 ---
 
@@ -94,7 +96,7 @@ Apply all fixes directly. Do not just report — fix.
 
 ---
 
-## Step 2 — Cleanup
+## Step 2 — Remove temporary audit artifacts
 
 ```bash
 rm audit_diff.txt
