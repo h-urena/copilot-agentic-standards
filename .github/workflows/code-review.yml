@@ -64,9 +64,11 @@ jobs:
               p.includes('Tests/');
 
             const isSensitivePath = p =>
-              /[\\/](auth|oauth|jwt|token|payment|billing|checkout|secret|credential)/i.test(p) ||
-              /\.(env|pem|key|pfx|p12)$/.test(p) ||
-              /[\\/](admin|sudo|privilege)/i.test(p);
+              !p.endsWith('.md') && (
+                /[\\/](auth|oauth|jwt|token|payment|billing|checkout|secret|credential)/i.test(p) ||
+                /\.(env|pem|key|pfx|p12)$/.test(p) ||
+                /[\\/](admin|sudo|privilege)/i.test(p)
+              );
 
             const sourceFiles  = files.filter(f => !isTestFile(f.filename));
             const testFiles    = files.filter(f =>  isTestFile(f.filename));
