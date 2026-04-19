@@ -8,13 +8,16 @@
 # What it does:
 #   1. Copies the composed copilot-instructions.md to .github/
 #   2. Copies code-review.instructions.md and stack-specific code-review-<stack>.instructions.md to .github/
-#   3. Copies PR templates to .github/PULL_REQUEST_TEMPLATE/
-#   4. Copies the pull-standards sync workflow to .github/workflows/
-#   5. Copies the composed MCP config to .vscode/mcp.json (base + stack merged)
-#   6. Copies .github/prompts/ (governance and audit prompt files)
-#   7. Writes .github/CODEOWNERS with the detected repo owner
-#   8. Copies dependabot.yml template (idempotent)
-#   9. Prints branch protection setup instructions
+#   3. Copies domain instruction files (*.instructions.md, excluding code-review) to .github/
+#   4. Copies PR templates to .github/PULL_REQUEST_TEMPLATE/
+#   5. Copies the pull-standards sync workflow to .github/workflows/
+#   6. Copies the composed MCP config to .vscode/mcp.json (base + stack merged)
+#   7. Copies .github/prompts/ (governance and audit prompt files)
+#   8. Writes .github/CODEOWNERS with the detected repo owner
+#   9. Copies stack-specific dependabot.yml template (idempotent)
+#  10. Copies .vscode/extensions.json with stack-specific extension recommendations
+#  11. Copies templates/memory/project-context.md to .github/project-context.md
+#  12. Prints branch protection setup instructions
 
 set -euo pipefail
 
@@ -90,7 +93,18 @@ if [ -f "$STACK_REVIEW" ]; then
   echo "  ✓ .github/code-review-${STACK}.instructions.md"
 fi
 
-# 3. PR templates
+# 3. Domain instruction files (glob-discovered; code-review files handled separately above)
+for src in "$ROOT_DIR/instructions/"*.instructions.md; do
+  [ -f "$src" ] || continue
+  fname="$(basename "$src")"
+  case "$fname" in
+    code-review*) continue ;;
+  esac
+  cp "$src" "$REPO_PATH/.github/$fname"
+  echo "  ✓ .github/$fname"
+done
+
+# 4. PR templates
 mkdir -p "$REPO_PATH/.github/PULL_REQUEST_TEMPLATE"
 for tmpl in "$ROOT_DIR"/templates/pull-request/*.md; do
   [ -f "$tmpl" ] || continue
@@ -98,12 +112,12 @@ for tmpl in "$ROOT_DIR"/templates/pull-request/*.md; do
   echo "  ✓ .github/PULL_REQUEST_TEMPLATE/$(basename "$tmpl")"
 done
 
-# 4. Sync workflow
+# 5. Sync workflow
 mkdir -p "$REPO_PATH/.github/workflows"
 cp "$ROOT_DIR/workflows/sync/pull-standards.yml" "$REPO_PATH/.github/workflows/pull-standards.yml"
 echo "  ✓ .github/workflows/pull-standards.yml"
 
-# 5. MCP config (use pre-composed merged file if available, else merge on-the-fly, else copy stack file)
+# 6. MCP config (use pre-composed merged file if available, else merge on-the-fly, else copy stack file)
 COMPOSED_MCP="$ROOT_DIR/composed/${STACK}.mcp.json"
 MCP_FILE="$ROOT_DIR/mcp/${STACK}.mcp.json"
 BASE_MCP="$ROOT_DIR/mcp/base.mcp.json"
@@ -123,7 +137,7 @@ elif [ -f "$MCP_FILE" ]; then
   fi
 fi
 
-# 6. Governance prompts
+# 7. Governance prompts
 PROMPTS_SRC="$ROOT_DIR/.github/prompts"
 if [ -d "$PROMPTS_SRC" ]; then
   mkdir -p "$REPO_PATH/.github/prompts"
@@ -131,7 +145,7 @@ if [ -d "$PROMPTS_SRC" ]; then
   echo "  ✓ .github/prompts/ (governance + audit prompts)"
 fi
 
-# 7. CODEOWNERS (detect repo owner from git remote)
+# 8. CODEOWNERS (detect repo owner from git remote)
 REMOTE_URL="$(git -C "$REPO_PATH" remote get-url origin 2>/dev/null || true)"
 REPO_OWNER=""
 if [ -n "$REMOTE_URL" ]; then
@@ -150,12 +164,36 @@ else
   echo "  ⚠ Could not detect repo owner — create .github/CODEOWNERS manually"
 fi
 
-# 8. Dependabot config (only if target repo doesn't already have one — idempotent)
-DEPENDABOT_TMPL="$ROOT_DIR/templates/dependabot.yml"
-if [ -f "$DEPENDABOT_TMPL" ] && [ ! -f "$REPO_PATH/.github/dependabot.yml" ]; then
+# 9. Dependabot config — use stack-specific template if available, fall back to base (idempotent)
+DEPENDABOT_STACK_TMPL="$ROOT_DIR/templates/dependabot.${STACK}.yml"
+DEPENDABOT_BASE_TMPL="$ROOT_DIR/templates/dependabot.yml"
+if [ ! -f "$REPO_PATH/.github/dependabot.yml" ]; then
   mkdir -p "$REPO_PATH/.github"
-  cp "$DEPENDABOT_TMPL" "$REPO_PATH/.github/dependabot.yml"
-  echo "  ✓ .github/dependabot.yml"
+  if [ -f "$DEPENDABOT_STACK_TMPL" ]; then
+    cp "$DEPENDABOT_STACK_TMPL" "$REPO_PATH/.github/dependabot.yml"
+    echo "  ✓ .github/dependabot.yml (${STACK} template — github-actions + ${STACK} ecosystem)"
+  elif [ -f "$DEPENDABOT_BASE_TMPL" ]; then
+    cp "$DEPENDABOT_BASE_TMPL" "$REPO_PATH/.github/dependabot.yml"
+    echo "  ✓ .github/dependabot.yml (base template — uncomment stack ecosystem manually)"
+  fi
+fi
+
+# 10. VS Code extension recommendations
+EXT_TMPL="$ROOT_DIR/templates/vscode/extensions.${STACK}.json"
+if [ -f "$EXT_TMPL" ]; then
+  mkdir -p "$REPO_PATH/.vscode"
+  # Only write if .vscode/extensions.json doesn't already exist (idempotent)
+  if [ ! -f "$REPO_PATH/.vscode/extensions.json" ]; then
+    cp "$EXT_TMPL" "$REPO_PATH/.vscode/extensions.json"
+    echo "  ✓ .vscode/extensions.json (${STACK} recommendations)"
+  fi
+fi
+
+# 11. Project memory bootstrap template
+MEMORY_TMPL="$ROOT_DIR/templates/memory/project-context.md"
+if [ -f "$MEMORY_TMPL" ] && [ ! -f "$REPO_PATH/.github/project-context.md" ]; then
+  cp "$MEMORY_TMPL" "$REPO_PATH/.github/project-context.md"
+  echo "  ✓ .github/project-context.md (memory bootstrap — fill in project details)"
 fi
 
 echo ""

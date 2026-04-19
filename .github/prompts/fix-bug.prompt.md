@@ -94,6 +94,8 @@ gh pr create \
   --body "Closes #<issue-number>"
 ```
 
+> **Title constraint:** The commit subject and PR title must be **≤ 100 characters** — `commitlint` enforces `header-max-length` in CI and will block the PR if exceeded.
+
 **PR description must include:**
 - **Root cause** — what was wrong and why
 - **Fix applied** — what was changed

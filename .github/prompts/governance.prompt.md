@@ -71,6 +71,8 @@ git commit -m "<type>(<scope>): <description>
 Closes #<issue-number>"
 ```
 
+> **Title constraint:** The first line (`<type>(<scope>): <description>`) must be **≤ 100 characters** — `commitlint` enforces this in CI and will block the PR.
+
 ## Step 7 — Push and open a Pull Request
 
 ```bash

@@ -45,6 +45,7 @@ Every `.yml` change **must** use the absolute latest action versions. Flag anyth
 - **Sequence Audit:** Flag redundant installs or steps that override previous state.
 - **Contradiction Check:** Ensure new steps do not break subsequent logic.
 - **Idempotency:** Steps that run on every push should be idempotent (re-runnable without side effects).
+- **Embedded script correctness:** For any inline JS/shell that classifies files by path (e.g. sensitive paths, test file detection), verify the regex does not produce false positives against documentation, configuration, or instruction files (`.md`, `.yml`, `.json`). A pattern like `/(auth|secret)/i` will match `auth-patterns.instructions.md` — always scope path-matching regexes to source code extensions or add explicit exclusions for non-code file types.
 
 ---
 
