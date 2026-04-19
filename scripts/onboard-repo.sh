@@ -8,7 +8,7 @@
 # What it does:
 #   1. Copies the composed copilot-instructions.md to .github/
 #   2. Copies code-review.instructions.md and stack-specific code-review-<stack>.instructions.md to .github/
-#   3. Copies domain instruction files (api-design, db-patterns, auth-patterns) to .github/
+#   3. Copies domain instruction files (*.instructions.md, excluding code-review) to .github/
 #   4. Copies PR templates to .github/PULL_REQUEST_TEMPLATE/
 #   5. Copies the pull-standards sync workflow to .github/workflows/
 #   6. Copies the composed MCP config to .vscode/mcp.json (base + stack merged)
@@ -93,13 +93,15 @@ if [ -f "$STACK_REVIEW" ]; then
   echo "  ✓ .github/code-review-${STACK}.instructions.md"
 fi
 
-# 3. Domain instruction files (api-design, db-patterns, auth-patterns)
-for domain_instr in api-design db-patterns auth-patterns; do
-  src="$ROOT_DIR/instructions/${domain_instr}.instructions.md"
-  if [ -f "$src" ]; then
-    cp "$src" "$REPO_PATH/.github/${domain_instr}.instructions.md"
-    echo "  ✓ .github/${domain_instr}.instructions.md"
-  fi
+# 3. Domain instruction files (glob-discovered; code-review files handled separately above)
+for src in "$ROOT_DIR/instructions/"*.instructions.md; do
+  [ -f "$src" ] || continue
+  fname="$(basename "$src")"
+  case "$fname" in
+    code-review*) continue ;;
+  esac
+  cp "$src" "$REPO_PATH/.github/$fname"
+  echo "  ✓ .github/$fname"
 done
 
 # 4. PR templates
