@@ -5,6 +5,30 @@ description: "Senior Agentic Standards Auditor — run against any branch diff t
 
 # Senior Agentic Standards Audit
 
+## Step 0 — Verify governance compliance
+
+Before evaluating the code, verify the branch itself followed process. Flag any violation as a
+blocker — code correctness is irrelevant if the process was bypassed.
+
+```bash
+# 1. Confirm branch name follows <type>/<issue-number>-<slug>
+git rev-parse --abbrev-ref HEAD
+
+# 2. Confirm a linked issue exists for the issue number in the branch name
+gh issue view <issue-number>
+
+# 3. Confirm the PR body contains Closes/Fixes/Resolves #<issue-number>
+gh pr view --json body -q .body
+```
+
+| Check | Pass condition |
+|-------|---------------|
+| Branch name | Matches `^(feat\|fix\|docs\|style\|refactor\|perf\|test\|build\|ci\|chore\|hotfix)/\d+-[a-z0-9-]+$` |
+| Linked issue | Issue exists and is open or was closed by this PR |
+| PR body | Contains `Closes #N`, `Fixes #N`, or `Resolves #N` |
+
+---
+
 ## Step 1 — Generate the branch diff for analysis
 
 ```bash
@@ -46,14 +70,18 @@ Every `.yml` change **must** use the absolute latest action versions. Flag anyth
 - **Contradiction Check:** Ensure new steps do not break subsequent logic.
 - **Idempotency:** Steps that run on every push should be idempotent (re-runnable without side effects).
 - **Embedded script correctness:** For any inline JS/shell that classifies files by path (e.g. sensitive paths, test file detection), verify the regex does not produce false positives against documentation, configuration, or instruction files (`.md`, `.yml`, `.json`). A pattern like `/(auth|secret)/i` will match `auth-patterns.instructions.md` — always scope path-matching regexes to source code extensions or add explicit exclusions for non-code file types.
+- **`workflow_call` input completeness:** For every workflow that exposes `workflow_call`, verify that every value accessed via `context.payload.*` or `${{ inputs.* }}` inside the job steps is either: (a) declared as a `workflow_call` input with a sensible default, or (b) guarded with a null-check that prevents `core.setFailed` when the payload is absent. A bare `workflow_call: {}` with no inputs is a red flag — check that inline scripts do not silently fail when called externally.
 
 ---
 
 ### 🤖 Agentic Clarity (rate 1–10)
 
-- **Semantic Intent:** `name:` fields must describe *intent* not just *action*.
-  - ❌ `"Check merge method"` — describes the action
-  - ✅ `"Check repository merge settings"` — describes the intent
+- **Semantic Intent:** `name:` fields at **all three levels** must describe *intent*, not just *action*:
+  - **Workflow `name:`** (top of file) — describes the policy the workflow enforces
+  - **Job `jobs.<id>.name:`** — describes the outcome the job ensures
+  - **Step `steps[*].name:`** — describes what is being verified or enforced, not the tool being run
+  - ❌ `"Check merge method"` / `"PR Description Generator"` — action or noun
+  - ✅ `"Enforce squash-only merge policy"` / `"Auto-populate PR Body From Branch Commits"` — policy statement
   - ✅ `"Auto-assign PR to its author"` — policy statement
 - **Atomic Instructions:** Markdown must be chronological — Step 5 cannot make Step 2 redundant.
 - **No ambiguity:** Step names readable by an LLM with no surrounding context.
@@ -85,9 +113,10 @@ Flag **any** hardcoded values that should be dynamic:
 For each finding:
 
 ```
+🏛️ Governance: <finding> — <fix>
 🔍 Doc Compliance: <finding> in <file>:<line> — <fix>
 🔄 Logic & Redundancy: <finding> — <fix>
-🤖 Agentic Clarity: <rating>/10 — <specific step name to improve>
+🤖 Agentic Clarity: <rating>/10 — <specific name: level and value to improve>
 ✅ Refactored Snippet: <only if a code change is needed>
 ```
 
@@ -97,8 +126,8 @@ Apply all fixes directly. Do not just report — fix.
 
 ---
 
-## Step 2 — Remove temporary audit artifacts
+## Step 3 — Remove temporary audit artifacts
 
 ```bash
-rm audit_diff.txt
+rm -f audit_diff.txt
 ```
