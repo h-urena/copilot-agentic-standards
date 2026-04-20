@@ -14,6 +14,36 @@ These are universal rules that apply to **every** repository regardless of langu
 - Do not leave dead code, commented-out code, or TODO comments without a linked issue.
 - Treat compiler/linter warnings as errors.
 
+## MANDATORY pre-flight — do this before touching any file
+
+> **STOP.** Do not create, edit, or delete any file until all four steps below are complete.
+> This applies to every change, no matter how small or "obvious".
+
+**Step 1 — Verify main is up to date**
+```bash
+git checkout main && git pull origin main
+```
+
+**Step 2 — Create a GitHub issue**
+```bash
+gh issue create --title "<type>(scope): short description" --body "Problem, solution, acceptance criteria" --assignee @me
+```
+Record the issue number. You cannot proceed without it.
+
+**Step 3 — Create a branch linked to that issue**
+```bash
+git checkout -b <type>/<issue-number>-<short-slug>
+# e.g. feat/42-add-pr-description-workflow
+```
+Valid types: `feat` `fix` `docs` `style` `refactor` `perf` `test` `build` `ci` `chore` `hotfix`
+
+**Step 4 — Make ALL changes on that branch, then open a PR**
+```bash
+gh pr create --title "<type>(scope): description" --body "Closes #<issue-number>"
+```
+
+If you skipped any step, stop immediately, undo your changes (`git checkout main`), and restart from Step 1.
+
 ## Agentic workflow
 
 Before making any code change, always execute these steps in order:

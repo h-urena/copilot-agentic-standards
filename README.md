@@ -1,81 +1,91 @@
 # copilot-agentic-standards
 
-Centralized, source-controlled Copilot instructions, reusable workflows, PR templates, MCP configs, and linting baselines — so every repo on the team starts (and stays) consistent.
+Single source of truth for Copilot instructions, reusable workflows, PR templates, agent prompts,
+persona skills, and MCP configs — so every repo on the team starts (and stays) consistent,
+regardless of whether it is TypeScript, Python, C#, or a combination.
 
 ## Why
 
-Without a single source of truth, every repository drifts: different branch strategies, inconsistent PR titles, missing squash policies, and ad-hoc Copilot instructions. This repo fixes that by providing **composable, stack-aware standards** that any project can adopt with a single bootstrap script.
+Without a shared baseline, repositories drift: different branch strategies, inconsistent PR titles,
+missing squash policies, ad-hoc Copilot instructions, and agents that behave differently across
+projects. This repo fixes that with **composable, stack-aware standards** that any project can
+adopt with a single bootstrap script.
 
-## Repo structure
+---
 
-```
-instructions/          Copilot instruction files (base + per-stack)
-  stacks/              Stack-specific additions (typescript, python, csharp)
-  code-review.instructions.md
-composed/              Pre-merged, ready-to-copy instruction files
-workflows/
-  reusable/            Reusable GitHub Actions called by consumer repos
-  examples/            Example caller workflows
-  sync/                Workflow that pulls latest standards into a repo
-templates/
-  pull-request/        PR templates (default, hotfix)
-mcp/                   MCP server configs (base + per-stack)
-scripts/               Compose, validate, and onboard automation
-```
+## For teams adopting the standards
 
-## Quick start
-
-### 1. Bootstrap an existing repo
+### Quick start — bootstrap an existing repo
 
 ```bash
-# From the target repo root
-curl -sL https://raw.githubusercontent.com/h-urena/copilot-agentic-standards/main/scripts/onboard-repo.sh | bash -s -- --stack typescript
-```
+# Remotely (no clone needed)
+curl -sL https://raw.githubusercontent.com/h-urena/copilot-agentic-standards/main/scripts/onboard-repo.sh \
+  | bash -s -- --stack typescript
 
-Or clone this repo and run locally:
-
-```bash
+# Or clone locally first
 git clone https://github.com/h-urena/copilot-agentic-standards.git
-cd copilot-agentic-standards
-./scripts/onboard-repo.sh --repo ../my-project --stack python
+./copilot-agentic-standards/scripts/onboard-repo.sh --repo ../my-project --stack python
 ```
 
-### 2. Use a composed instruction file directly
+The script copies everything listed in the table below into the target repo. Run it once; after
+that, `pull-standards.yml` keeps the repo in sync automatically.
 
-Copy a pre-merged file into your repo's `.github/` directory:
+### What gets copied by `onboard-repo.sh`
 
-```bash
-cp composed/typescript-copilot-instructions.md ../my-project/.github/copilot-instructions.md
-```
+| File / folder | Destination | Purpose |
+|---------------|-------------|---------|
+| `composed/<stack>-copilot-instructions.md` | `.github/copilot-instructions.md` | Universal + stack-specific Copilot rules |
+| `instructions/code-review.instructions.md` | `.github/` | Generic code review checklist |
+| `instructions/code-review-<stack>.instructions.md` | `.github/` | Stack-specific review checklist |
+| `instructions/*.instructions.md` | `.github/` | Domain instruction files (API design, auth, DB patterns) |
+| `templates/pull-request/` | `.github/PULL_REQUEST_TEMPLATE/` | Default and hotfix PR templates |
+| `workflows/sync/pull-standards.yml` | `.github/workflows/` | Keeps standards in sync weekly |
+| `composed/<stack>.mcp.json` | `.vscode/mcp.json` | MCP server config for Copilot tools |
+| `.github/prompts/` | `.github/prompts/` | All agent prompts (governance, features, bugs, tests, audit, personas) |
+| `.github/CODEOWNERS` | `.github/CODEOWNERS` | Auto-generated from git remote owner |
+| `templates/dependabot.<stack>.yml` | `.github/dependabot.yml` | Stack-appropriate Dependabot config |
+| `templates/vscode/extensions.<stack>.json` | `.vscode/extensions.json` | Recommended VS Code extensions |
+| `templates/memory/project-context.md` | `.github/project-context.md` | Agent memory bootstrap template |
 
-### 3. Keep standards in sync
+### Keep standards in sync
 
-Add the pull-standards workflow to your repo so it opens a PR whenever this repo updates:
+`pull-standards.yml` runs every Monday at 09:00 UTC and opens a PR when this repo changes.
+Enable it by running `onboard-repo.sh` once, or copy the workflow manually:
 
 ```bash
 cp workflows/sync/pull-standards.yml ../my-project/.github/workflows/pull-standards.yml
 ```
 
-## Composing instructions
+### Agent prompts
 
-The `scripts/compose.sh` script merges `instructions/base.md` with a stack file from `instructions/stacks/` into a single ready-to-use file.
+All prompts in `.github/prompts/` are distributed to downstream repos and invocable from VS Code
+Copilot Chat with `#<prompt-name>` or via the Copilot agent mode.
 
-```bash
-./scripts/compose.sh typescript   # → composed/typescript-copilot-instructions.md
-./scripts/compose.sh python       # → composed/python-copilot-instructions.md
-./scripts/compose.sh csharp       # → composed/csharp-copilot-instructions.md
-./scripts/compose.sh all          # → all composed files
-```
+**Workflow prompts** (`.github/prompts/`)
 
-## Validating composed files
+| Prompt | Purpose |
+|--------|---------|
+| `governance.prompt.md` | Full governance workflow — run before any change (issue → branch → PR) |
+| `implement-feature.prompt.md` | End-to-end feature implementation: design, code, tests, PR |
+| `fix-bug.prompt.md` | Systematic bug fix: reproduce → root cause → targeted fix → regression test |
+| `write-tests.prompt.md` | Write comprehensive test suites for existing code |
+| `audit.prompt.md` | Standards audit: validate a branch diff against all project rules |
 
-CI runs `scripts/validate-composed.sh` to ensure composed files are never stale:
+**Persona prompts** (`.github/prompts/personas/`)
 
-```bash
-./scripts/validate-composed.sh    # exits non-zero if any composed file is outdated
-```
+| Prompt | Purpose |
+|--------|---------|
+| `persona-devops-engineer.prompt.md` | Adopt a DevOps Engineer perspective for infra, CI/CD, and deployment review |
+| `persona-principal-engineer.prompt.md` | Adopt a Principal Engineer perspective for architecture and design review |
+| `persona-qa-engineer.prompt.md` | Adopt a Senior QA Engineer perspective for coverage and quality risk review |
 
-## Supported stacks
+### Agent memory — `project-context.md`
+
+Copy `templates/memory/project-context.md` to `.github/project-context.md` in your repo and fill
+it in during project kickoff. Agents read this file to understand the project without re-exploring
+the codebase each session.
+
+### Supported stacks
 
 | Stack | Instruction file | Code review checklist | MCP config |
 |-------|-----------------|----------------------|------------|
@@ -83,22 +93,98 @@ CI runs `scripts/validate-composed.sh` to ensure composed files are never stale:
 | Python | `instructions/stacks/python.md` | `instructions/code-review-python.instructions.md` | `mcp/python.mcp.json` |
 | C# | `instructions/stacks/csharp.md` | `instructions/code-review-csharp.instructions.md` | `mcp/csharp.mcp.json` |
 
-## Workflows
+---
 
-| Workflow | Type | Purpose |
-|----------|------|---------|
-| `merge-rules.yml` | Reusable | All merge gates: status checks, squash enforcement, commitlint |
-| `pr-automation.yml` | Reusable | Auto-assign, label, comment, notify |
-| `example-ci.yml` | Example | Shows how a consumer repo calls both reusable workflows |
-| `pull-standards.yml` | Sync | Repo-side workflow that opens a PR when standards change |
+## For maintainers of this repo
 
-## Contributing
+> Before making any change, follow the full governance workflow in
+> `.github/prompts/governance.prompt.md`. Never push directly to `main`.
 
-1. Create a feature branch from `main`
-2. Make changes to source files in `instructions/`, `workflows/`, `templates/`, or `mcp/`
-3. Run `./scripts/compose.sh all` to regenerate composed files
-4. Run `./scripts/validate-composed.sh` to verify
-5. Open a PR following the conventional commit format
+### Repo structure
+
+```
+instructions/          Copilot instruction files (base + per-stack)
+  base.md              Universal rules — inherited by all stacks
+  stacks/              Additive per-stack rules (typescript, python, csharp)
+  *.instructions.md    Domain files: API design, auth patterns, DB patterns, code review
+composed/              Auto-generated by scripts/compose.sh — never edit directly
+.github/
+  workflows/           Active GitHub Actions (pr-description, code-review, merge-rules, …)
+  prompts/             Agent prompts distributed to downstream repos
+workflows/
+  reusable/            Documentation-only mirrors of .github/workflows/ reusable files
+  examples/            Example caller workflow for consumer repos
+  sync/                Workflow consumers run to pull updates from this repo
+templates/
+  pull-request/        PR templates (default, hotfix)
+  memory/              project-context.md — agent memory bootstrap
+  vscode/              Stack-specific extensions.json
+mcp/                   MCP server configs (base + per-stack)
+scripts/               compose.sh, validate-composed.sh, onboard-repo.sh
+```
+
+### Composing instruction files
+
+`scripts/compose.sh` merges `instructions/base.md` with a stack file into a single ready-to-use
+file in `composed/`.
+
+```bash
+./scripts/compose.sh typescript   # → composed/typescript-copilot-instructions.md
+./scripts/compose.sh python       # → composed/python-copilot-instructions.md
+./scripts/compose.sh csharp       # → composed/csharp-copilot-instructions.md
+./scripts/compose.sh all          # → all three composed files
+```
+
+CI runs `scripts/validate-composed.sh` on every PR to ensure composed files are never stale.
+
+### Adding a new stack
+
+1. Create `instructions/stacks/<stack>.md`
+2. Create `mcp/<stack>.mcp.json`
+3. Create `instructions/code-review-<stack>.instructions.md`
+4. Update `scripts/compose.sh` to include the new stack
+5. Run `./scripts/compose.sh all` and commit the result
+
+### Workflows
+
+| Workflow | Location | Type | Purpose |
+|----------|----------|------|---------|
+| `pr-description.yml` | `.github/workflows/` | Reusable | Auto-fills PR body from commit messages on open/sync |
+| `code-review.yml` | `.github/workflows/` | Reusable | Tiered automated code review (critical + suggestions) |
+| `merge-rules.yml` | `.github/workflows/` | Reusable | Squash enforcement, commitlint, branch naming |
+| `pr-automation.yml` | `.github/workflows/` | Reusable | Auto-assign, label, welcome comment |
+| `project-automation.yml` | `.github/workflows/` | Internal | GitHub Project board lifecycle automation |
+| `validate.yml` | `.github/workflows/` | Internal | CI — validates composed files are not stale |
+| `example-ci.yml` | `workflows/examples/` | Example | Shows how a consumer repo calls reusable workflows |
+| `pull-standards.yml` | `workflows/sync/` | Sync | Consumer-side weekly sync with this repo |
+
+### PR description auto-generation
+
+`pr-description.yml` runs on every `pull_request` (opened / synchronize / reopened). It:
+
+1. Reads all commits on the branch and parses them as Conventional Commits.
+2. Groups them by type (feat, fix, docs, …) and fills in the PR body template automatically.
+3. Pre-checks the "Type of change" checkboxes based on commit types found.
+4. Extracts the issue number from the branch name (`feat/42-slug` → `Closes #42`).
+5. **Never overwrites a manually edited description.** A description is considered manual when the
+   `<!-- pr-description: auto -->` HTML comment has been removed.
+
+Consumer repos call it as:
+
+```yaml
+permissions:
+  pull-requests: write
+jobs:
+  pr-description:
+    uses: h-urena/copilot-agentic-standards/.github/workflows/pr-description.yml@main
+```
+
+### Contributing
+
+1. Follow `.github/prompts/governance.prompt.md` (create issue → branch → PR).
+2. Edit source files only — never files in `composed/`.
+3. Run `./scripts/compose.sh all && ./scripts/validate-composed.sh` before pushing.
+4. Open a PR with a Conventional Commits title: `type(scope): description`.
 
 ## License
 

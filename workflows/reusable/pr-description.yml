@@ -1,0 +1,43 @@
+# PR Description Generator — Reusable Workflow
+#
+# This file is a documentation reference. The ACTUAL callable reusable workflow is:
+#   .github/workflows/pr-description.yml
+#
+# That file supports both pull_request (for this repo) and workflow_call (for consumers).
+# Consumer repos call it as:
+#
+#   permissions:
+#     pull-requests: write
+#   jobs:
+#     pr-description:
+#       uses: h-urena/copilot-agentic-standards/.github/workflows/pr-description.yml@main
+#
+# What it does:
+#   Reads all commits on the PR branch, parses Conventional Commits, and fills in
+#   the PR body. The auto-generated body is only written when the PR body is empty,
+#   still matches the default template placeholder, or was previously auto-generated
+#   (detected via the <!-- pr-description: auto --> HTML comment).
+#
+#   Removing that comment from a description signals "human edited — do not touch".
+#
+# Authentication: uses GITHUB_TOKEN. No secrets required.
+
+name: PR Description Generator
+
+on:
+  workflow_call: {}
+
+permissions:
+  pull-requests: write
+
+jobs:
+  generate:
+    name: Generate description from commits
+    if: ${{ !endsWith(github.actor, '[bot]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build PR description from commit history
+        uses: actions/github-script@v9
+        with:
+          script: |
+            # See .github/workflows/pr-description.yml for the full implementation.

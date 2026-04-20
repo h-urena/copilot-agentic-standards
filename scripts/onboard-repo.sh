@@ -12,7 +12,8 @@
 #   4. Copies PR templates to .github/PULL_REQUEST_TEMPLATE/
 #   5. Copies the pull-standards sync workflow to .github/workflows/
 #   6. Copies the composed MCP config to .vscode/mcp.json (base + stack merged)
-#   7. Copies .github/prompts/ (governance and audit prompt files)
+#   7. Copies .github/prompts/ (workflow agent prompts: governance, features, bugs, tests, audit)
+#  7a. Copies .github/prompts/personas/ (persona prompts: devops, principal engineer, QA)
 #   8. Writes .github/CODEOWNERS with the detected repo owner
 #   9. Copies stack-specific dependabot.yml template (idempotent)
 #  10. Copies .vscode/extensions.json with stack-specific extension recommendations
@@ -112,7 +113,7 @@ for tmpl in "$ROOT_DIR"/templates/pull-request/*.md; do
   echo "  ✓ .github/PULL_REQUEST_TEMPLATE/$(basename "$tmpl")"
 done
 
-# 5. Sync workflow
+# 5. Sync workflow + pr-description workflow
 mkdir -p "$REPO_PATH/.github/workflows"
 cp "$ROOT_DIR/workflows/sync/pull-standards.yml" "$REPO_PATH/.github/workflows/pull-standards.yml"
 echo "  ✓ .github/workflows/pull-standards.yml"
@@ -137,12 +138,20 @@ elif [ -f "$MCP_FILE" ]; then
   fi
 fi
 
-# 7. Governance prompts
+# 7. Agent prompts (governance, features, bugs, tests, audit)
 PROMPTS_SRC="$ROOT_DIR/.github/prompts"
 if [ -d "$PROMPTS_SRC" ]; then
   mkdir -p "$REPO_PATH/.github/prompts"
   cp "$PROMPTS_SRC"/*.prompt.md "$REPO_PATH/.github/prompts/"
-  echo "  ✓ .github/prompts/ (governance + audit prompts)"
+  echo "  ✓ .github/prompts/ (workflow agent prompts)"
+fi
+
+# 7a. Persona prompts (devops, principal engineer, QA, etc.)
+PERSONAS_SRC="$ROOT_DIR/.github/prompts/personas"
+if [ -d "$PERSONAS_SRC" ]; then
+  mkdir -p "$REPO_PATH/.github/prompts/personas"
+  cp "$PERSONAS_SRC"/*.prompt.md "$REPO_PATH/.github/prompts/personas/"
+  echo "  ✓ .github/prompts/personas/ (persona prompts)"
 fi
 
 # 8. CODEOWNERS (detect repo owner from git remote)
