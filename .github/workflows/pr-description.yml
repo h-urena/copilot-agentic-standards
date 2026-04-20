@@ -22,7 +22,7 @@
 #
 # Authentication: uses GITHUB_TOKEN automatically. No secrets required.
 
-name: PR Description Generator
+name: Auto-populate PR Body From Branch Commits
 
 on:
   pull_request:

@@ -24,7 +24,7 @@
 #
 # Authentication: uses GITHUB_TOKEN. No secrets required.
 
-name: PR Description Generator
+name: Auto-populate PR Body From Branch Commits
 
 on:
   workflow_call:
