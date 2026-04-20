@@ -177,6 +177,8 @@ permissions:
 jobs:
   pr-description:
     uses: h-urena/copilot-agentic-standards/.github/workflows/pr-description.yml@main
+    with:
+      pr-number: ${{ github.event.pull_request.number }}
 ```
 
 ### Contributing

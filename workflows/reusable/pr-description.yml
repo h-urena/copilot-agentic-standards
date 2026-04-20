@@ -11,6 +11,8 @@
 #   jobs:
 #     pr-description:
 #       uses: h-urena/copilot-agentic-standards/.github/workflows/pr-description.yml@main
+#       with:
+#         pr-number: ${{ github.event.pull_request.number }}
 #
 # What it does:
 #   Reads all commits on the PR branch, parses Conventional Commits, and fills in
@@ -25,18 +27,24 @@
 name: PR Description Generator
 
 on:
-  workflow_call: {}
+  workflow_call:
+    inputs:
+      pr-number:
+        description: "PR number to populate (required when called from another workflow)"
+        required: false
+        type: number
+        default: 0
 
 permissions:
   pull-requests: write
 
 jobs:
   generate:
-    name: Generate description from commits
+    name: Ensure PR body is populated before review
     if: ${{ !endsWith(github.actor, '[bot]') }}
     runs-on: ubuntu-latest
     steps:
-      - name: Build PR description from commit history
+      - name: Write PR body from branch Conventional Commits
         uses: actions/github-script@v9
         with:
           script: |

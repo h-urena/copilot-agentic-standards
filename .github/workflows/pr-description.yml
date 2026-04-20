@@ -27,20 +27,26 @@ name: PR Description Generator
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  workflow_call: {}
+  workflow_call:
+    inputs:
+      pr-number:
+        description: "PR number to populate (required when called from another workflow)"
+        required: false
+        type: number
+        default: 0
 
 permissions:
   pull-requests: write
 
 jobs:
   generate:
-    name: Generate description from commits
+    name: Ensure PR body is populated before review
     runs-on: ubuntu-latest
     # Skip bot-opened PRs — Dependabot etc. manage their own descriptions
     if: ${{ !endsWith(github.actor, '[bot]') }}
 
     steps:
-      - name: Build PR description from commit history
+      - name: Write PR body from branch Conventional Commits
         uses: actions/github-script@v9
         with:
           script: |
@@ -49,7 +55,9 @@ jobs:
             const AUTO_MARKER = '<!-- pr-description: auto -->';
 
             // ── 1. Resolve PR number ──────────────────────────────────────────
-            const prNumber = context.payload.pull_request?.number;
+            const prNumber =
+              context.payload.pull_request?.number ??
+              ${{ inputs['pr-number'] || 0 }};
             if (!prNumber) {
               core.setFailed('Could not determine PR number from event payload.');
               return;
