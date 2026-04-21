@@ -129,5 +129,5 @@ Apply all fixes directly. Do not just report — fix.
 ## Step 3 — Remove temporary audit artifacts
 
 ```bash
-rm -f audit_diff.txt
+rm -force audit_diff.txt
 ```
