@@ -1,0 +1,156 @@
+# CI pipeline template for TypeScript projects.
+# Copy to .github/workflows/ci.yml in your project.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Governance checks (reusable from standards repo) ──
+  merge-rules:
+    if: github.event_name == 'pull_request'
+    uses: h-urena/copilot-agentic-standards/.github/workflows/merge-rules.yml@main
+    permissions:
+      contents: read
+      pull-requests: read
+
+  pr-description:
+    if: github.event_name == 'pull_request'
+    uses: h-urena/copilot-agentic-standards/.github/workflows/pr-description.yml@main
+    permissions:
+      pull-requests: write
+
+  pr-automation:
+    if: github.event_name == 'pull_request'
+    uses: h-urena/copilot-agentic-standards/.github/workflows/pr-automation.yml@main
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    with:
+      enable-labeler: true
+
+  code-review:
+    if: github.event_name == 'pull_request'
+    uses: h-urena/copilot-agentic-standards/.github/workflows/code-review.yml@main
+    permissions:
+      contents: read
+      pull-requests: write
+
+  # ── Lint ──
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: ESLint
+        run: npx eslint . --max-warnings 0
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+  # ── Unit tests ──
+  test-unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Run unit tests
+        run: npx vitest run --coverage
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit
+          path: coverage/
+
+  # ── Integration tests ──
+  test-integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Run integration tests
+        run: npx vitest run --config vitest.integration.config.ts
+
+  # ── Build ──
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [test-unit, test-integration]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  # ── Docker (optional — uncomment if using containers) ──
+  # docker:
+  #   name: Docker Build
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #
+  #     - name: Build Docker image
+  #       run: docker build -t app:${{ github.sha }} .
+  #
+  #     - name: Run container health check
+  #       run: |
+  #         docker run -d --name app -p 3000:3000 app:${{ github.sha }}
+  #         sleep 5
+  #         curl -f http://localhost:3000/health || exit 1
+  #         docker stop app
