@@ -13,9 +13,10 @@
 #   4. Copies PR templates to .github/PULL_REQUEST_TEMPLATE/
 #   5. Copies the pull-standards sync workflow to .github/workflows/
 #   6. Copies the composed MCP config to .vscode/mcp.json (base + stack merged)
-#  7. Copies .github/prompts/workflows/ (workflow agent prompts)
-#  7a. Copies .github/prompts/scaffolds/ (scaffold prompts)
-#  7b. Copies .github/prompts/personas/ (persona prompts)
+#  7. Copies .github/prompts/implementation/ (implementation agent prompts)
+#  7a. Copies .github/prompts/review/ (review and audit prompts)
+#  7b. Copies .github/prompts/scaffolds/ (scaffold prompts)
+#  7c. Copies .github/prompts/personas/ (persona prompts)
 #   8. Writes .github/CODEOWNERS with the detected repo owner
 #   9. Copies stack-specific dependabot.yml template (idempotent)
 #  10. Copies .vscode/extensions.json with stack-specific extension recommendations
@@ -158,15 +159,23 @@ elif [ -f "$MCP_FILE" ]; then
   fi
 fi
 
-# 7. Workflow agent prompts
-WORKFLOWS_PROMPTS_SRC="$ROOT_DIR/.github/prompts/workflows"
-if [ -d "$WORKFLOWS_PROMPTS_SRC" ]; then
-  mkdir -p "$REPO_PATH/.github/prompts/workflows"
-  cp "$WORKFLOWS_PROMPTS_SRC"/*.prompt.md "$REPO_PATH/.github/prompts/workflows/"
-  echo "  ✓ .github/prompts/workflows/ (workflow agent prompts)"
+# 7. Implementation prompts
+IMPL_PROMPTS_SRC="$ROOT_DIR/.github/prompts/implementation"
+if [ -d "$IMPL_PROMPTS_SRC" ]; then
+  mkdir -p "$REPO_PATH/.github/prompts/implementation"
+  cp "$IMPL_PROMPTS_SRC"/*.prompt.md "$REPO_PATH/.github/prompts/implementation/"
+  echo "  ✓ .github/prompts/implementation/ (implementation prompts)"
 fi
 
-# 7a. Scaffold prompts
+# 7a. Review prompts
+REVIEW_PROMPTS_SRC="$ROOT_DIR/.github/prompts/review"
+if [ -d "$REVIEW_PROMPTS_SRC" ]; then
+  mkdir -p "$REPO_PATH/.github/prompts/review"
+  cp "$REVIEW_PROMPTS_SRC"/*.prompt.md "$REPO_PATH/.github/prompts/review/"
+  echo "  ✓ .github/prompts/review/ (review and audit prompts)"
+fi
+
+# 7b. Scaffold prompts
 SCAFFOLDS_PROMPTS_SRC="$ROOT_DIR/.github/prompts/scaffolds"
 if [ -d "$SCAFFOLDS_PROMPTS_SRC" ]; then
   mkdir -p "$REPO_PATH/.github/prompts/scaffolds"
@@ -174,7 +183,7 @@ if [ -d "$SCAFFOLDS_PROMPTS_SRC" ]; then
   echo "  ✓ .github/prompts/scaffolds/ (scaffold prompts)"
 fi
 
-# 7b. Persona prompts
+# 7c. Persona prompts
 PERSONAS_SRC="$ROOT_DIR/.github/prompts/personas"
 if [ -d "$PERSONAS_SRC" ]; then
   mkdir -p "$REPO_PATH/.github/prompts/personas"
