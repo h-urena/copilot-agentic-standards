@@ -100,14 +100,27 @@ jobs:
             fi
           fi
 
-          # Update agent prompts (.github/prompts/*.prompt.md)
-          if [ -d "$TEMP_DIR/.github/prompts" ]; then
-            mkdir -p .github/prompts
-            for prompt in "$TEMP_DIR/.github/prompts"/*.prompt.md; do
+          # Update workflow prompts (.github/prompts/workflows/*.prompt.md)
+          if [ -d "$TEMP_DIR/.github/prompts/workflows" ]; then
+            mkdir -p .github/prompts/workflows
+            for prompt in "$TEMP_DIR/.github/prompts/workflows"/*.prompt.md; do
               [ -f "$prompt" ] || continue
               fname=$(basename "$prompt")
-              if ! diff -q ".github/prompts/$fname" "$prompt" > /dev/null 2>&1; then
-                cp "$prompt" ".github/prompts/$fname"
+              if ! diff -q ".github/prompts/workflows/$fname" "$prompt" > /dev/null 2>&1; then
+                cp "$prompt" ".github/prompts/workflows/$fname"
+                CHANGED=true
+              fi
+            done
+          fi
+
+          # Update scaffold prompts (.github/prompts/scaffolds/*.prompt.md)
+          if [ -d "$TEMP_DIR/.github/prompts/scaffolds" ]; then
+            mkdir -p .github/prompts/scaffolds
+            for prompt in "$TEMP_DIR/.github/prompts/scaffolds"/*.prompt.md; do
+              [ -f "$prompt" ] || continue
+              fname=$(basename "$prompt")
+              if ! diff -q ".github/prompts/scaffolds/$fname" "$prompt" > /dev/null 2>&1; then
+                cp "$prompt" ".github/prompts/scaffolds/$fname"
                 CHANGED=true
               fi
             done

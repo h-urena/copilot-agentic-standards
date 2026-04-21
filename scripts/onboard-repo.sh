@@ -13,8 +13,9 @@
 #   4. Copies PR templates to .github/PULL_REQUEST_TEMPLATE/
 #   5. Copies the pull-standards sync workflow to .github/workflows/
 #   6. Copies the composed MCP config to .vscode/mcp.json (base + stack merged)
-#   7. Copies .github/prompts/ (workflow agent prompts: governance, features, bugs, tests, audit)
-#  7a. Copies .github/prompts/personas/ (persona prompts: devops, principal engineer, QA)
+#  7. Copies .github/prompts/workflows/ (workflow agent prompts)
+#  7a. Copies .github/prompts/scaffolds/ (scaffold prompts)
+#  7b. Copies .github/prompts/personas/ (persona prompts)
 #   8. Writes .github/CODEOWNERS with the detected repo owner
 #   9. Copies stack-specific dependabot.yml template (idempotent)
 #  10. Copies .vscode/extensions.json with stack-specific extension recommendations
@@ -157,15 +158,23 @@ elif [ -f "$MCP_FILE" ]; then
   fi
 fi
 
-# 7. Agent prompts (governance, features, bugs, tests, audit)
-PROMPTS_SRC="$ROOT_DIR/.github/prompts"
-if [ -d "$PROMPTS_SRC" ]; then
-  mkdir -p "$REPO_PATH/.github/prompts"
-  cp "$PROMPTS_SRC"/*.prompt.md "$REPO_PATH/.github/prompts/"
-  echo "  ✓ .github/prompts/ (workflow agent prompts)"
+# 7. Workflow agent prompts
+WORKFLOWS_PROMPTS_SRC="$ROOT_DIR/.github/prompts/workflows"
+if [ -d "$WORKFLOWS_PROMPTS_SRC" ]; then
+  mkdir -p "$REPO_PATH/.github/prompts/workflows"
+  cp "$WORKFLOWS_PROMPTS_SRC"/*.prompt.md "$REPO_PATH/.github/prompts/workflows/"
+  echo "  ✓ .github/prompts/workflows/ (workflow agent prompts)"
 fi
 
-# 7a. Persona prompts (devops, principal engineer, QA, etc.)
+# 7a. Scaffold prompts
+SCAFFOLDS_PROMPTS_SRC="$ROOT_DIR/.github/prompts/scaffolds"
+if [ -d "$SCAFFOLDS_PROMPTS_SRC" ]; then
+  mkdir -p "$REPO_PATH/.github/prompts/scaffolds"
+  cp "$SCAFFOLDS_PROMPTS_SRC"/*.prompt.md "$REPO_PATH/.github/prompts/scaffolds/"
+  echo "  ✓ .github/prompts/scaffolds/ (scaffold prompts)"
+fi
+
+# 7b. Persona prompts
 PERSONAS_SRC="$ROOT_DIR/.github/prompts/personas"
 if [ -d "$PERSONAS_SRC" ]; then
   mkdir -p "$REPO_PATH/.github/prompts/personas"
