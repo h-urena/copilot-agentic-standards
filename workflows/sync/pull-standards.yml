@@ -113,6 +113,29 @@ jobs:
             done
           fi
 
+          # Update persona prompts (.github/prompts/personas/*.prompt.md)
+          if [ -d "$TEMP_DIR/.github/prompts/personas" ]; then
+            mkdir -p .github/prompts/personas
+            for prompt in "$TEMP_DIR/.github/prompts/personas"/*.prompt.md; do
+              [ -f "$prompt" ] || continue
+              fname=$(basename "$prompt")
+              if ! diff -q ".github/prompts/personas/$fname" "$prompt" > /dev/null 2>&1; then
+                cp "$prompt" ".github/prompts/personas/$fname"
+                CHANGED=true
+              fi
+            done
+          fi
+
+          # Update pr-description workflow if present in this repo
+          PR_DESC_SRC="$TEMP_DIR/.github/workflows/pr-description.yml"
+          if [ -f "$PR_DESC_SRC" ]; then
+            mkdir -p .github/workflows
+            if ! diff -q ".github/workflows/pr-description.yml" "$PR_DESC_SRC" > /dev/null 2>&1; then
+              cp "$PR_DESC_SRC" .github/workflows/pr-description.yml
+              CHANGED=true
+            fi
+          fi
+
           # Update domain instruction files (.github/*.instructions.md),
           # skipping code-review files already handled above
           for instr_file in "$TEMP_DIR/instructions/"*.instructions.md; do
