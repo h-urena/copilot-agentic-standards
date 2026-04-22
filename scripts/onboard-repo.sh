@@ -25,7 +25,8 @@
 #  13. Copies labeler.yml to .github/labeler.yml
 #  14. Copies Docker templates (Dockerfile, .dockerignore, docker-compose.yml)
 #  15. Copies stack-specific CI pipeline template
-#  16. Prints branch protection setup instructions
+#  16. Copies Copilot Skill files to .github/skills/
+#  17. Prints branch protection setup instructions
 
 set -euo pipefail
 
@@ -278,6 +279,14 @@ if [ -f "$CI_TMPL" ] && [ ! -f "$REPO_PATH/.github/workflows/ci.yml" ]; then
   mkdir -p "$REPO_PATH/.github/workflows"
   cp "$CI_TMPL" "$REPO_PATH/.github/workflows/ci.yml"
   echo "  ✓ .github/workflows/ci.yml (${PRIMARY_STACK} pipeline)"
+fi
+
+# 16. Copilot Skill files
+SKILLS_SRC="$ROOT_DIR/templates/skills"
+if [ -d "$SKILLS_SRC" ]; then
+  mkdir -p "$REPO_PATH/.github/skills"
+  cp "$SKILLS_SRC"/*.skill.md "$REPO_PATH/.github/skills/"
+  echo "  ✓ .github/skills/ (Copilot Skill files)"
 fi
 
 echo ""

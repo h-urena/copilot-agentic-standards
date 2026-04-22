@@ -152,6 +152,19 @@ jobs:
             done
           fi
 
+          # Update Copilot Skill files (.github/skills/*.skill.md)
+          if [ -d "$TEMP_DIR/templates/skills" ]; then
+            mkdir -p .github/skills
+            for skill in "$TEMP_DIR/templates/skills"/*.skill.md; do
+              [ -f "$skill" ] || continue
+              fname=$(basename "$skill")
+              if ! diff -q ".github/skills/$fname" "$skill" > /dev/null 2>&1; then
+                cp "$skill" ".github/skills/$fname"
+                CHANGED=true
+              fi
+            done
+          fi
+
           # Update pr-description workflow if present in this repo
           PR_DESC_SRC="$TEMP_DIR/.github/workflows/pr-description.yml"
           if [ -f "$PR_DESC_SRC" ]; then
