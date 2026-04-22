@@ -48,11 +48,13 @@ Every `.yml` change **must** use the absolute latest action versions. Flag anyth
 | Action | Minimum Version |
 |---|---|
 | `actions/checkout` | `@v6` |
-| `actions/setup-node` | `@v5` (prefer `@v6`) |
-| `actions/upload-artifact` | `@v5` |
-| `actions/download-artifact` | `@v5` |
+| `actions/setup-node` | `@v6` |
+| `actions/upload-artifact` | `@v7` |
+| `actions/download-artifact` | `@v7` |
 | `actions/github-script` | `@v9` |
 | `actions/labeler` | `@v6` |
+| `actions/setup-python` | `@v6` |
+| `actions/setup-dotnet` | `@v5` |
 
 **Node runtime:** Flag any action using Node 20 runtime — all actions must be Node 24 compatible.
 

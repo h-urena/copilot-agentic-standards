@@ -140,7 +140,7 @@ services:
     environment:
       POSTGRES_DB: mydb
       POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: mypassword
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # inject via environment — never hardcode
     ports:
       - "5432:5432"
     volumes:

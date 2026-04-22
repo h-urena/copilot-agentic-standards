@@ -21,16 +21,19 @@ Before writing any code, confirm:
 
 **TypeScript**
 ```bash
-npm install jose jwks-rsa                      # JWT validation
-npm install @auth0/nextjs-auth0                # Auth0 (if applicable)
-npm install passport passport-jwt              # Express/Fastify (if applicable)
+# Use --save-exact to pin to a specific version; commit the resulting package-lock.json.
+# CI must use `npm ci` (not `npm install`) to install from the lockfile.
+npm install --save-exact jose jwks-rsa                # JWT validation
+npm install --save-exact @auth0/nextjs-auth0          # Auth0 (if applicable)
+npm install --save-exact passport passport-jwt        # Express/Fastify (if applicable)
 ```
 
-**Python**
+**Python** (project standard: `uv`)
 ```bash
-pip install pyjwt[crypto] httpx                # JWT validation
-pip install authlib                            # OAuth 2.0 client
-pip install python-jose[cryptography]          # Alternative JWT library
+# uv add pins to the resolved version in uv.lock; commit the lockfile.
+# CI uses `uv sync --frozen` to install from the lockfile.
+uv add pyjwt[crypto] httpx        # JWT validation
+uv add authlib                    # OAuth 2.0 client
 ```
 
 **C#**
