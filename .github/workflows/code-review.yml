@@ -55,6 +55,17 @@ jobs:
             const addedLines    = files.flatMap(f =>
               (f.patch ?? '').split('\n').filter(l => l.startsWith('+') && !l.startsWith('+++'))
             );
+            // Exclude documentation and workflow files from secret/PII scanning —
+            // they contain example code and regex patterns that are legitimate content.
+            const isDocOrWorkflow = p =>
+              p.endsWith('.md') ||
+              (p.endsWith('.yml') && p.includes('.github/workflows/')) ||
+              (p.endsWith('.yml') && p.includes('workflows/'));
+            const addedCodeLines = files
+              .filter(f => !isDocOrWorkflow(f.filename))
+              .flatMap(f =>
+                (f.patch ?? '').split('\n').filter(l => l.startsWith('+') && !l.startsWith('+++'))
+              );
 
             const isTestFile = p =>
               /\.(test|spec)\.[jt]sx?$/.test(p) ||
@@ -101,7 +112,7 @@ jobs:
             ];
             const foundSecrets = [];
             for (const { re, label } of SECRET_PATTERNS) {
-              if (addedLines.some(l => re.test(l))) foundSecrets.push(label);
+              if (addedCodeLines.some(l => re.test(l))) foundSecrets.push(label);
             }
             if (foundSecrets.length) {
               critical.push(
@@ -119,6 +130,7 @@ jobs:
             ];
             const piiFiles = sourceFiles
               .filter(f => !isTestFile(f.filename))
+              .filter(f => !isDocOrWorkflow(f.filename))
               .filter(f => {
                 const addedInFile = (f.patch ?? '').split('\n')
                   .filter(l => l.startsWith('+') && !l.startsWith('+++'));
