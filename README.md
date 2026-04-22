@@ -41,6 +41,9 @@ that, `pull-standards.yml` keeps the repo in sync automatically.
 | `templates/pull-request/` | `.github/PULL_REQUEST_TEMPLATE/` | Default and hotfix PR templates |
 | `workflows/sync/pull-standards.yml` | `.github/workflows/` | Keeps standards in sync weekly |
 | `composed/<stack>.mcp.json` | `.vscode/mcp.json` | MCP server config for Copilot tools |
+
+
+00
 | `.github/prompts/implementation/` | `.github/prompts/implementation/` | Implementation prompts (governance, feature, bug, refactor, kickoff, tests, docs) |
 | `.github/prompts/review/` | `.github/prompts/review/` | Review and audit prompts |
 | `.github/prompts/scaffolds/` | `.github/prompts/scaffolds/` | Scaffold prompts (CRUD, auth, DB, frontend) |

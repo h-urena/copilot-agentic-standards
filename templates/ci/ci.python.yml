@@ -1,5 +1,8 @@
 # CI pipeline template for Python projects.
 # Copy to .github/workflows/ci.yml in your project.
+#
+# NOTE: The reusable workflow references below point to h-urena/copilot-agentic-standards.
+# If you have forked or mirrored the standards repo, update the org/repo in every `uses:` line.
 
 name: CI
 
