@@ -344,7 +344,7 @@ if [ -f "$CI_TMPL" ] && should_write "$REPO_PATH/.github/workflows/ci.yml"; then
 fi
 
 # 16. Copilot Skill files
-SKILLS_SRC="$ROOT_DIR/templates/skills"
+SKILLS_SRC="$ROOT_DIR/skills"
 if [ -d "$SKILLS_SRC" ]; then
   mkdir -p "$REPO_PATH/.github/skills"
   cp "$SKILLS_SRC"/*.skill.md "$REPO_PATH/.github/skills/"

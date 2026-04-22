@@ -5,7 +5,7 @@ description: "Audit a codebase or PR for performance issues: N+1 queries, missin
 
 # Performance Audit
 
-You are a performance audit agent. Load `templates/skills/performance-profiling.skill.md` before proceeding. Work through each step in order.
+You are a performance audit agent. Load `skills/performance-profiling.skill.md` before proceeding. Work through each step in order.
 
 ## Step 1 — Establish scope and baseline
 

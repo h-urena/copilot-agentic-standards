@@ -153,9 +153,9 @@ jobs:
           fi
 
           # Update Copilot Skill files (.github/skills/*.skill.md)
-          if [ -d "$TEMP_DIR/templates/skills" ]; then
+          if [ -d "$TEMP_DIR/skills" ]; then
             mkdir -p .github/skills
-            for skill in "$TEMP_DIR/templates/skills"/*.skill.md; do
+            for skill in "$TEMP_DIR/skills"/*.skill.md; do
               [ -f "$skill" ] || continue
               fname=$(basename "$skill")
               if ! diff -q ".github/skills/$fname" "$skill" > /dev/null 2>&1; then

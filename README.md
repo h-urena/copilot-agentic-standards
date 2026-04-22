@@ -58,7 +58,7 @@ that, `pull-standards.yml` keeps the repo in sync automatically.
 | `templates/docker/.dockerignore` | `.dockerignore` | Docker build exclusions |
 | `templates/docker/docker-compose.yml` | `docker-compose.yml` | Local development environment |
 | `templates/ci/ci.<stack>.yml` | `.github/workflows/ci.yml` | Stack-specific CI pipeline |
-| `templates/skills/*.skill.md` | `.github/skills/` | Copilot Skill files (test generation, code analysis, etc.) |
+| `skills/*.skill.md` | `.github/skills/` | Copilot Skill files (test generation, code analysis, etc.) |
 
 ### Multi-stack projects
 
@@ -134,11 +134,12 @@ subfolders: `implementation/`, `review/`, `scaffolds/`, and `personas/`.
 | `architect.prompt.md` | Adopt a Principal Architect perspective: system design, service decomposition, ADRs |
 | `product-manager.prompt.md` | Adopt a Product Manager perspective: PRDs, user stories, acceptance criteria |
 
-### Copilot Skill files — `.github/skills/`
+### Copilot Skill files — `skills/`
 
 Skill files give agents specialised domain knowledge for tasks like test generation, code analysis,
-API design review, performance profiling, and data migration. They are loaded by the agent before
-tackling the relevant task.
+API design review, performance profiling, and data migration. They live at the repo root in `skills/`
+because they are **complete, ready-to-use operational files** — agents load them directly, you
+never fill them in. They are distributed to downstream repos as `.github/skills/`.
 
 | Skill file | Purpose |
 |------------|---------|
@@ -192,14 +193,14 @@ workflows/
   examples/            Example caller workflow for consumer repos
   sync/                Workflow consumers run to pull updates from this repo
 templates/
-  pull-request/        PR templates (default, hotfix)
-  memory/              project-context.md — agent memory bootstrap
-  vscode/              Stack-specific extensions.json
-  docker/              Dockerfiles, .dockerignore, docker-compose.yml
-  ci/                  Stack-specific CI pipeline templates (ci, release, stale)
-  skills/              Copilot Skill files (test-generation, code-analysis, …)
+  pull-request/        PR templates (default, hotfix) — fill in per project
+  memory/              project-context.md — fill in during kickoff
+  vscode/              Stack-specific extensions.json — starting-point, customise as needed
+  docker/              Dockerfiles, .dockerignore, docker-compose.yml — starting-point
+  ci/                  CI pipeline templates (ci, release, stale) — starting-point
   labeler.yml          Path-based PR labeling config
   .editorconfig        Consistent editor formatting rules
+skills/                Copilot Skill files — operational, used as-is by agents
 mcp/                   MCP server configs (base + per-stack)
 scripts/               compose.sh, validate-composed.sh, onboard-repo.sh
 ```
