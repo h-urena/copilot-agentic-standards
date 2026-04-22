@@ -66,7 +66,9 @@ jobs:
             const needsHuman  = hasSecretIssue || hasPIIIssue;
             const needsAgent  = hasSensitivePath || hasTitleIssue;
 
-            core.info(`Criticals — title:${hasTitleIssue} secret:${hasSecretIssue} pii:${hasPIIIssue} sensitive:${hasSensitivePath}`);
+            core.info(
+              `Criticals — title:${hasTitleIssue} secret:${hasSecretIssue} pii:${hasPIIIssue} sensitive:${hasSensitivePath}`
+            );
 
             // ── 3. Auto-fix: PR title ─────────────────────────────────────────
             // Derive a conventional-commit title from the branch name.
