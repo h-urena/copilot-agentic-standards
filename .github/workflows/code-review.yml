@@ -1,4 +1,4 @@
-name: Automated Code Review
+name: Enforce Code Quality Standards on Every PR
 
 on:
   pull_request:
@@ -16,13 +16,13 @@ permissions:
 
 jobs:
   review:
-    name: Tiered Review
+    name: Post tiered review — criticals block merge, suggestions inform
     runs-on: ubuntu-latest
     # Skip automated bot PRs — Dependabot and alike don't need this review
     if: ${{ github.actor != 'dependabot[bot]' && !endsWith(github.actor, '[bot]') }}
 
     steps:
-      - name: Run tiered code review
+      - name: Evaluate PR diff and post structured tiered review
         uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

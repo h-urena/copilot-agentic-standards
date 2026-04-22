@@ -1,4 +1,4 @@
-name: Self-Heal Review
+name: Auto-Fix Resolvable PR Review Criticals
 
 # Triggered when github-actions[bot] posts a REQUEST_CHANGES review.
 # Attempts to auto-fix issues that can be resolved without a code change
@@ -11,6 +11,12 @@ on:
   pull_request_review:
     types: [submitted]
   workflow_call:
+    inputs:
+      pr-number:
+        description: "PR number to act on (required when called from another workflow)"
+        required: false
+        type: number
+        default: 0
 
 permissions:
   contents: write
@@ -18,7 +24,7 @@ permissions:
 
 jobs:
   self-heal:
-    name: Self-Heal
+    name: Fix PR title and post remediation checklist
     runs-on: ubuntu-latest
 
     # Only act on REQUEST_CHANGES from the bot — human reviews are left alone.
@@ -27,16 +33,23 @@ jobs:
       github.event.review.user.login == 'github-actions[bot]'
 
     steps:
-      - name: Parse review and apply fixes
+      - name: Auto-correct title and post agent-ready action checklist
         uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const owner    = context.repo.owner;
             const repo     = context.repo.repo;
-            const prNumber = context.payload.pull_request.number;
-            const reviewId = context.payload.review.id;
-            const reviewBody = context.payload.review.body ?? '';
+            const prNumber =
+              context.payload.pull_request?.number ??
+              ${{ inputs['pr-number'] || 0 }};
+            const reviewId  = context.payload.review?.id;
+            const reviewBody = context.payload.review?.body ?? '';
+
+            if (!prNumber) {
+              core.setFailed('Could not determine PR number.');
+              return;
+            }
 
             core.info(`Self-heal triggered for PR #${prNumber}, review #${reviewId}`);
 
@@ -67,7 +80,8 @@ jobs:
             const needsAgent  = hasSensitivePath || hasTitleIssue;
 
             core.info(
-              `Criticals — title:${hasTitleIssue} secret:${hasSecretIssue} pii:${hasPIIIssue} sensitive:${hasSensitivePath}`
+              `Criticals — title:${hasTitleIssue} secret:${hasSecretIssue} ` +
+              `pii:${hasPIIIssue} sensitive:${hasSensitivePath}`
             );
 
             // ── 3. Auto-fix: PR title ─────────────────────────────────────────
@@ -101,7 +115,7 @@ jobs:
             // ── 4. Dismiss the bot REQUEST_CHANGES review ────────────────────
             // Only dismiss if we're posting a follow-up (so the review thread
             // stays tidy). If we auto-fixed everything, dismiss unconditionally.
-            if (titleFixed && !hasSecretIssue && !hasPIIIssue && !hasSensitivePath) {
+            if (reviewId && titleFixed && !hasSecretIssue && !hasPIIIssue && !hasSensitivePath) {
               await github.rest.pulls.dismissReview({
                 owner, repo, pull_number: prNumber,
                 review_id: reviewId,

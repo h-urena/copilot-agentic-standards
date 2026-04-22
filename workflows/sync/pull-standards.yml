@@ -5,7 +5,7 @@
 #
 # Copy this file to your repo: .github/workflows/pull-standards.yml
 
-name: Pull Standards
+name: Sync Agentic Standards From Upstream on Schedule
 
 on:
   schedule:
@@ -23,15 +23,15 @@ env:
 
 jobs:
   sync:
-    name: Sync standards
+    name: Detect and apply upstream standards updates
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout consumer repo
+      - name: Checkout consumer repo at full depth for git operations
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Fetch latest standards
+      - name: Detect changed standards assets and copy to workspace
         run: |
           set -euo pipefail
 
@@ -202,7 +202,7 @@ jobs:
 
           echo "changed=$CHANGED" >> "$GITHUB_ENV"
 
-      - name: Create PR if changed
+      - name: Commit standards updates to dedicated sync branch
         if: env.changed == 'true'
         run: |
           set -euo pipefail
@@ -215,7 +215,7 @@ jobs:
           git commit -m "chore: update agentic standards from upstream"
           git push --force origin "$UPDATE_BRANCH"
 
-      - name: Open pull request
+      - name: Open PR to deliver standards updates (idempotent)
         if: env.changed == 'true'
         uses: actions/github-script@v9
         with:

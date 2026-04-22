@@ -6,7 +6,7 @@
 #   Copy to .github/workflows/stale.yml. Adjust days-before-stale and
 #   days-before-close to match your team's cadence.
 
-name: Stale
+name: Close Stale Issues and PRs After Inactivity
 
 on:
   schedule:

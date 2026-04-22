@@ -10,7 +10,7 @@
 # Usage in consumer repo:
 #   Copy to .github/workflows/release.yml and adjust the build/publish steps for your stack.
 
-name: Release
+name: Cut Versioned Release With Changelog on Merge to Main
 
 on:
   push:
@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   release:
-    name: Release
+    name: Create GitHub release and publish artifacts
     runs-on: ubuntu-latest
 
     steps:
@@ -39,15 +39,17 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install semantic-release
+      - name: Install and configure semantic-release
         run: |
+          # Pin exact versions for deterministic releases.
+          # Check npmjs.com/package/semantic-release for latest stable versions.
           npm install --no-save \
-            semantic-release \
-            @semantic-release/changelog \
-            @semantic-release/git \
-            @semantic-release/github \
-            @semantic-release/commit-analyzer \
-            @semantic-release/release-notes-generator
+            semantic-release@24 \
+            @semantic-release/changelog@6 \
+            @semantic-release/git@10 \
+            @semantic-release/github@10 \
+            @semantic-release/commit-analyzer@13 \
+            @semantic-release/release-notes-generator@14
 
       # ─── TypeScript: build before release ──────────────────────────────
       # Uncomment and adjust if this is a TypeScript project.
@@ -84,7 +86,7 @@ jobs:
       # - name: Build and pack
       #   run: dotnet pack -c Release -o ./nupkg
 
-      - name: Release
+      - name: Run semantic-release and publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
