@@ -156,7 +156,9 @@ jobs:
             }
 
             lines.push('---');
-            lines.push('*Posted by `self-heal.yml`. Push a new commit or fix the items above to re-trigger the review.*');
+            lines.push(
+              '*Posted by `self-heal.yml`. Push a new commit or fix the items above to re-trigger the review.*'
+            );
 
             await github.rest.issues.createComment({
               owner, repo, issue_number: prNumber,
