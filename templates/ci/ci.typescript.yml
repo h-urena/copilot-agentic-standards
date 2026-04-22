@@ -55,7 +55,7 @@ jobs:
 
   # ── Lint ──
   lint:
-    name: Lint & Type Check
+    name: Enforce code style and type safety
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,15 +67,15 @@ jobs:
 
       - run: npm ci
 
-      - name: ESLint
+      - name: Enforce zero ESLint warnings
         run: npx eslint . --max-warnings 0
 
-      - name: Type check
+      - name: Enforce TypeScript type safety
         run: npx tsc --noEmit
 
   # ── Unit tests ──
   test-unit:
-    name: Unit Tests
+    name: Unit tests pass
     runs-on: ubuntu-latest
     needs: lint
     steps:
@@ -88,10 +88,10 @@ jobs:
 
       - run: npm ci
 
-      - name: Run unit tests
+      - name: Run unit tests with coverage
         run: npx vitest run --coverage
 
-      - name: Upload coverage
+      - name: Persist coverage report
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -100,7 +100,7 @@ jobs:
 
   # ── Integration tests ──
   test-integration:
-    name: Integration Tests
+    name: Integration tests pass
     runs-on: ubuntu-latest
     needs: lint
     steps:
@@ -113,12 +113,12 @@ jobs:
 
       - run: npm ci
 
-      - name: Run integration tests
+      - name: Run integration test suite
         run: npx vitest run --config vitest.integration.config.ts
 
   # ── Build ──
   build:
-    name: Build
+    name: Application compiles and packages
     runs-on: ubuntu-latest
     needs: [test-unit, test-integration]
     steps:
@@ -131,10 +131,10 @@ jobs:
 
       - run: npm ci
 
-      - name: Build
+      - name: Compile and bundle
         run: npm run build
 
-      - name: Upload build artifact
+      - name: Persist build artifact
         uses: actions/upload-artifact@v4
         with:
           name: dist

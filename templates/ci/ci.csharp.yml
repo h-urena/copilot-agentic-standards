@@ -55,7 +55,7 @@ jobs:
 
   # ── Build & Lint ──
   build:
-    name: Build
+    name: Application compiles with zero warnings
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,15 +64,15 @@ jobs:
         with:
           dotnet-version: "9.0.x"
 
-      - name: Restore
+      - name: Restore NuGet packages
         run: dotnet restore
 
-      - name: Build (warnings as errors)
+      - name: Compile with zero-warning policy
         run: dotnet build --no-restore -warnaserror
 
   # ── Unit tests ──
   test-unit:
-    name: Unit Tests
+    name: Unit tests pass
     runs-on: ubuntu-latest
     needs: build
     steps:
@@ -82,17 +82,17 @@ jobs:
         with:
           dotnet-version: "9.0.x"
 
-      - name: Restore
+      - name: Restore NuGet packages
         run: dotnet restore
 
-      - name: Run unit tests
+      - name: Run unit tests with coverage
         run: >
           dotnet test --no-restore
           --filter "Category!=Integration"
           --collect:"XPlat Code Coverage"
           --results-directory ./coverage
 
-      - name: Upload coverage
+      - name: Persist coverage report
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -101,7 +101,7 @@ jobs:
 
   # ── Integration tests ──
   test-integration:
-    name: Integration Tests
+    name: Integration tests pass
     runs-on: ubuntu-latest
     needs: build
     steps:
@@ -111,15 +111,15 @@ jobs:
         with:
           dotnet-version: "9.0.x"
 
-      - name: Restore
+      - name: Restore NuGet packages
         run: dotnet restore
 
-      - name: Run integration tests
+      - name: Run integration test suite
         run: dotnet test --no-restore --filter "Category=Integration"
 
   # ── Publish ──
   publish:
-    name: Publish
+    name: Release artifact published
     runs-on: ubuntu-latest
     needs: [test-unit, test-integration]
     steps:
@@ -129,10 +129,10 @@ jobs:
         with:
           dotnet-version: "9.0.x"
 
-      - name: Publish
+      - name: Publish release build
         run: dotnet publish src/Api/Api.csproj -c Release -o publish
 
-      - name: Upload artifact
+      - name: Persist publish artifact
         uses: actions/upload-artifact@v4
         with:
           name: publish

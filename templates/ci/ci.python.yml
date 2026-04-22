@@ -55,52 +55,52 @@ jobs:
 
   # ── Lint & Type Check ──
   lint:
-    name: Lint & Type Check
+    name: Enforce code style and type safety
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install uv
+      - name: Set up uv package manager
         uses: astral-sh/setup-uv@v4
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
+      - name: Install locked dependencies
         run: uv sync --frozen
 
-      - name: Ruff lint
+      - name: Enforce Ruff code style
         run: uv run ruff check .
 
-      - name: Ruff format check
+      - name: Enforce Ruff formatting
         run: uv run ruff format --check .
 
-      - name: mypy
+      - name: Enforce strict mypy type checking
         run: uv run mypy --strict .
 
   # ── Unit tests ──
   test-unit:
-    name: Unit Tests
+    name: Unit tests pass
     runs-on: ubuntu-latest
     needs: lint
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install uv
+      - name: Set up uv package manager
         uses: astral-sh/setup-uv@v4
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
+      - name: Install locked dependencies
         run: uv sync --frozen
 
-      - name: Run unit tests
+      - name: Run unit tests with coverage
         run: uv run pytest tests/unit -v --cov --cov-report=xml
 
-      - name: Upload coverage
+      - name: Persist coverage report
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -109,44 +109,44 @@ jobs:
 
   # ── Integration tests ──
   test-integration:
-    name: Integration Tests
+    name: Integration tests pass
     runs-on: ubuntu-latest
     needs: lint
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install uv
+      - name: Set up uv package manager
         uses: astral-sh/setup-uv@v4
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
+      - name: Install locked dependencies
         run: uv sync --frozen
 
-      - name: Run integration tests
+      - name: Run integration test suite
         run: uv run pytest tests/integration -v
 
   # ── Build ──
   build:
-    name: Build
+    name: Application compiles and packages
     runs-on: ubuntu-latest
     needs: [test-unit, test-integration]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install uv
+      - name: Set up uv package manager
         uses: astral-sh/setup-uv@v4
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Build package
+      - name: Build distributable package
         run: uv build
 
-      - name: Upload build artifact
+      - name: Persist build artifact
         uses: actions/upload-artifact@v4
         with:
           name: dist
