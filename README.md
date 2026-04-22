@@ -41,12 +41,37 @@ that, `pull-standards.yml` keeps the repo in sync automatically.
 | `templates/pull-request/` | `.github/PULL_REQUEST_TEMPLATE/` | Default and hotfix PR templates |
 | `workflows/sync/pull-standards.yml` | `.github/workflows/` | Keeps standards in sync weekly |
 | `composed/<stack>.mcp.json` | `.vscode/mcp.json` | MCP server config for Copilot tools |
-| `.github/prompts/` | `.github/prompts/` | Workflow agent prompts (governance, implement-feature, fix-bug, write-tests, audit) |
-| `.github/prompts/personas/` | `.github/prompts/personas/` | Persona prompts (DevOps Engineer, Principal Engineer, QA Engineer) |
+
+
+00
+| `.github/prompts/implementation/` | `.github/prompts/implementation/` | Implementation prompts (governance, feature, bug, refactor, kickoff, tests, docs) |
+| `.github/prompts/review/` | `.github/prompts/review/` | Review and audit prompts |
+| `.github/prompts/scaffolds/` | `.github/prompts/scaffolds/` | Scaffold prompts (CRUD, auth, DB, frontend) |
+| `.github/prompts/personas/` | `.github/prompts/personas/` | Persona prompts (DevOps, Principal, QA) |
 | `.github/CODEOWNERS` | `.github/CODEOWNERS` | Auto-generated from git remote owner |
 | `templates/dependabot.<stack>.yml` | `.github/dependabot.yml` | Stack-appropriate Dependabot config |
 | `templates/vscode/extensions.<stack>.json` | `.vscode/extensions.json` | Recommended VS Code extensions |
 | `templates/memory/project-context.md` | `.github/project-context.md` | Agent memory bootstrap template |
+| `templates/.editorconfig` | `.editorconfig` | Consistent formatting across editors |
+| `templates/labeler.yml` | `.github/labeler.yml` | Path-based PR labeling config |
+| `templates/docker/Dockerfile.<stack>` | `Dockerfile` | Multi-stage Docker build template |
+| `templates/docker/.dockerignore` | `.dockerignore` | Docker build exclusions |
+| `templates/docker/docker-compose.yml` | `docker-compose.yml` | Local development environment |
+| `templates/ci/ci.<stack>.yml` | `.github/workflows/ci.yml` | Stack-specific CI pipeline |
+
+### Multi-stack projects
+
+For projects combining stacks (e.g., TypeScript frontend + Python API), use the `+` separator:
+
+```bash
+./scripts/compose.sh typescript+python
+./scripts/onboard-repo.sh --repo ../my-project --stack typescript+python
+```
+
+This produces:
+- `composed/python+typescript-copilot-instructions.md` — base + both stack instructions
+- `composed/python+typescript.mcp.json` — merged MCP config from all stacks
+- Code review checklists for all included stacks
 
 ### Keep standards in sync
 
@@ -60,9 +85,10 @@ cp workflows/sync/pull-standards.yml ../my-project/.github/workflows/pull-standa
 ### Agent prompts
 
 All prompts in `.github/prompts/` are distributed to downstream repos and invocable from VS Code
-Copilot Chat with `#<prompt-name>` or via the Copilot agent mode.
+Copilot Chat with `#<prompt-name>` or via the Copilot agent mode. Prompts are organised into four
+subfolders: `implementation/`, `review/`, `scaffolds/`, and `personas/`.
 
-**Workflow prompts** (`.github/prompts/`)
+**Implementation prompts** (`.github/prompts/implementation/`)
 
 | Prompt | Purpose |
 |--------|---------|
@@ -70,7 +96,25 @@ Copilot Chat with `#<prompt-name>` or via the Copilot agent mode.
 | `implement-feature.prompt.md` | End-to-end feature implementation: design, code, tests, PR |
 | `fix-bug.prompt.md` | Systematic bug fix: reproduce → root cause → targeted fix → regression test |
 | `write-tests.prompt.md` | Write comprehensive test suites for existing code |
+| `project-kickoff.prompt.md` | Bootstrap a new project: scaffold structure, tooling, CI, Docker |
+| `refactor.prompt.md` | Systematic refactoring: preserve behaviour, incremental changes, no regressions |
+| `write-docs.prompt.md` | Generate/update documentation: README, API docs, ADRs, changelogs |
+
+**Review prompts** (`.github/prompts/review/`)
+
+| Prompt | Purpose |
+|--------|---------|
 | `audit.prompt.md` | Standards audit: validate a branch diff against all project rules |
+| `security-audit.prompt.md` | OWASP-focused security audit: secrets, auth, injection, dependencies |
+
+**Scaffold prompts** (`.github/prompts/scaffolds/`)
+
+| Prompt | Purpose |
+|--------|---------|
+| `crud-api.prompt.md` | Scaffold a CRUD API: routes, models, validation, service layer, tests |
+| `auth.prompt.md` | Wire auth: identity provider, middleware, route protection, audit logging |
+| `database.prompt.md` | Set up database: connection, ORM, migrations, seeding, health check |
+| `frontend.prompt.md` | Scaffold frontend component: structure, a11y, state, forms, tests |
 
 **Persona prompts** (`.github/prompts/personas/`)
 
@@ -99,7 +143,7 @@ the codebase each session.
 ## For maintainers of this repo
 
 > Before making any change, follow the full governance workflow in
-> `.github/prompts/governance.prompt.md`. Never push directly to `main`.
+> `.github/prompts/implementation/governance.prompt.md`. Never push directly to `main`.
 
 ### Repo structure
 
@@ -111,7 +155,10 @@ instructions/          Copilot instruction files (base + per-stack)
 composed/              Auto-generated by scripts/compose.sh — never edit directly
 .github/
   workflows/           Active GitHub Actions (pr-description, code-review, merge-rules, …)
-  prompts/             Workflow agent prompts distributed to downstream repos
+  prompts/
+    implementation/    Implementation prompts (governance, implement-feature, fix-bug, …)
+    review/            Review and audit prompts (audit, security-audit)
+    scaffolds/         Scaffold prompts (crud-api, auth, database, frontend)
     personas/          Persona prompts (DevOps, Principal Engineer, QA)
 workflows/
   reusable/            Documentation-only mirrors of .github/workflows/ reusable files
@@ -121,6 +168,10 @@ templates/
   pull-request/        PR templates (default, hotfix)
   memory/              project-context.md — agent memory bootstrap
   vscode/              Stack-specific extensions.json
+  docker/              Dockerfiles, .dockerignore, docker-compose.yml
+  ci/                  Stack-specific CI pipeline templates
+  labeler.yml          Path-based PR labeling config
+  .editorconfig        Consistent editor formatting rules
 mcp/                   MCP server configs (base + per-stack)
 scripts/               compose.sh, validate-composed.sh, onboard-repo.sh
 ```
@@ -131,10 +182,11 @@ scripts/               compose.sh, validate-composed.sh, onboard-repo.sh
 file in `composed/`.
 
 ```bash
-./scripts/compose.sh typescript   # → composed/typescript-copilot-instructions.md
-./scripts/compose.sh python       # → composed/python-copilot-instructions.md
-./scripts/compose.sh csharp       # → composed/csharp-copilot-instructions.md
-./scripts/compose.sh all          # → all three composed files
+./scripts/compose.sh typescript          # → composed/typescript-copilot-instructions.md
+./scripts/compose.sh python              # → composed/python-copilot-instructions.md
+./scripts/compose.sh csharp             # → composed/csharp-copilot-instructions.md
+./scripts/compose.sh typescript+python  # → composed/python+typescript-copilot-instructions.md
+./scripts/compose.sh all                 # → all individual stack composed files
 ```
 
 CI runs `scripts/validate-composed.sh` on every PR to ensure composed files are never stale.

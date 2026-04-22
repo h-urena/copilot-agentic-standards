@@ -4,6 +4,7 @@
 # Usage:
 #   ./scripts/onboard-repo.sh --repo ../my-project --stack typescript
 #   ./scripts/onboard-repo.sh --repo /path/to/repo --stack python
+#   ./scripts/onboard-repo.sh --repo /path/to/repo --stack typescript+python  (multi-stack)
 #
 # What it does:
 #   1. Copies the composed copilot-instructions.md to .github/
@@ -12,13 +13,19 @@
 #   4. Copies PR templates to .github/PULL_REQUEST_TEMPLATE/
 #   5. Copies the pull-standards sync workflow to .github/workflows/
 #   6. Copies the composed MCP config to .vscode/mcp.json (base + stack merged)
-#   7. Copies .github/prompts/ (workflow agent prompts: governance, features, bugs, tests, audit)
-#  7a. Copies .github/prompts/personas/ (persona prompts: devops, principal engineer, QA)
+#  7. Copies .github/prompts/implementation/ (implementation agent prompts)
+#  7a. Copies .github/prompts/review/ (review and audit prompts)
+#  7b. Copies .github/prompts/scaffolds/ (scaffold prompts)
+#  7c. Copies .github/prompts/personas/ (persona prompts)
 #   8. Writes .github/CODEOWNERS with the detected repo owner
 #   9. Copies stack-specific dependabot.yml template (idempotent)
 #  10. Copies .vscode/extensions.json with stack-specific extension recommendations
 #  11. Copies templates/memory/project-context.md to .github/project-context.md
-#  12. Prints branch protection setup instructions
+#  12. Copies .editorconfig to repo root
+#  13. Copies labeler.yml to .github/labeler.yml
+#  14. Copies Docker templates (Dockerfile, .dockerignore, docker-compose.yml)
+#  15. Copies stack-specific CI pipeline template
+#  16. Prints branch protection setup instructions
 
 set -euo pipefail
 
@@ -67,6 +74,18 @@ if [ ! -d "$REPO_PATH" ]; then
 fi
 
 COMPOSED_FILE="$ROOT_DIR/composed/${STACK}-copilot-instructions.md"
+# For multi-stack, the composed filename uses sorted stacks joined by '+'
+if [[ "$STACK" == *"+"* ]]; then
+  IFS='+' read -ra STACK_PARTS <<< "$STACK"
+  SORTED_STACK="$(printf '%s\n' "${STACK_PARTS[@]}" | sort | paste -sd '+' -)"
+  COMPOSED_FILE="$ROOT_DIR/composed/${SORTED_STACK}-copilot-instructions.md"
+  PRIMARY_STACK="${STACK_PARTS[0]}"
+else
+  SORTED_STACK="$STACK"
+  STACK_PARTS=("$STACK")
+  PRIMARY_STACK="$STACK"
+fi
+
 if [ ! -f "$COMPOSED_FILE" ]; then
   echo "Error: Composed file not found for stack '$STACK'."
   echo "Run './scripts/compose.sh $STACK' first."
@@ -88,11 +107,13 @@ if [ -f "$ROOT_DIR/instructions/code-review.instructions.md" ]; then
   echo "  ✓ .github/code-review.instructions.md"
 fi
 
-STACK_REVIEW="$ROOT_DIR/instructions/code-review-${STACK}.instructions.md"
-if [ -f "$STACK_REVIEW" ]; then
-  cp "$STACK_REVIEW" "$REPO_PATH/.github/code-review-${STACK}.instructions.md"
-  echo "  ✓ .github/code-review-${STACK}.instructions.md"
-fi
+for s in "${STACK_PARTS[@]}"; do
+  STACK_REVIEW="$ROOT_DIR/instructions/code-review-${s}.instructions.md"
+  if [ -f "$STACK_REVIEW" ]; then
+    cp "$STACK_REVIEW" "$REPO_PATH/.github/code-review-${s}.instructions.md"
+    echo "  ✓ .github/code-review-${s}.instructions.md"
+  fi
+done
 
 # 3. Domain instruction files (glob-discovered; code-review files handled separately above)
 for src in "$ROOT_DIR/instructions/"*.instructions.md; do
@@ -119,8 +140,8 @@ cp "$ROOT_DIR/workflows/sync/pull-standards.yml" "$REPO_PATH/.github/workflows/p
 echo "  ✓ .github/workflows/pull-standards.yml"
 
 # 6. MCP config (use pre-composed merged file if available, else merge on-the-fly, else copy stack file)
-COMPOSED_MCP="$ROOT_DIR/composed/${STACK}.mcp.json"
-MCP_FILE="$ROOT_DIR/mcp/${STACK}.mcp.json"
+COMPOSED_MCP="$ROOT_DIR/composed/${SORTED_STACK}.mcp.json"
+MCP_FILE="$ROOT_DIR/mcp/${PRIMARY_STACK}.mcp.json"
 BASE_MCP="$ROOT_DIR/mcp/base.mcp.json"
 
 if [ -f "$COMPOSED_MCP" ]; then
@@ -138,15 +159,31 @@ elif [ -f "$MCP_FILE" ]; then
   fi
 fi
 
-# 7. Agent prompts (governance, features, bugs, tests, audit)
-PROMPTS_SRC="$ROOT_DIR/.github/prompts"
-if [ -d "$PROMPTS_SRC" ]; then
-  mkdir -p "$REPO_PATH/.github/prompts"
-  cp "$PROMPTS_SRC"/*.prompt.md "$REPO_PATH/.github/prompts/"
-  echo "  ✓ .github/prompts/ (workflow agent prompts)"
+# 7. Implementation prompts
+IMPL_PROMPTS_SRC="$ROOT_DIR/.github/prompts/implementation"
+if [ -d "$IMPL_PROMPTS_SRC" ]; then
+  mkdir -p "$REPO_PATH/.github/prompts/implementation"
+  cp "$IMPL_PROMPTS_SRC"/*.prompt.md "$REPO_PATH/.github/prompts/implementation/"
+  echo "  ✓ .github/prompts/implementation/ (implementation prompts)"
 fi
 
-# 7a. Persona prompts (devops, principal engineer, QA, etc.)
+# 7a. Review prompts
+REVIEW_PROMPTS_SRC="$ROOT_DIR/.github/prompts/review"
+if [ -d "$REVIEW_PROMPTS_SRC" ]; then
+  mkdir -p "$REPO_PATH/.github/prompts/review"
+  cp "$REVIEW_PROMPTS_SRC"/*.prompt.md "$REPO_PATH/.github/prompts/review/"
+  echo "  ✓ .github/prompts/review/ (review and audit prompts)"
+fi
+
+# 7b. Scaffold prompts
+SCAFFOLDS_PROMPTS_SRC="$ROOT_DIR/.github/prompts/scaffolds"
+if [ -d "$SCAFFOLDS_PROMPTS_SRC" ]; then
+  mkdir -p "$REPO_PATH/.github/prompts/scaffolds"
+  cp "$SCAFFOLDS_PROMPTS_SRC"/*.prompt.md "$REPO_PATH/.github/prompts/scaffolds/"
+  echo "  ✓ .github/prompts/scaffolds/ (scaffold prompts)"
+fi
+
+# 7c. Persona prompts
 PERSONAS_SRC="$ROOT_DIR/.github/prompts/personas"
 if [ -d "$PERSONAS_SRC" ]; then
   mkdir -p "$REPO_PATH/.github/prompts/personas"
@@ -174,13 +211,13 @@ else
 fi
 
 # 9. Dependabot config — use stack-specific template if available, fall back to base (idempotent)
-DEPENDABOT_STACK_TMPL="$ROOT_DIR/templates/dependabot.${STACK}.yml"
+DEPENDABOT_STACK_TMPL="$ROOT_DIR/templates/dependabot.${PRIMARY_STACK}.yml"
 DEPENDABOT_BASE_TMPL="$ROOT_DIR/templates/dependabot.yml"
 if [ ! -f "$REPO_PATH/.github/dependabot.yml" ]; then
   mkdir -p "$REPO_PATH/.github"
   if [ -f "$DEPENDABOT_STACK_TMPL" ]; then
     cp "$DEPENDABOT_STACK_TMPL" "$REPO_PATH/.github/dependabot.yml"
-    echo "  ✓ .github/dependabot.yml (${STACK} template — github-actions + ${STACK} ecosystem)"
+    echo "  ✓ .github/dependabot.yml (${PRIMARY_STACK} template — github-actions + ${PRIMARY_STACK} ecosystem)"
   elif [ -f "$DEPENDABOT_BASE_TMPL" ]; then
     cp "$DEPENDABOT_BASE_TMPL" "$REPO_PATH/.github/dependabot.yml"
     echo "  ✓ .github/dependabot.yml (base template — uncomment stack ecosystem manually)"
@@ -188,13 +225,13 @@ if [ ! -f "$REPO_PATH/.github/dependabot.yml" ]; then
 fi
 
 # 10. VS Code extension recommendations
-EXT_TMPL="$ROOT_DIR/templates/vscode/extensions.${STACK}.json"
+EXT_TMPL="$ROOT_DIR/templates/vscode/extensions.${PRIMARY_STACK}.json"
 if [ -f "$EXT_TMPL" ]; then
   mkdir -p "$REPO_PATH/.vscode"
   # Only write if .vscode/extensions.json doesn't already exist (idempotent)
   if [ ! -f "$REPO_PATH/.vscode/extensions.json" ]; then
     cp "$EXT_TMPL" "$REPO_PATH/.vscode/extensions.json"
-    echo "  ✓ .vscode/extensions.json (${STACK} recommendations)"
+    echo "  ✓ .vscode/extensions.json (${PRIMARY_STACK} recommendations)"
   fi
 fi
 
@@ -205,10 +242,48 @@ if [ -f "$MEMORY_TMPL" ] && [ ! -f "$REPO_PATH/.github/project-context.md" ]; th
   echo "  ✓ .github/project-context.md (memory bootstrap — fill in project details)"
 fi
 
+# 12. EditorConfig
+EDITORCONFIG_TMPL="$ROOT_DIR/templates/.editorconfig"
+if [ -f "$EDITORCONFIG_TMPL" ] && [ ! -f "$REPO_PATH/.editorconfig" ]; then
+  cp "$EDITORCONFIG_TMPL" "$REPO_PATH/.editorconfig"
+  echo "  ✓ .editorconfig"
+fi
+
+# 13. Labeler config (used by pr-automation workflow)
+LABELER_TMPL="$ROOT_DIR/templates/labeler.yml"
+if [ -f "$LABELER_TMPL" ] && [ ! -f "$REPO_PATH/.github/labeler.yml" ]; then
+  cp "$LABELER_TMPL" "$REPO_PATH/.github/labeler.yml"
+  echo "  ✓ .github/labeler.yml"
+fi
+
+# 14. Docker templates (Dockerfile, .dockerignore, docker-compose.yml)
+DOCKER_TMPL_DIR="$ROOT_DIR/templates/docker"
+DOCKERFILE_TMPL="$DOCKER_TMPL_DIR/Dockerfile.${PRIMARY_STACK}"
+if [ -f "$DOCKERFILE_TMPL" ] && [ ! -f "$REPO_PATH/Dockerfile" ]; then
+  cp "$DOCKERFILE_TMPL" "$REPO_PATH/Dockerfile"
+  echo "  ✓ Dockerfile (${PRIMARY_STACK} template)"
+fi
+if [ -f "$DOCKER_TMPL_DIR/.dockerignore" ] && [ ! -f "$REPO_PATH/.dockerignore" ]; then
+  cp "$DOCKER_TMPL_DIR/.dockerignore" "$REPO_PATH/.dockerignore"
+  echo "  ✓ .dockerignore"
+fi
+if [ -f "$DOCKER_TMPL_DIR/docker-compose.yml" ] && [ ! -f "$REPO_PATH/docker-compose.yml" ]; then
+  cp "$DOCKER_TMPL_DIR/docker-compose.yml" "$REPO_PATH/docker-compose.yml"
+  echo "  ✓ docker-compose.yml (development template)"
+fi
+
+# 15. CI pipeline template
+CI_TMPL="$ROOT_DIR/templates/ci/ci.${PRIMARY_STACK}.yml"
+if [ -f "$CI_TMPL" ] && [ ! -f "$REPO_PATH/.github/workflows/ci.yml" ]; then
+  mkdir -p "$REPO_PATH/.github/workflows"
+  cp "$CI_TMPL" "$REPO_PATH/.github/workflows/ci.yml"
+  echo "  ✓ .github/workflows/ci.yml (${PRIMARY_STACK} pipeline)"
+fi
+
 echo ""
 echo "Done! Review the changes and commit them:"
 echo "  cd $REPO_PATH"
-echo "  git add -A && git commit -m 'chore: onboard agentic standards ($STACK)'"
+echo "  git add -A && git commit -m 'chore: onboard agentic standards ($SORTED_STACK)'"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "POST-ONBOARDING: Enable branch protection on the default branch"

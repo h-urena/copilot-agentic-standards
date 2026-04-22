@@ -100,14 +100,40 @@ jobs:
             fi
           fi
 
-          # Update agent prompts (.github/prompts/*.prompt.md)
-          if [ -d "$TEMP_DIR/.github/prompts" ]; then
-            mkdir -p .github/prompts
-            for prompt in "$TEMP_DIR/.github/prompts"/*.prompt.md; do
+          # Update implementation prompts (.github/prompts/implementation/*.prompt.md)
+          if [ -d "$TEMP_DIR/.github/prompts/implementation" ]; then
+            mkdir -p .github/prompts/implementation
+            for prompt in "$TEMP_DIR/.github/prompts/implementation"/*.prompt.md; do
               [ -f "$prompt" ] || continue
               fname=$(basename "$prompt")
-              if ! diff -q ".github/prompts/$fname" "$prompt" > /dev/null 2>&1; then
-                cp "$prompt" ".github/prompts/$fname"
+              if ! diff -q ".github/prompts/implementation/$fname" "$prompt" > /dev/null 2>&1; then
+                cp "$prompt" ".github/prompts/implementation/$fname"
+                CHANGED=true
+              fi
+            done
+          fi
+
+          # Update review prompts (.github/prompts/review/*.prompt.md)
+          if [ -d "$TEMP_DIR/.github/prompts/review" ]; then
+            mkdir -p .github/prompts/review
+            for prompt in "$TEMP_DIR/.github/prompts/review"/*.prompt.md; do
+              [ -f "$prompt" ] || continue
+              fname=$(basename "$prompt")
+              if ! diff -q ".github/prompts/review/$fname" "$prompt" > /dev/null 2>&1; then
+                cp "$prompt" ".github/prompts/review/$fname"
+                CHANGED=true
+              fi
+            done
+          fi
+
+          # Update scaffold prompts (.github/prompts/scaffolds/*.prompt.md)
+          if [ -d "$TEMP_DIR/.github/prompts/scaffolds" ]; then
+            mkdir -p .github/prompts/scaffolds
+            for prompt in "$TEMP_DIR/.github/prompts/scaffolds"/*.prompt.md; do
+              [ -f "$prompt" ] || continue
+              fname=$(basename "$prompt")
+              if ! diff -q ".github/prompts/scaffolds/$fname" "$prompt" > /dev/null 2>&1; then
+                cp "$prompt" ".github/prompts/scaffolds/$fname"
                 CHANGED=true
               fi
             done

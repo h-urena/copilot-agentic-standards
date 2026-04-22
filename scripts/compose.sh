@@ -3,8 +3,9 @@
 # into composed/<stack>-copilot-instructions.md
 #
 # Usage:
-#   ./scripts/compose.sh typescript
-#   ./scripts/compose.sh all
+#   ./scripts/compose.sh typescript          # single stack
+#   ./scripts/compose.sh typescript+python   # multi-stack (combined output)
+#   ./scripts/compose.sh all                 # all individual stacks
 
 set -euo pipefail
 
@@ -74,10 +75,63 @@ compose_mcp() {
   echo "  ✓ composed/${stack}.mcp.json"
 }
 
+compose_multi_stack() {
+  local combo="$1"
+  IFS='+' read -ra stacks <<< "$combo"
+  local sorted_name
+  sorted_name="$(printf '%s\n' "${stacks[@]}" | sort | paste -sd '+' -)"
+  local output_file="$COMPOSED_DIR/${sorted_name}-copilot-instructions.md"
+
+  # Validate all stacks exist
+  for stack in "${stacks[@]}"; do
+    if [ ! -f "$STACKS_DIR/${stack}.md" ]; then
+      echo "Error: Stack file not found: $STACKS_DIR/${stack}.md" >&2
+      return 1
+    fi
+  done
+
+  mkdir -p "$COMPOSED_DIR"
+
+  cat > "$output_file" <<EOF
+<!-- AUTO-GENERATED — do not edit. Regenerate with: ./scripts/compose.sh ${combo} -->
+<!-- Source: instructions/base.md + ${stacks[*]/#/instructions/stacks/} -->
+<!-- Stacks: ${stacks[*]} -->
+
+EOF
+
+  {
+    cat "$INSTRUCTIONS_DIR/base.md"
+    for stack in "${stacks[@]}"; do
+      echo ""
+      echo "---"
+      echo ""
+      cat "$STACKS_DIR/${stack}.md"
+    done
+  } >> "$output_file"
+
+  echo "  ✓ composed/${sorted_name}-copilot-instructions.md"
+
+  # Compose MCP: deep-merge base + all stack MCP configs
+  if command -v jq > /dev/null 2>&1; then
+    local mcp_output="$COMPOSED_DIR/${sorted_name}.mcp.json"
+    local mcp_inputs=("$MCP_DIR/base.mcp.json")
+    for stack in "${stacks[@]}"; do
+      if [ -f "$MCP_DIR/${stack}.mcp.json" ]; then
+        mcp_inputs+=("$MCP_DIR/${stack}.mcp.json")
+      fi
+    done
+    if [ "${#mcp_inputs[@]}" -gt 1 ]; then
+      jq -s 'reduce .[] as $item ({}; .servers = (.servers // {} | . * ($item.servers // {}))) | {servers}' "${mcp_inputs[@]}" > "$mcp_output"
+      echo "  ✓ composed/${sorted_name}.mcp.json"
+    fi
+  fi
+}
+
 if [ $# -eq 0 ]; then
-  echo "Usage: $0 <stack|all>"
+  echo "Usage: $0 <stack|stack1+stack2|all>"
   echo ""
   echo "Available stacks: ${AVAILABLE_STACKS[*]}"
+  echo "Multi-stack: combine with '+' (e.g., typescript+python)"
   exit 1
 fi
 
@@ -89,6 +143,10 @@ if [ "$TARGET" = "all" ]; then
     compose_stack "$stack"
     compose_mcp "$stack"
   done
+  echo "Done."
+elif [[ "$TARGET" == *"+"* ]]; then
+  echo "Composing multi-stack: $TARGET..."
+  compose_multi_stack "$TARGET"
   echo "Done."
 else
   compose_stack "$TARGET"
