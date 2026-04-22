@@ -17,6 +17,13 @@
         "@modelcontextprotocol/server-memory@2026.1.26"
       ]
     },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking@2025.5.2"
+      ]
+    },
     "python": {
       "command": "uvx",
       "args": [
