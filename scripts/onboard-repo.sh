@@ -198,10 +198,18 @@ for tmpl in "$ROOT_DIR"/templates/pull-request/*.md; do
   echo "  ✓ .github/PULL_REQUEST_TEMPLATE/$(basename "$tmpl")"
 done
 
-# 5. Sync workflow + pr-description workflow
+# 5. Sync workflow + pr-description workflow + self-heal workflow
 mkdir -p "$REPO_PATH/.github/workflows"
 cp "$ROOT_DIR/workflows/sync/pull-standards.yml" "$REPO_PATH/.github/workflows/pull-standards.yml"
 echo "  ✓ .github/workflows/pull-standards.yml"
+
+for wf in pr-description.yml self-heal.yml; do
+  WF_SRC="$ROOT_DIR/.github/workflows/$wf"
+  if [ -f "$WF_SRC" ]; then
+    cp "$WF_SRC" "$REPO_PATH/.github/workflows/$wf"
+    echo "  ✓ .github/workflows/$wf"
+  fi
+done
 
 # 6. MCP config (use pre-composed merged file if available, else merge on-the-fly, else copy stack file)
 COMPOSED_MCP="$ROOT_DIR/composed/${SORTED_STACK}.mcp.json"

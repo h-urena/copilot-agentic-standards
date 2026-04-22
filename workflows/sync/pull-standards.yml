@@ -175,6 +175,16 @@ jobs:
             fi
           fi
 
+          # Update self-heal workflow if present in this repo
+          SELF_HEAL_SRC="$TEMP_DIR/.github/workflows/self-heal.yml"
+          if [ -f "$SELF_HEAL_SRC" ]; then
+            mkdir -p .github/workflows
+            if ! diff -q ".github/workflows/self-heal.yml" "$SELF_HEAL_SRC" > /dev/null 2>&1; then
+              cp "$SELF_HEAL_SRC" .github/workflows/self-heal.yml
+              CHANGED=true
+            fi
+          fi
+
           # Update domain instruction files (.github/*.instructions.md),
           # skipping code-review files already handled above
           for instr_file in "$TEMP_DIR/instructions/"*.instructions.md; do

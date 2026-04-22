@@ -234,12 +234,13 @@ CI runs `scripts/validate-composed.sh` on every PR to ensure composed files are 
 |----------|----------|------|---------|
 | `pr-description.yml` | `.github/workflows/` | Reusable | Auto-fills PR body from commit messages on open/sync |
 | `code-review.yml` | `.github/workflows/` | Reusable | Tiered automated code review (critical + suggestions) |
+| `self-heal.yml` | `.github/workflows/` | Reusable | Auto-fixes bot REQUEST_CHANGES reviews; posts agent-ready checklist for code issues |
 | `merge-rules.yml` | `.github/workflows/` | Reusable | Squash enforcement, commitlint, branch naming |
 | `pr-automation.yml` | `.github/workflows/` | Reusable | Auto-assign, label, welcome comment |
 | `project-automation.yml` | `.github/workflows/` | Internal | GitHub Project board lifecycle automation |
 | `validate.yml` | `.github/workflows/` | Internal | CI — validates composed files are not stale |
 | `example-ci.yml` | `workflows/examples/` | Example | Shows how a consumer repo calls reusable workflows |
-| `pull-standards.yml` | `workflows/sync/` | Sync | Consumer-side weekly sync — updates instructions, prompts, personas, and `pr-description.yml` |
+| `pull-standards.yml` | `workflows/sync/` | Sync | Consumer-side weekly sync — updates instructions, prompts, skills, and reusable workflows |
 
 ### PR description auto-generation
 
