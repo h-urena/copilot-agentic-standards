@@ -55,12 +55,13 @@ jobs:
             const addedLines    = files.flatMap(f =>
               (f.patch ?? '').split('\n').filter(l => l.startsWith('+') && !l.startsWith('+++'))
             );
-            // Exclude documentation and workflow files from secret/PII scanning —
-            // they contain example code and regex patterns that are legitimate content.
+            // Exclude markdown docs and GitHub Actions workflow files from secret/PII scanning.
+            // .md files contain example code; .github/workflows/*.yml files embed JS regex patterns
+            // (e.g. email-detection regexes) that would trip PII scanners.
+            // All other .yml files (docker-compose, Helm values, k8s manifests) remain scanned.
             const isDocOrWorkflow = p =>
               p.endsWith('.md') ||
-              (p.endsWith('.yml') && p.includes('.github/workflows/')) ||
-              (p.endsWith('.yml') && p.includes('workflows/'));
+              /^\.github[\\/]workflows[\\/].+\.ya?ml$/.test(p);
             const addedCodeLines = files
               .filter(f => !isDocOrWorkflow(f.filename))
               .flatMap(f =>
