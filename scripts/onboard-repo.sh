@@ -9,9 +9,14 @@
 #   ./scripts/onboard-repo.sh --repo ../existing   --stack python --force
 #
 # Options:
-#   --create      Create the GitHub repo (via gh CLI) and clone it before onboarding
-#   --force       Overwrite files that are normally skipped when they already exist
-#   --visibility  public|private — used with --create (default: private)
+#   --create        Create the GitHub repo (via gh CLI) and clone it before onboarding
+#   --force         Overwrite files that are normally skipped when they already exist
+#   --visibility    public|private — used with --create (default: private)
+#   --project-name  Name for the GitHub Project board (default: "<repo-name> Roadmap")
+#
+# Environment variables:
+#   GH_PROJECT_PAT  Classic PAT with 'project' scope — enables automatic project board creation.
+#                   Fine-grained PATs do NOT support the Projects v2 API.
 #
 # What it does:
 #   1. Copies the composed copilot-instructions.md to .github/
@@ -34,7 +39,9 @@
 #  15. Copies stack-specific CI pipeline template
 #  16. Copies Copilot Skill files to .github/skills/
 #  17. Creates conventional commit labels (feat, fix, chore, docs, refactor, perf, test, ci, style)
-#  18. Prints branch protection setup instructions
+#  18. Creates GitHub Project board with columns: Todo → In Progress → In Review → Done
+#       (requires GH_PROJECT_PAT env var — classic PAT with 'project' scope)
+#  19. Prints post-onboarding instructions (branch protection + board setup if step 18 skipped)
 
 set -euo pipefail
 
@@ -42,14 +49,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 usage() {
-  echo "Usage: $0 --repo <path> --stack <stack> [--create] [--force] [--visibility public|private]"
+  echo "Usage: $0 --repo <path> --stack <stack> [--create] [--force] [--visibility public|private] [--project-name <name>]"
   echo ""
   echo "Options:"
-  echo "  --repo        Path to the target repository (must exist, unless --create is used)"
-  echo "  --stack       Stack name: typescript, python, csharp, or multi e.g. typescript+python"
-  echo "  --create      Create the GitHub repo via gh CLI and clone it before onboarding"
-  echo "  --force       Overwrite files that are normally skipped when they already exist"
-  echo "  --visibility  Repository visibility when using --create (default: private)"
+  echo "  --repo          Path to the target repository (must exist, unless --create is used)"
+  echo "  --stack         Stack name: typescript, python, csharp, or multi e.g. typescript+python"
+  echo "  --create        Create the GitHub repo via gh CLI and clone it before onboarding"
+  echo "  --force         Overwrite files that are normally skipped when they already exist"
+  echo "  --visibility    Repository visibility when using --create (default: private)"
+  echo "  --project-name  Name for the GitHub Project board (default: \"<repo-name> Roadmap\")"
+  echo ""
+  echo "Environment variables:"
+  echo "  GH_PROJECT_PAT  Classic PAT with 'project' scope for automatic board creation."
+  echo "                  Fine-grained PATs do NOT support the Projects v2 API."
   echo ""
   echo "Examples:"
   echo "  $0 --repo ../my-project --stack typescript"
@@ -64,6 +76,7 @@ STACK=""
 CREATE=false
 FORCE=false
 VISIBILITY=private
+PROJECT_NAME=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -89,6 +102,10 @@ while [[ $# -gt 0 ]]; do
         echo "Error: --visibility must be 'public' or 'private'"
         exit 1
       fi
+      shift 2
+      ;;
+    --project-name)
+      PROJECT_NAME="$2"
       shift 2
       ;;
     *)
@@ -159,6 +176,16 @@ echo ""
 # --force mode: always write, pulling in the latest version.
 should_write() {
   [ "$FORCE" = true ] || [ ! -f "$1" ]
+}
+
+# Calls gh CLI using GH_PROJECT_PAT (classic PAT with 'project' scope) when available,
+# falling back to the default gh auth. Scoped to a subshell so it doesn't pollute env.
+_gh_project() {
+  if [ -n "${GH_PROJECT_PAT:-}" ]; then
+    GH_TOKEN="$GH_PROJECT_PAT" gh "$@"
+  else
+    gh "$@"
+  fi
 }
 
 # 1. Copilot instructions
@@ -360,20 +387,62 @@ if [ -d "$SKILLS_SRC" ]; then
   echo "  ✓ .github/skills/ (Copilot Skill files)"
 fi
 
-# 17. Conventional commit labels (idempotent — --force updates if already exists)
+# Detect full repo slug (owner/repo) once — reused by steps 17 and 18.
+_REPO_FULL=""
+_REPO_OWNER_LOGIN=""
+_REPO_NAME_SLUG=""
 if command -v gh > /dev/null 2>&1; then
   _REPO_FULL="$(git -C "$REPO_PATH" remote get-url origin 2>/dev/null | sed -E 's|.*[:/]([^/]+/[^/]+)(\.git)?$|\1|')" || true
-  if [ -n "$_REPO_FULL" ]; then
-    gh label create "feat"     --repo "$_REPO_FULL" --description "New feature"                            --color "0075ca" --force 2>/dev/null
-    gh label create "fix"      --repo "$_REPO_FULL" --description "Bug fix"                                --color "d73a4a" --force 2>/dev/null
-    gh label create "chore"    --repo "$_REPO_FULL" --description "Maintenance, tooling, config"           --color "e4e669" --force 2>/dev/null
-    gh label create "docs"     --repo "$_REPO_FULL" --description "Documentation changes"                  --color "0075ca" --force 2>/dev/null
-    gh label create "refactor" --repo "$_REPO_FULL" --description "Code restructuring, no behavior change" --color "c5def5" --force 2>/dev/null
-    gh label create "perf"     --repo "$_REPO_FULL" --description "Performance improvement"                --color "0e8a16" --force 2>/dev/null
-    gh label create "test"     --repo "$_REPO_FULL" --description "Tests only"                             --color "f9c74f" --force 2>/dev/null
-    gh label create "ci"       --repo "$_REPO_FULL" --description "CI/CD pipeline changes"                 --color "000000" --force 2>/dev/null
-    gh label create "style"    --repo "$_REPO_FULL" --description "Formatting, whitespace"                 --color "ffffff" --force 2>/dev/null
-    echo "  ✓ Conventional commit labels (feat, fix, chore, docs, refactor, perf, test, ci, style)"
+  _REPO_OWNER_LOGIN="$(echo "$_REPO_FULL" | cut -d'/' -f1)"
+  _REPO_NAME_SLUG="$(echo "$_REPO_FULL" | cut -d'/' -f2)"
+fi
+
+# 17. Conventional commit labels (idempotent — --force updates if already exists)
+if [ -n "$_REPO_FULL" ]; then
+  gh label create "feat"     --repo "$_REPO_FULL" --description "New feature"                            --color "0075ca" --force 2>/dev/null
+  gh label create "fix"      --repo "$_REPO_FULL" --description "Bug fix"                                --color "d73a4a" --force 2>/dev/null
+  gh label create "chore"    --repo "$_REPO_FULL" --description "Maintenance, tooling, config"           --color "e4e669" --force 2>/dev/null
+  gh label create "docs"     --repo "$_REPO_FULL" --description "Documentation changes"                  --color "0075ca" --force 2>/dev/null
+  gh label create "refactor" --repo "$_REPO_FULL" --description "Code restructuring, no behavior change" --color "c5def5" --force 2>/dev/null
+  gh label create "perf"     --repo "$_REPO_FULL" --description "Performance improvement"                --color "0e8a16" --force 2>/dev/null
+  gh label create "test"     --repo "$_REPO_FULL" --description "Tests only"                             --color "f9c74f" --force 2>/dev/null
+  gh label create "ci"       --repo "$_REPO_FULL" --description "CI/CD pipeline changes"                 --color "000000" --force 2>/dev/null
+  gh label create "style"    --repo "$_REPO_FULL" --description "Formatting, whitespace"                 --color "ffffff" --force 2>/dev/null
+  echo "  ✓ Conventional commit labels (feat, fix, chore, docs, refactor, perf, test, ci, style)"
+fi
+
+# 18. GitHub Project board (Todo → In Progress → In Review → Done)
+#     Requires GH_PROJECT_PAT (classic PAT with 'project' scope) or gh auth that has project scope.
+#     Skips silently and prints instructions instead if board creation fails.
+_BOARD_CREATED=false
+if [ -n "$_REPO_OWNER_LOGIN" ]; then
+  _BOARD_NAME="${PROJECT_NAME:-${_REPO_NAME_SLUG} Roadmap}"
+  _OWNER_NODE_ID="$(_gh_project api graphql \
+    -f query='query($login:String!){user(login:$login){id}}' \
+    -f login="$_REPO_OWNER_LOGIN" \
+    --jq '.data.user.id' 2>/dev/null || true)"
+
+  if [ -n "$_OWNER_NODE_ID" ]; then
+    _NEW_PROJECT_ID="$(_gh_project api graphql \
+      -f query='mutation($ownerId:ID!,$title:String!){createProjectV2(input:{ownerId:$ownerId,title:$title}){projectV2{id}}}' \
+      -f ownerId="$_OWNER_NODE_ID" \
+      -f title="$_BOARD_NAME" \
+      --jq '.data.createProjectV2.projectV2.id' 2>/dev/null || true)"
+
+    if [ -n "$_NEW_PROJECT_ID" ]; then
+      _STATUS_FIELD_ID="$(_gh_project api graphql \
+        -f query='query($id:ID!){node(id:$id){...on ProjectV2{field(name:"Status"){...on ProjectV2SingleSelectField{id}}}}}' \
+        -f id="$_NEW_PROJECT_ID" \
+        --jq '.data.node.field.id' 2>/dev/null || true)"
+
+      if [ -n "$_STATUS_FIELD_ID" ]; then
+        _gh_project api graphql \
+          -f query='mutation($fid:ID!){updateProjectV2Field(input:{fieldId:$fid,singleSelectOptions:[{name:"Todo",color:GRAY,description:""},{name:"In Progress",color:BLUE,description:""},{name:"In Review",color:YELLOW,description:"PR open, awaiting review"},{name:"Done",color:GREEN,description:""}]}){projectV2Field{...on ProjectV2SingleSelectField{options{name}}}}}' \
+          -f fid="$_STATUS_FIELD_ID" > /dev/null 2>&1 || true
+        _BOARD_CREATED=true
+        echo "  ✓ GitHub Project board: \"$_BOARD_NAME\" (Todo → In Progress → In Review → Done)"
+      fi
+    fi
   fi
 fi
 
@@ -407,3 +476,25 @@ echo "    -f 'allow_force_pushes=false' \\"
 echo "    -f 'allow_deletions=false'"
 echo ""
 echo "This enforces: PR-only merges, required CI checks, CODEOWNERS review, no force pushes."
+
+if [ "$_BOARD_CREATED" = false ]; then
+  _BOARD_NAME_DISPLAY="${PROJECT_NAME:-${_REPO_NAME_SLUG:-<repo-name>} Roadmap}"
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "POST-ONBOARDING: Create GitHub Project board"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  echo "Board creation requires a classic PAT with 'project' scope."
+  echo "Fine-grained PATs do NOT have access to the Projects v2 API."
+  echo ""
+  echo "Option A — Re-run with a classic PAT:"
+  echo "  export GH_PROJECT_PAT=<classic-pat-with-project-scope>"
+  echo "  ./scripts/onboard-repo.sh --repo $REPO_PATH --stack $STACK"
+  echo ""
+  echo "Option B — Create the board manually on GitHub:"
+  echo "  1. Go to https://github.com/${_REPO_OWNER_LOGIN:-<owner>}?tab=projects"
+  echo "  2. Click 'New project' → select 'Board' layout"
+  echo "  3. Name it: \"$_BOARD_NAME_DISPLAY\""
+  echo "  4. Add Status columns: Todo → In Progress → In Review → Done"
+  echo "  5. Link the repository to the project"
+fi
