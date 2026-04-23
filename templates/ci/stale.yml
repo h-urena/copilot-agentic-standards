@@ -20,11 +20,11 @@ permissions:
 
 jobs:
   stale:
-    name: Mark and close stale issues and PRs
+    name: Enforce activity policy — warn, then close inactive issues and PRs
     runs-on: ubuntu-latest
 
     steps:
-      - name: Close stale issues and PRs
+      - name: Apply stale labels and close issues and PRs that exceed inactivity thresholds
         uses: actions/stale@v9
         with:
           # ── Issues ────────────────────────────────────────────────────

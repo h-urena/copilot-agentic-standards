@@ -24,22 +24,22 @@ permissions:
 
 jobs:
   release:
-    name: Create GitHub release and publish artifacts
+    name: Deliver a versioned GitHub release and publish build artifacts
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Ensure full git history is available for commit analysis
         uses: actions/checkout@v6
         with:
           fetch-depth: 0     # semantic-release needs full history
           persist-credentials: false
 
-      - name: Setup Node.js
+      - name: Ensure Node.js runtime is available for semantic-release
         uses: actions/setup-node@v6
         with:
           node-version: 22
 
-      - name: Install and configure semantic-release
+      - name: Ensure semantic-release and all changelog plugins are installed at pinned versions
         run: |
           # Pin exact versions for deterministic releases.
           # Check npmjs.com/package/semantic-release for latest stable versions.
@@ -86,7 +86,7 @@ jobs:
       # - name: Build and pack
       #   run: dotnet pack -c Release -o ./nupkg
 
-      - name: Run semantic-release and publish
+      - name: Publish release — cut tag, generate changelog, push to GitHub and package registry
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
