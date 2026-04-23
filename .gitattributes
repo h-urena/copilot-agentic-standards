@@ -1,0 +1,13 @@
+# Normalize all text files to LF in the repo and working tree.
+# This prevents compose.sh (bash) from producing CRLF-vs-LF noise on Windows.
+* text=auto eol=lf
+
+# Binaries — no line-ending conversion.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.tar binary
+*.gz binary

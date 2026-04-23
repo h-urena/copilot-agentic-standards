@@ -15,24 +15,30 @@ You are working on the **copilot-agentic-standards** repo — the single source 
 > This applies to every change, no matter how small or "obvious".
 
 **Step 1 — Verify main is up to date**
+
 ```bash
 git checkout main && git pull origin main
 ```
 
 **Step 2 — Create a GitHub issue**
+
 ```bash
 gh issue create --title "<type>(scope): short description" --body "Problem, solution, acceptance criteria" --assignee @me
 ```
+
 Record the issue number. You cannot proceed without it.
 
 **Step 3 — Create a branch linked to that issue**
+
 ```bash
 git checkout -b <type>/<issue-number>-<short-slug>
 # e.g. feat/42-add-pr-description-workflow
 ```
+
 Valid types: `feat` `fix` `docs` `style` `refactor` `perf` `test` `build` `ci` `chore` `hotfix`
 
 **Step 4 — Make ALL changes on that branch, then open a PR**
+
 ```bash
 gh pr create --title "<type>(scope): description" --body "Closes #<issue-number>"
 ```
@@ -49,4 +55,4 @@ The full governance workflow with validation steps is in `.github/prompts/govern
 3. When adding a new stack, create `instructions/stacks/<stack>.md`, add a `mcp/<stack>.mcp.json` if applicable, and update `scripts/compose.sh`.
 4. Workflow files must use `workflow_call` trigger for reusable workflows.
 5. Follow conventional commits: `feat:`, `fix:`, `docs:`, `chore:`. Add a `scope` when applicable (e.g., `feat(frontend): add UI component`).
-6. Shell scripts must pass `shellcheck` and use `set -euo pipefail`.
+6. Shell scripts must pass `shellcheck` with zero warnings and use `set -euo pipefail`. Never suppress a warning with `# shellcheck disable` as a first resort — fix the root cause. For SC2016 (dollar sign in single quotes), assign the string with double quotes and `\$` to produce a literal `$` without shell expansion (e.g. `Q="query(\$id:ID!){...}"`). Single-quoted assignment still triggers SC2016 — do not use it.
