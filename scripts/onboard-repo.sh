@@ -33,7 +33,8 @@
 #  14. Copies Docker templates (Dockerfile, .dockerignore, docker-compose.yml)
 #  15. Copies stack-specific CI pipeline template
 #  16. Copies Copilot Skill files to .github/skills/
-#  17. Prints branch protection setup instructions
+#  17. Creates conventional commit labels (feat, fix, chore, docs, refactor, perf, test, ci, style)
+#  18. Prints branch protection setup instructions
 
 set -euo pipefail
 
@@ -357,6 +358,23 @@ if [ -d "$SKILLS_SRC" ]; then
   mkdir -p "$REPO_PATH/.github/skills"
   cp "$SKILLS_SRC"/*.skill.md "$REPO_PATH/.github/skills/"
   echo "  ✓ .github/skills/ (Copilot Skill files)"
+fi
+
+# 17. Conventional commit labels (idempotent — --force updates if already exists)
+if command -v gh > /dev/null 2>&1; then
+  _REPO_FULL="$(git -C "$REPO_PATH" remote get-url origin 2>/dev/null | sed -E 's|.*[:/]([^/]+/[^/]+)(\.git)?$|\1|')" || true
+  if [ -n "$_REPO_FULL" ]; then
+    gh label create "feat"     --repo "$_REPO_FULL" --description "New feature"                            --color "0075ca" --force 2>/dev/null
+    gh label create "fix"      --repo "$_REPO_FULL" --description "Bug fix"                                --color "d73a4a" --force 2>/dev/null
+    gh label create "chore"    --repo "$_REPO_FULL" --description "Maintenance, tooling, config"           --color "e4e669" --force 2>/dev/null
+    gh label create "docs"     --repo "$_REPO_FULL" --description "Documentation changes"                  --color "0075ca" --force 2>/dev/null
+    gh label create "refactor" --repo "$_REPO_FULL" --description "Code restructuring, no behavior change" --color "c5def5" --force 2>/dev/null
+    gh label create "perf"     --repo "$_REPO_FULL" --description "Performance improvement"                --color "0e8a16" --force 2>/dev/null
+    gh label create "test"     --repo "$_REPO_FULL" --description "Tests only"                             --color "f9c74f" --force 2>/dev/null
+    gh label create "ci"       --repo "$_REPO_FULL" --description "CI/CD pipeline changes"                 --color "000000" --force 2>/dev/null
+    gh label create "style"    --repo "$_REPO_FULL" --description "Formatting, whitespace"                 --color "ffffff" --force 2>/dev/null
+    echo "  ✓ Conventional commit labels (feat, fix, chore, docs, refactor, perf, test, ci, style)"
+  fi
 fi
 
 echo ""
