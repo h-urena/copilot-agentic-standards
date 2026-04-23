@@ -234,7 +234,7 @@ CI runs `scripts/validate-composed.sh` on every PR to ensure composed files are 
 |----------|----------|------|---------|
 | `pr-description.yml` | `.github/workflows/` | Reusable | Auto-fills PR body from commit messages on open/sync |
 | `code-review.yml` | `.github/workflows/` | Reusable | Tiered automated code review (critical + suggestions) |
-| `self-heal.yml` | `.github/workflows/` | Reusable | Auto-fixes bot REQUEST_CHANGES reviews; posts agent-ready checklist for code issues |
+| `auto-fix.yml` | `.github/workflows/` | Reusable | Auto-fixes bot REQUEST_CHANGES reviews; posts agent-ready checklist for code issues |
 | `merge-rules.yml` | `.github/workflows/` | Reusable | Squash enforcement, commitlint, branch naming |
 | `pr-automation.yml` | `.github/workflows/` | Reusable | Auto-assign, label, welcome comment |
 | `project-automation.yml` | `.github/workflows/` | Internal | GitHub Project board lifecycle automation |
