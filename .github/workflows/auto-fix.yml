@@ -75,9 +75,7 @@ jobs:
             const hasPIIIssue       = /PII pattern/i.test(rawCriticals);
             const hasSensitivePath  = /Security-sensitive file/i.test(rawCriticals);
 
-            const autoFixable = hasTitleIssue && !hasSecretIssue && !hasPIIIssue;
             const needsHuman  = hasSecretIssue || hasPIIIssue;
-            const needsAgent  = hasSensitivePath || hasTitleIssue;
 
             core.info(
               `Criticals — title:${hasTitleIssue} secret:${hasSecretIssue} ` +
@@ -171,7 +169,7 @@ jobs:
 
             lines.push('---');
             lines.push(
-              '*Posted by `self-heal.yml`. Push a new commit or fix the items above to re-trigger the review.*'
+              '*Posted by `auto-fix.yml`. Push a new commit or fix the items above to re-trigger the review.*'
             );
 
             await github.rest.issues.createComment({
