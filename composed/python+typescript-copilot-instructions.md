@@ -1,6 +1,6 @@
-<!-- AUTO-GENERATED — do not edit. Regenerate with: ./scripts/compose.sh typescript+python -->
-<!-- Source: instructions/base.md + instructions/stacks/typescript instructions/stacks/python -->
-<!-- Stacks: typescript python -->
+<!-- AUTO-GENERATED — do not edit. Regenerate with: ./scripts/compose.sh python+typescript -->
+<!-- Source: instructions/base.md + instructions/stacks/python instructions/stacks/typescript -->
+<!-- Stacks: python typescript -->
 
 # Base Copilot Instructions
 
@@ -144,6 +144,18 @@ Every issue moves through these statuses automatically via CI:
 - Pin action versions using the major version tag (e.g., `actions/checkout@v6`), not floating tags like `@latest` or `@main`.
 - Use `lts/*` for language version inputs (Node.js) and the equivalent latest-stable selector for other runtimes — never hardcode a specific version number in workflow files.
 
+## Shell scripting
+
+- Every script must begin with `set -euo pipefail`.
+- Quote all variable expansions: `"$var"`, `"${var}"`. Never leave expansions unquoted.
+- All scripts must pass `shellcheck` with zero warnings. **Never suppress a warning with `# shellcheck disable` as a first resort** — fix the root cause instead:
+  - SC2016 (dollar sign in single quotes): extract the string into a named variable using single-quoted assignment, then expand it with double quotes. Do not wrap the call site in a disable comment.
+  - SC2086 (unquoted variable): add quotes rather than disabling.
+  - Only use `# shellcheck disable` when the flagged construct is provably correct and no clean rewrite exists — always include an inline explanation of *why*.
+- Assign long or special-character strings (GraphQL queries, JSON fragments, regex patterns) to named variables before use. Inline literals that trigger linter false positives are a code smell — extract, name, and reference them.
+- Use `command -v tool > /dev/null 2>&1` to guard optional tool usage rather than assuming availability.
+- Prefer `printf` over `echo` for output that contains escape sequences or user-controlled data.
+
 ## Documentation
 
 - Update README and relevant docs alongside code changes.
@@ -164,78 +176,6 @@ Every issue moves through these statuses automatically via CI:
 - Log errors with sufficient context for debugging (timestamp, request ID, stack trace).
 - Return meaningful error messages to callers; do not expose internal details to end users.
 - No problems stated in the 'Problems' tab should be ignored. If a problem is not actionable, it should be suppressed with a comment explaining why. Otherwise, all problems should be addressed before merging.
-
----
-
-# TypeScript Stack Instructions
-
-> Additive to `base.md` — these rules apply on top of the universal standards.
-
----
-
-## Language and runtime
-
-- Target the latest LTS version of Node.js unless the project specifies otherwise. Pin the version using a `.nvmrc` or `.node-version` file at the project root.
-- Use TypeScript strict mode (`"strict": true` in `tsconfig.json`). No exceptions.
-- Set `moduleResolution` to `bundler` (for Vite/esbuild projects) or `NodeNext` (for Node.js services). The legacy `node` mode causes subtle import resolution bugs.
-- Prefer `const` over `let`. Never use `var`.
-- Use `unknown` over `any`. If `any` is unavoidable, add a `// eslint-disable-next-line` with justification.
-
-## Project structure
-
-- Use a `src/` directory for source code and `tests/` (or `__tests__/`) for test files.
-- Group by feature/domain, not by file type (e.g., `src/users/` not `src/controllers/`).
-- Use barrel files (`index.ts`) sparingly — only at module boundaries.
-- Keep `tsconfig.json` at the project root. Use `tsconfig.build.json` for build-specific overrides.
-
-## Code style
-
-- Use ESLint with `@typescript-eslint/recommended` as the base config. Migrate to ESLint's flat config format (`eslint.config.ts`) for new projects.
-- Use Prettier for formatting. Do not mix formatting rules into ESLint.
-- Prefer named exports over default exports.
-- Use `interface` for object shapes that may be extended; use `type` for unions, intersections, and mapped types.
-- Prefer `async/await` over raw Promises. Never mix callbacks and promises.
-
-## Runtime validation
-
-- Validate all external inputs (HTTP bodies, query params, API responses, config) with **Zod** (or Valibot) at the system boundary. TypeScript types are erased at runtime; they do not protect against malformed data.
-- Co-locate Zod schemas with the route or handler that uses them.
-- Validate environment variables at startup with a Zod schema (e.g., `t3-env` or a hand-rolled `z.object({...}).parse(process.env)`). Never access `process.env.THING` at arbitrary call sites.
-
-## Error handling
-
-- Use typed error classes extending `Error` for domain-specific errors.
-- Always type catch variables: `catch (error: unknown)` and narrow before using.
-- Use a `Result<T, E>` type (e.g., `neverthrow`'s `Result`) for recoverable errors ("user not found", "validation failed") instead of throwing. Reserve exceptions for truly unexpected conditions.
-- Model state with discriminated unions (`{ status: 'loading' } | { status: 'error'; error: Error } | { status: 'success'; data: T }`) — avoid parallel nullable fields or boolean flag combinations.
-- In Express/Fastify, use centralized error-handling middleware — do not catch in every route.
-
-## Logging and observability
-
-- Use **`pino`** for structured JSON logging in Node.js services. Never use `console.log` in production code paths.
-- Pass a child logger with request-scoped context (request ID, user ID) through the call chain — use `logger.child({ requestId })` per request.
-- Log at appropriate levels. Never log PII, tokens, or full request/response bodies.
-
-## Testing
-
-- **Unit tests**: Use **Vitest** for all new TypeScript projects. It has native TypeScript/ESM support (no `ts-jest` wrapper), a Jest-compatible API (`describe`/`it`/`expect`), and runs significantly faster. Use Jest only if a project is already committed to it — the migration cost is low, but don't migrate just to migrate.
-  - Use `vi.mock()` for module mocking, `vi.spyOn()` for spying.
-  - Use `@vitest/coverage-v8` for coverage reports (faster than istanbul).
-- **Integration tests**: Use `supertest` for HTTP-level integration tests against Express/Fastify/Hono handlers. Use `@testcontainers/testcontainers` to spin up real infrastructure (databases, queues) in Docker for true integration coverage.
-- **E2E tests**: Use `@playwright/test` for browser automation. Keep the suite lean — critical user flows only. Run E2E against a deployed preview environment, not localhost.
-- Co-locate unit/integration test files next to source files (`*.test.ts`) or mirror structure in `tests/`. Keep E2E tests in a top-level `e2e/` directory.
-
-## Dependencies
-
-- Use `npm` or `pnpm` with a lockfile committed to the repo.
-- Prefer `devDependencies` for build/test tools. Keep `dependencies` minimal.
-- Use `tsx` or `ts-node` for development; compile to JavaScript for production.
-
-## Build and bundling
-
-- Use `tsc` for type-checking. Use a bundler (esbuild, tsup, Vite) for builds.
-- Output to a `dist/` directory. Add `dist/` to `.gitignore`.
-- Ensure `package.json` has correct `main`, `module`, and `types` fields.
 
 ---
 
@@ -313,3 +253,75 @@ Every issue moves through these statuses automatically via CI:
 - Use `hatch`, `flit`, or `setuptools` with `pyproject.toml` as the build backend.
 - Version using `__version__` in the package `__init__.py` or dynamic versioning via SCM tags.
 - Include `LICENSE`, `README.md`, and `py.typed` in the distribution.
+
+---
+
+# TypeScript Stack Instructions
+
+> Additive to `base.md` — these rules apply on top of the universal standards.
+
+---
+
+## Language and runtime
+
+- Target the latest LTS version of Node.js unless the project specifies otherwise. Pin the version using a `.nvmrc` or `.node-version` file at the project root.
+- Use TypeScript strict mode (`"strict": true` in `tsconfig.json`). No exceptions.
+- Set `moduleResolution` to `bundler` (for Vite/esbuild projects) or `NodeNext` (for Node.js services). The legacy `node` mode causes subtle import resolution bugs.
+- Prefer `const` over `let`. Never use `var`.
+- Use `unknown` over `any`. If `any` is unavoidable, add a `// eslint-disable-next-line` with justification.
+
+## Project structure
+
+- Use a `src/` directory for source code and `tests/` (or `__tests__/`) for test files.
+- Group by feature/domain, not by file type (e.g., `src/users/` not `src/controllers/`).
+- Use barrel files (`index.ts`) sparingly — only at module boundaries.
+- Keep `tsconfig.json` at the project root. Use `tsconfig.build.json` for build-specific overrides.
+
+## Code style
+
+- Use ESLint with `@typescript-eslint/recommended` as the base config. Migrate to ESLint's flat config format (`eslint.config.ts`) for new projects.
+- Use Prettier for formatting. Do not mix formatting rules into ESLint.
+- Prefer named exports over default exports.
+- Use `interface` for object shapes that may be extended; use `type` for unions, intersections, and mapped types.
+- Prefer `async/await` over raw Promises. Never mix callbacks and promises.
+
+## Runtime validation
+
+- Validate all external inputs (HTTP bodies, query params, API responses, config) with **Zod** (or Valibot) at the system boundary. TypeScript types are erased at runtime; they do not protect against malformed data.
+- Co-locate Zod schemas with the route or handler that uses them.
+- Validate environment variables at startup with a Zod schema (e.g., `t3-env` or a hand-rolled `z.object({...}).parse(process.env)`). Never access `process.env.THING` at arbitrary call sites.
+
+## Error handling
+
+- Use typed error classes extending `Error` for domain-specific errors.
+- Always type catch variables: `catch (error: unknown)` and narrow before using.
+- Use a `Result<T, E>` type (e.g., `neverthrow`'s `Result`) for recoverable errors ("user not found", "validation failed") instead of throwing. Reserve exceptions for truly unexpected conditions.
+- Model state with discriminated unions (`{ status: 'loading' } | { status: 'error'; error: Error } | { status: 'success'; data: T }`) — avoid parallel nullable fields or boolean flag combinations.
+- In Express/Fastify, use centralized error-handling middleware — do not catch in every route.
+
+## Logging and observability
+
+- Use **`pino`** for structured JSON logging in Node.js services. Never use `console.log` in production code paths.
+- Pass a child logger with request-scoped context (request ID, user ID) through the call chain — use `logger.child({ requestId })` per request.
+- Log at appropriate levels. Never log PII, tokens, or full request/response bodies.
+
+## Testing
+
+- **Unit tests**: Use **Vitest** for all new TypeScript projects. It has native TypeScript/ESM support (no `ts-jest` wrapper), a Jest-compatible API (`describe`/`it`/`expect`), and runs significantly faster. Use Jest only if a project is already committed to it — the migration cost is low, but don't migrate just to migrate.
+  - Use `vi.mock()` for module mocking, `vi.spyOn()` for spying.
+  - Use `@vitest/coverage-v8` for coverage reports (faster than istanbul).
+- **Integration tests**: Use `supertest` for HTTP-level integration tests against Express/Fastify/Hono handlers. Use `@testcontainers/testcontainers` to spin up real infrastructure (databases, queues) in Docker for true integration coverage.
+- **E2E tests**: Use `@playwright/test` for browser automation. Keep the suite lean — critical user flows only. Run E2E against a deployed preview environment, not localhost.
+- Co-locate unit/integration test files next to source files (`*.test.ts`) or mirror structure in `tests/`. Keep E2E tests in a top-level `e2e/` directory.
+
+## Dependencies
+
+- Use `npm` or `pnpm` with a lockfile committed to the repo.
+- Prefer `devDependencies` for build/test tools. Keep `dependencies` minimal.
+- Use `tsx` or `ts-node` for development; compile to JavaScript for production.
+
+## Build and bundling
+
+- Use `tsc` for type-checking. Use a bundler (esbuild, tsup, Vite) for builds.
+- Output to a `dist/` directory. Add `dist/` to `.gitignore`.
+- Ensure `package.json` has correct `main`, `module`, and `types` fields.

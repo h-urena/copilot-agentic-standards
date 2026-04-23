@@ -417,27 +417,45 @@ fi
 _BOARD_CREATED=false
 if [ -n "$_REPO_OWNER_LOGIN" ]; then
   _BOARD_NAME="${PROJECT_NAME:-${_REPO_NAME_SLUG} Roadmap}"
+
+  # GraphQL queries stored in variables (single-quoted so $ signs are literal GraphQL syntax,
+  # not shell variables). Passed via double-quoted "$_GQL_*" to avoid SC2016 false positives.
+  _GQL_GET_OWNER_ID='query($login:String!){user(login:$login){id}}'
+  _GQL_LIST_PROJECTS='query($login:String!){user(login:$login){projectsV2(first:20){nodes{id,title}}}}'
+  _GQL_CREATE_PROJECT='mutation($ownerId:ID!,$title:String!){createProjectV2(input:{ownerId:$ownerId,title:$title}){projectV2{id}}}'
+  _GQL_GET_STATUS_FIELD='query($id:ID!){node(id:$id){...on ProjectV2{field(name:"Status"){...on ProjectV2SingleSelectField{id}}}}}'
+  _GQL_SET_STATUS_OPTIONS='mutation($fid:ID!){updateProjectV2Field(input:{fieldId:$fid,singleSelectOptions:[{name:"Todo",color:GRAY,description:""},{name:"In Progress",color:BLUE,description:""},{name:"In Review",color:YELLOW,description:"PR open, awaiting review"},{name:"Done",color:GREEN,description:""}]}){projectV2Field{...on ProjectV2SingleSelectField{options{name}}}}}'
+
   _OWNER_NODE_ID="$(_gh_project api graphql \
-    -f query='query($login:String!){user(login:$login){id}}' \
+    -f query="$_GQL_GET_OWNER_ID" \
     -f login="$_REPO_OWNER_LOGIN" \
     --jq '.data.user.id' 2>/dev/null || true)"
 
   if [ -n "$_OWNER_NODE_ID" ]; then
+    # Idempotent guard — reuse the existing board if one with this name already exists.
     _NEW_PROJECT_ID="$(_gh_project api graphql \
-      -f query='mutation($ownerId:ID!,$title:String!){createProjectV2(input:{ownerId:$ownerId,title:$title}){projectV2{id}}}' \
-      -f ownerId="$_OWNER_NODE_ID" \
-      -f title="$_BOARD_NAME" \
-      --jq '.data.createProjectV2.projectV2.id' 2>/dev/null || true)"
+      -f query="$_GQL_LIST_PROJECTS" \
+      -f login="$_REPO_OWNER_LOGIN" \
+      --jq ".data.user.projectsV2.nodes[] | select(.title == \"${_BOARD_NAME}\") | .id" \
+      2>/dev/null | head -n1 || true)"
+
+    if [ -z "$_NEW_PROJECT_ID" ]; then
+      _NEW_PROJECT_ID="$(_gh_project api graphql \
+        -f query="$_GQL_CREATE_PROJECT" \
+        -f ownerId="$_OWNER_NODE_ID" \
+        -f title="$_BOARD_NAME" \
+        --jq '.data.createProjectV2.projectV2.id' 2>/dev/null || true)"
+    fi
 
     if [ -n "$_NEW_PROJECT_ID" ]; then
       _STATUS_FIELD_ID="$(_gh_project api graphql \
-        -f query='query($id:ID!){node(id:$id){...on ProjectV2{field(name:"Status"){...on ProjectV2SingleSelectField{id}}}}}' \
+        -f query="$_GQL_GET_STATUS_FIELD" \
         -f id="$_NEW_PROJECT_ID" \
         --jq '.data.node.field.id' 2>/dev/null || true)"
 
       if [ -n "$_STATUS_FIELD_ID" ]; then
         _gh_project api graphql \
-          -f query='mutation($fid:ID!){updateProjectV2Field(input:{fieldId:$fid,singleSelectOptions:[{name:"Todo",color:GRAY,description:""},{name:"In Progress",color:BLUE,description:""},{name:"In Review",color:YELLOW,description:"PR open, awaiting review"},{name:"Done",color:GREEN,description:""}]}){projectV2Field{...on ProjectV2SingleSelectField{options{name}}}}}' \
+          -f query="$_GQL_SET_STATUS_OPTIONS" \
           -f fid="$_STATUS_FIELD_ID" > /dev/null 2>&1 || true
         _BOARD_CREATED=true
         echo "  ✓ GitHub Project board: \"$_BOARD_NAME\" (Todo → In Progress → In Review → Done)"

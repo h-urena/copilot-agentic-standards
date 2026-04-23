@@ -144,6 +144,18 @@ Every issue moves through these statuses automatically via CI:
 - Pin action versions using the major version tag (e.g., `actions/checkout@v6`), not floating tags like `@latest` or `@main`.
 - Use `lts/*` for language version inputs (Node.js) and the equivalent latest-stable selector for other runtimes — never hardcode a specific version number in workflow files.
 
+## Shell scripting
+
+- Every script must begin with `set -euo pipefail`.
+- Quote all variable expansions: `"$var"`, `"${var}"`. Never leave expansions unquoted.
+- All scripts must pass `shellcheck` with zero warnings. **Never suppress a warning with `# shellcheck disable` as a first resort** — fix the root cause instead:
+  - SC2016 (dollar sign in single quotes): extract the string into a named variable using single-quoted assignment, then expand it with double quotes. Do not wrap the call site in a disable comment.
+  - SC2086 (unquoted variable): add quotes rather than disabling.
+  - Only use `# shellcheck disable` when the flagged construct is provably correct and no clean rewrite exists — always include an inline explanation of *why*.
+- Assign long or special-character strings (GraphQL queries, JSON fragments, regex patterns) to named variables before use. Inline literals that trigger linter false positives are a code smell — extract, name, and reference them.
+- Use `command -v tool > /dev/null 2>&1` to guard optional tool usage rather than assuming availability.
+- Prefer `printf` over `echo` for output that contains escape sequences or user-controlled data.
+
 ## Documentation
 
 - Update README and relevant docs alongside code changes.
