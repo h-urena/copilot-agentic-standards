@@ -85,6 +85,10 @@ Every `.yml` change **must** use the absolute latest action versions. Flag anyth
   - ❌ `"Check merge method"` / `"PR Description Generator"` — action or noun
   - ✅ `"Enforce squash-only merge policy"` / `"Auto-populate PR Body From Branch Commits"` — policy statement
   - ✅ `"Auto-assign PR to its author"` — policy statement
+  - ⚠️ **Exception — branch protection contracts:** Job names registered as required status checks
+    in branch protection rules **must not be renamed**. Renaming breaks the check permanently
+    (GitHub shows "Expected — Waiting for status to be reported"). Before renaming a job, verify
+    it is not listed under Settings → Branches → required status checks.
 - **Atomic Instructions:** Markdown must be chronological — Step 5 cannot make Step 2 redundant.
 - **No ambiguity:** Step names readable by an LLM with no surrounding context.
 
