@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   review:
-    name: Post tiered review — criticals block merge, suggestions inform
+    name: Tiered Review
     runs-on: ubuntu-latest
     # Skip automated bot PRs — Dependabot and alike don't need this review
     if: ${{ github.actor != 'dependabot[bot]' && !endsWith(github.actor, '[bot]') }}
