@@ -418,13 +418,13 @@ _BOARD_CREATED=false
 if [ -n "$_REPO_OWNER_LOGIN" ]; then
   _BOARD_NAME="${PROJECT_NAME:-${_REPO_NAME_SLUG} Roadmap}"
 
-  # GraphQL queries stored in variables (single-quoted so $ signs are literal GraphQL syntax,
-  # not shell variables). Passed via double-quoted "$_GQL_*" to avoid SC2016 false positives.
-  _GQL_GET_OWNER_ID='query($login:String!){user(login:$login){id}}'
-  _GQL_LIST_PROJECTS='query($login:String!){user(login:$login){projectsV2(first:20){nodes{id,title}}}}'
-  _GQL_CREATE_PROJECT='mutation($ownerId:ID!,$title:String!){createProjectV2(input:{ownerId:$ownerId,title:$title}){projectV2{id}}}'
-  _GQL_GET_STATUS_FIELD='query($id:ID!){node(id:$id){...on ProjectV2{field(name:"Status"){...on ProjectV2SingleSelectField{id}}}}}'
-  _GQL_SET_STATUS_OPTIONS='mutation($fid:ID!){updateProjectV2Field(input:{fieldId:$fid,singleSelectOptions:[{name:"Todo",color:GRAY,description:""},{name:"In Progress",color:BLUE,description:""},{name:"In Review",color:YELLOW,description:"PR open, awaiting review"},{name:"Done",color:GREEN,description:""}]}){projectV2Field{...on ProjectV2SingleSelectField{options{name}}}}}'
+  # GraphQL queries use \$ (escaped dollar) inside double quotes so the $ signs are stored
+  # as literals without triggering SC2016 (which fires on $ inside single-quoted strings).
+  _GQL_GET_OWNER_ID="query(\$login:String!){user(login:\$login){id}}"
+  _GQL_LIST_PROJECTS="query(\$login:String!){user(login:\$login){projectsV2(first:20){nodes{id,title}}}}"
+  _GQL_CREATE_PROJECT="mutation(\$ownerId:ID!,\$title:String!){createProjectV2(input:{ownerId:\$ownerId,title:\$title}){projectV2{id}}}"
+  _GQL_GET_STATUS_FIELD="query(\$id:ID!){node(id:\$id){...on ProjectV2{field(name:\"Status\"){...on ProjectV2SingleSelectField{id}}}}}"
+  _GQL_SET_STATUS_OPTIONS="mutation(\$fid:ID!){updateProjectV2Field(input:{fieldId:\$fid,singleSelectOptions:[{name:\"Todo\",color:GRAY,description:\"\"},{name:\"In Progress\",color:BLUE,description:\"\"},{name:\"In Review\",color:YELLOW,description:\"PR open, awaiting review\"},{name:\"Done\",color:GREEN,description:\"\"}]}){projectV2Field{...on ProjectV2SingleSelectField{options{name}}}}}"
 
   _OWNER_NODE_ID="$(_gh_project api graphql \
     -f query="$_GQL_GET_OWNER_ID" \

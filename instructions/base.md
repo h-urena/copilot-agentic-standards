@@ -151,7 +151,7 @@ Every issue moves through these statuses automatically via CI:
 - Every script must begin with `set -euo pipefail`.
 - Quote all variable expansions: `"$var"`, `"${var}"`. Never leave expansions unquoted.
 - All scripts must pass `shellcheck` with zero warnings. **Never suppress a warning with `# shellcheck disable` as a first resort** — fix the root cause instead:
-  - SC2016 (dollar sign in single quotes): extract the string into a named variable using single-quoted assignment, then expand it with double quotes. Do not wrap the call site in a disable comment.
+  - SC2016 (dollar sign in single quotes): assign the string using double quotes with `\$` to produce a literal `$` (e.g. `_Q="query(\$id:ID!){...}"` stores `query($id:ID!){...}` without shell expansion). Never use a single-quoted assignment with `$`-containing content — shellcheck fires SC2016 on both the assignment and the call site.
   - SC2086 (unquoted variable): add quotes rather than disabling.
   - Only use `# shellcheck disable` when the flagged construct is provably correct and no clean rewrite exists — always include an inline explanation of _why_.
 - Assign long or special-character strings (GraphQL queries, JSON fragments, regex patterns) to named variables before use. Inline literals that trigger linter false positives are a code smell — extract, name, and reference them.
