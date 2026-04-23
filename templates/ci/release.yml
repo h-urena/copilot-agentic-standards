@@ -1,0 +1,109 @@
+---
+# Release workflow — semantic versioning + changelog generation
+# Triggered on merge to main. Requires conventional commits.
+# Supports: TypeScript / Python / C#
+#
+# Required secrets:
+#   GITHUB_TOKEN   — provided automatically by Actions
+#   NPM_TOKEN      — required for TypeScript npm publish (set to "" to skip publish)
+#
+# Usage in consumer repo:
+#   Copy to .github/workflows/release.yml and adjust the build/publish steps for your stack.
+
+name: Cut Versioned Release With Changelog on Merge to Main
+
+on:
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  release:
+    name: Deliver a versioned GitHub release and publish build artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ensure full git history is available for commit analysis
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0     # semantic-release needs full history
+          persist-credentials: false
+
+      - name: Ensure Node.js runtime is available for semantic-release
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Ensure semantic-release and all changelog plugins are installed at pinned versions
+        run: |
+          # Pin exact versions for deterministic releases.
+          # Check npmjs.com/package/semantic-release for latest stable versions.
+          npm install --no-save \
+            semantic-release@24 \
+            @semantic-release/changelog@6 \
+            @semantic-release/git@10 \
+            @semantic-release/github@10 \
+            @semantic-release/commit-analyzer@13 \
+            @semantic-release/release-notes-generator@14
+
+      # ─── TypeScript: build before release ──────────────────────────────
+      # Uncomment and adjust if this is a TypeScript project.
+      #
+      # - name: Setup Node.js (project)
+      #   uses: actions/setup-node@v6
+      #   with:
+      #     node-version: 22
+      #     cache: pnpm
+      # - name: Install dependencies
+      #   run: pnpm install --frozen-lockfile
+      # - name: Build
+      #   run: pnpm build
+
+      # ─── Python: build wheel before release ────────────────────────────
+      # Uncomment and adjust if this is a Python project.
+      #
+      # - name: Setup Python
+      #   uses: actions/setup-python@v6
+      #   with:
+      #     python-version: "3.12"
+      # - name: Build wheel
+      #   run: |
+      #     pip install build
+      #     python -m build
+
+      # ─── C#: build before release ──────────────────────────────────────
+      # Uncomment and adjust if this is a C# project.
+      #
+      # - name: Setup .NET
+      #   uses: actions/setup-dotnet@v5
+      #   with:
+      #     dotnet-version: "9.x"
+      # - name: Build and pack
+      #   run: dotnet pack -c Release -o ./nupkg
+
+      - name: Publish release — cut tag, generate changelog, push to GitHub and package registry
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npx semantic-release
+
+# ─── .releaserc.json (create this in your repo root) ────────────────────────
+#
+# {
+#   "branches": ["main"],
+#   "plugins": [
+#     "@semantic-release/commit-analyzer",
+#     "@semantic-release/release-notes-generator",
+#     ["@semantic-release/changelog", { "changelogFile": "CHANGELOG.md" }],
+#     "@semantic-release/github",
+#     ["@semantic-release/git", {
+#       "assets": ["CHANGELOG.md", "package.json"],
+#       "message": "chore(release): ${nextRelease.version} [skip ci]"
+#     }]
+#   ]
+# }

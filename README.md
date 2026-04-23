@@ -58,6 +58,7 @@ that, `pull-standards.yml` keeps the repo in sync automatically.
 | `templates/docker/.dockerignore` | `.dockerignore` | Docker build exclusions |
 | `templates/docker/docker-compose.yml` | `docker-compose.yml` | Local development environment |
 | `templates/ci/ci.<stack>.yml` | `.github/workflows/ci.yml` | Stack-specific CI pipeline |
+| `skills/*.skill.md` | `.github/skills/` | Copilot Skill files (test generation, code analysis, etc.) |
 
 ### Multi-stack projects
 
@@ -99,6 +100,8 @@ subfolders: `implementation/`, `review/`, `scaffolds/`, and `personas/`.
 | `project-kickoff.prompt.md` | Bootstrap a new project: scaffold structure, tooling, CI, Docker |
 | `refactor.prompt.md` | Systematic refactoring: preserve behaviour, incremental changes, no regressions |
 | `write-docs.prompt.md` | Generate/update documentation: README, API docs, ADRs, changelogs |
+| `create-adr.prompt.md` | Record an Architecture Decision: context, options, decision, consequences |
+| `deploy.prompt.md` | Deploy a service: pre-deploy checks, migrations, health checks, rollback |
 
 **Review prompts** (`.github/prompts/review/`)
 
@@ -106,6 +109,8 @@ subfolders: `implementation/`, `review/`, `scaffolds/`, and `personas/`.
 |--------|---------|
 | `audit.prompt.md` | Standards audit: validate a branch diff against all project rules |
 | `security-audit.prompt.md` | OWASP-focused security audit: secrets, auth, injection, dependencies |
+| `performance-audit.prompt.md` | Performance audit: N+1 queries, missing indexes, caching, bundle size |
+| `dependency-audit.prompt.md` | Dependency audit: CVEs, outdated packages, license compliance, supply chain |
 
 **Scaffold prompts** (`.github/prompts/scaffolds/`)
 
@@ -115,6 +120,9 @@ subfolders: `implementation/`, `review/`, `scaffolds/`, and `personas/`.
 | `auth.prompt.md` | Wire auth: identity provider, middleware, route protection, audit logging |
 | `database.prompt.md` | Set up database: connection, ORM, migrations, seeding, health check |
 | `frontend.prompt.md` | Scaffold frontend component: structure, a11y, state, forms, tests |
+| `background-jobs.prompt.md` | Scaffold async worker: queue, job definition, retry, dead-letter, monitoring |
+| `notifications.prompt.md` | Scaffold notifications: email, webhooks, push, retry, opt-out, preferences |
+| `monorepo.prompt.md` | Scaffold multi-service monorepo: layout, workspaces, contracts, CI per service |
 
 **Persona prompts** (`.github/prompts/personas/`)
 
@@ -123,12 +131,32 @@ subfolders: `implementation/`, `review/`, `scaffolds/`, and `personas/`.
 | `persona-devops-engineer.prompt.md` | Adopt a DevOps Engineer perspective for infra, CI/CD, and deployment review |
 | `persona-principal-engineer.prompt.md` | Adopt a Principal Engineer perspective for architecture and design review |
 | `persona-qa-engineer.prompt.md` | Adopt a Senior QA Engineer perspective for coverage and quality risk review |
+| `architect.prompt.md` | Adopt a Principal Architect perspective: system design, service decomposition, ADRs |
+| `product-manager.prompt.md` | Adopt a Product Manager perspective: PRDs, user stories, acceptance criteria |
+
+### Copilot Skill files — `skills/`
+
+Skill files give agents specialised domain knowledge for tasks like test generation, code analysis,
+API design review, performance profiling, and data migration. They live at the repo root in `skills/`
+because they are **complete, ready-to-use operational files** — agents load them directly, you
+never fill them in. They are distributed to downstream repos as `.github/skills/`.
+
+| Skill file | Purpose |
+|------------|---------|
+| `test-generation.skill.md` | Write comprehensive test suites: AAA, mocks, coverage plan, Testcontainers |
+| `code-analysis.skill.md` | Five-phase deep code analysis: correctness, security, performance, maintainability |
+| `api-design-review.skill.md` | API contract review: URL design, status codes, security, rate limiting |
+| `performance-profiling.skill.md` | Performance analysis: N+1, indexes, caching, async I/O, bundle size |
+| `data-migration.skill.md` | Safe schema migrations: Expand/Backfill/Contract, risk classification, verification |
 
 ### Agent memory — `project-context.md`
 
 Copy `templates/memory/project-context.md` to `.github/project-context.md` in your repo and fill
 it in during project kickoff. Agents read this file to understand the project without re-exploring
 the codebase each session.
+
+Use the **MCP memory server** (included in `mcp/base.mcp.json`) for in-session working memory.
+Use `project-context.md` for long-lived facts that survive between sessions.
 
 ### Supported stacks
 
@@ -165,13 +193,14 @@ workflows/
   examples/            Example caller workflow for consumer repos
   sync/                Workflow consumers run to pull updates from this repo
 templates/
-  pull-request/        PR templates (default, hotfix)
-  memory/              project-context.md — agent memory bootstrap
-  vscode/              Stack-specific extensions.json
-  docker/              Dockerfiles, .dockerignore, docker-compose.yml
-  ci/                  Stack-specific CI pipeline templates
+  pull-request/        PR templates (default, hotfix) — fill in per project
+  memory/              project-context.md — fill in during kickoff
+  vscode/              Stack-specific extensions.json — starting-point, customise as needed
+  docker/              Dockerfiles, .dockerignore, docker-compose.yml — starting-point
+  ci/                  CI pipeline templates (ci, release, stale) — starting-point
   labeler.yml          Path-based PR labeling config
   .editorconfig        Consistent editor formatting rules
+skills/                Copilot Skill files — operational, used as-is by agents
 mcp/                   MCP server configs (base + per-stack)
 scripts/               compose.sh, validate-composed.sh, onboard-repo.sh
 ```
@@ -205,12 +234,13 @@ CI runs `scripts/validate-composed.sh` on every PR to ensure composed files are 
 |----------|----------|------|---------|
 | `pr-description.yml` | `.github/workflows/` | Reusable | Auto-fills PR body from commit messages on open/sync |
 | `code-review.yml` | `.github/workflows/` | Reusable | Tiered automated code review (critical + suggestions) |
+| `auto-fix.yml` | `.github/workflows/` | Reusable | Auto-fixes bot REQUEST_CHANGES reviews; posts agent-ready checklist for code issues |
 | `merge-rules.yml` | `.github/workflows/` | Reusable | Squash enforcement, commitlint, branch naming |
 | `pr-automation.yml` | `.github/workflows/` | Reusable | Auto-assign, label, welcome comment |
 | `project-automation.yml` | `.github/workflows/` | Internal | GitHub Project board lifecycle automation |
 | `validate.yml` | `.github/workflows/` | Internal | CI — validates composed files are not stale |
 | `example-ci.yml` | `workflows/examples/` | Example | Shows how a consumer repo calls reusable workflows |
-| `pull-standards.yml` | `workflows/sync/` | Sync | Consumer-side weekly sync — updates instructions, prompts, personas, and `pr-description.yml` |
+| `pull-standards.yml` | `workflows/sync/` | Sync | Consumer-side weekly sync — updates instructions, prompts, skills, and reusable workflows |
 
 ### PR description auto-generation
 

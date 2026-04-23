@@ -1,4 +1,4 @@
-name: Automated Code Review
+name: Enforce Code Quality Standards on Every PR
 
 on:
   pull_request:
@@ -22,7 +22,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' && !endsWith(github.actor, '[bot]') }}
 
     steps:
-      - name: Run tiered code review
+      - name: Evaluate PR diff and post structured tiered review
         uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -55,6 +55,18 @@ jobs:
             const addedLines    = files.flatMap(f =>
               (f.patch ?? '').split('\n').filter(l => l.startsWith('+') && !l.startsWith('+++'))
             );
+            // Exclude markdown docs and GitHub Actions workflow files from secret/PII scanning.
+            // .md files contain example code; .github/workflows/*.yml files embed JS regex patterns
+            // (e.g. email-detection regexes) that would trip PII scanners.
+            // All other .yml files (docker-compose, Helm values, k8s manifests) remain scanned.
+            const isDocOrWorkflow = p =>
+              p.endsWith('.md') ||
+              /^\.github[\\/]workflows[\\/].+\.ya?ml$/.test(p);
+            const addedCodeLines = files
+              .filter(f => !isDocOrWorkflow(f.filename))
+              .flatMap(f =>
+                (f.patch ?? '').split('\n').filter(l => l.startsWith('+') && !l.startsWith('+++'))
+              );
 
             const isTestFile = p =>
               /\.(test|spec)\.[jt]sx?$/.test(p) ||
@@ -101,7 +113,7 @@ jobs:
             ];
             const foundSecrets = [];
             for (const { re, label } of SECRET_PATTERNS) {
-              if (addedLines.some(l => re.test(l))) foundSecrets.push(label);
+              if (addedCodeLines.some(l => re.test(l))) foundSecrets.push(label);
             }
             if (foundSecrets.length) {
               critical.push(
@@ -119,6 +131,7 @@ jobs:
             ];
             const piiFiles = sourceFiles
               .filter(f => !isTestFile(f.filename))
+              .filter(f => !isDocOrWorkflow(f.filename))
               .filter(f => {
                 const addedInFile = (f.patch ?? '').split('\n')
                   .filter(l => l.startsWith('+') && !l.startsWith('+++'));

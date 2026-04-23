@@ -1,0 +1,189 @@
+name: Auto-Fix Resolvable PR Review Criticals
+
+# Triggered when github-actions[bot] posts a REQUEST_CHANGES review.
+# Attempts to auto-fix issues that can be resolved without a code change
+# (e.g. PR title format). For issues that require code changes, posts a
+# structured action-item comment formatted for an agent to act on.
+#
+# Re-usable: consumer repos can call this as a reusable workflow.
+
+on:
+  pull_request_review:
+    types: [submitted]
+  workflow_call:
+    inputs:
+      pr-number:
+        description: "PR number to act on (required when called from another workflow)"
+        required: false
+        type: number
+        default: 0
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  self-heal:
+    name: Fix PR title and post remediation checklist
+    runs-on: ubuntu-latest
+
+    # Only act on REQUEST_CHANGES from the bot — human reviews are left alone.
+    if: >
+      github.event.review.state == 'changes_requested' &&
+      github.event.review.user.login == 'github-actions[bot]'
+
+    steps:
+      - name: Auto-correct title and post agent-ready action checklist
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner    = context.repo.owner;
+            const repo     = context.repo.repo;
+            const prNumber =
+              context.payload.pull_request?.number ??
+              ${{ inputs['pr-number'] || 0 }};
+            const reviewId  = context.payload.review?.id;
+            const reviewBody = context.payload.review?.body ?? '';
+
+            if (!prNumber) {
+              core.setFailed('Could not determine PR number.');
+              return;
+            }
+
+            core.info(`Self-heal triggered for PR #${prNumber}, review #${reviewId}`);
+
+            // ── 1. Fetch the current PR ───────────────────────────────────────
+            const { data: pr } = await github.rest.pulls.get({
+              owner, repo, pull_number: prNumber,
+            });
+
+            // ── 2. Parse criticals from the structured review body ────────────
+            // The code-review.yml review body has this shape:
+            //   ### 🚨 Requires Action
+            //   1. **PR title does not follow ...**
+            //   2. **Potential hardcoded secret ...**
+            const requiresActionBlock = reviewBody.match(
+              /###\s*🚨 Requires Action\s*([\s\S]*?)(?=###|$)/
+            );
+            const rawCriticals = requiresActionBlock
+              ? requiresActionBlock[1]
+              : '';
+
+            const hasTitleIssue     = /PR title does not follow/i.test(rawCriticals);
+            const hasSecretIssue    = /hardcoded secret/i.test(rawCriticals);
+            const hasPIIIssue       = /PII pattern/i.test(rawCriticals);
+            const hasSensitivePath  = /Security-sensitive file/i.test(rawCriticals);
+
+            const needsHuman  = hasSecretIssue || hasPIIIssue;
+
+            core.info(
+              `Criticals — title:${hasTitleIssue} secret:${hasSecretIssue} ` +
+              `pii:${hasPIIIssue} sensitive:${hasSensitivePath}`
+            );
+
+            // ── 3. Auto-fix: PR title ─────────────────────────────────────────
+            // Derive a conventional-commit title from the branch name.
+            // Branch format expected: type/issue-number-slug
+            // e.g. feat/42-add-oauth → "feat: add oauth (#42)"
+            let titleFixed = false;
+            if (hasTitleIssue) {
+              const branch = pr.head.ref;
+              const CC_RE  = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|hotfix)\/(\d+)-(.+)$/;
+              const match  = branch.match(CC_RE);
+
+              if (match) {
+                const [, type, issueNum, slug] = match;
+                const description = slug.replace(/-/g, ' ');
+                const newTitle    = `${type}: ${description} (#${issueNum})`;
+
+                core.info(`Auto-fixing PR title: "${pr.title}" → "${newTitle}"`);
+
+                await github.rest.pulls.update({
+                  owner, repo, pull_number: prNumber,
+                  title: newTitle,
+                });
+
+                titleFixed = true;
+              } else {
+                core.warning(`Branch "${branch}" does not match type/issue-slug — cannot auto-fix title.`);
+              }
+            }
+
+            // ── 4. Dismiss the bot REQUEST_CHANGES review ────────────────────
+            // Only dismiss if we're posting a follow-up (so the review thread
+            // stays tidy). If we auto-fixed everything, dismiss unconditionally.
+            if (reviewId && titleFixed && !hasSecretIssue && !hasPIIIssue && !hasSensitivePath) {
+              await github.rest.pulls.dismissReview({
+                owner, repo, pull_number: prNumber,
+                review_id: reviewId,
+                message: 'PR title auto-corrected by self-heal workflow.',
+              });
+              core.info('REQUEST_CHANGES review dismissed — all criticals auto-fixed.');
+              return;
+            }
+
+            // ── 5. Post structured action-item comment ───────────────────────
+            // For issues that need code changes or manual review, post a
+            // comment structured as a checklist an agent can directly act on.
+            const lines = [
+              '## 🤖 Self-Heal Report',
+              '',
+              `> PR #${prNumber} has review criticals that require attention. ` +
+              `Auto-fixable items have been applied where possible.`,
+              '',
+            ];
+
+            if (titleFixed) {
+              lines.push('### ✅ Auto-fixed');
+              lines.push('- PR title updated to follow Conventional Commits format.');
+              lines.push('');
+            }
+
+            if (needsHuman || hasSensitivePath) {
+              lines.push('### ❌ Requires code changes (cannot auto-fix)');
+              lines.push('');
+
+              if (hasSecretIssue) {
+                lines.push('**Hardcoded secret detected**');
+                lines.push('- [ ] Search the diff for hardcoded passwords, API keys, or tokens.');
+                lines.push('- [ ] Replace with environment variable references or a secrets manager call.');
+                lines.push('- [ ] If already committed, rotate the secret immediately — git history is public.');
+                lines.push('');
+              }
+
+              if (hasPIIIssue) {
+                lines.push('**PII pattern detected in source code**');
+                lines.push('- [ ] Verify no real email addresses, phone numbers, or SSNs are committed.');
+                lines.push('- [ ] Replace real values with anonymised fixtures (e.g. `user@example.com`, `555-0100`).');
+                lines.push('');
+              }
+
+              if (hasSensitivePath) {
+                lines.push('**Security-sensitive file(s) modified**');
+                lines.push('- [ ] Verify auth, token, payment, or credential code changes are intentional.');
+                lines.push('- [ ] Ensure a human reviewer has approved these changes before merge.');
+                lines.push('');
+              }
+            }
+
+            lines.push('---');
+            lines.push(
+              '*Posted by `auto-fix.yml`. Push a new commit or fix the items above to re-trigger the review.*'
+            );
+
+            await github.rest.issues.createComment({
+              owner, repo, issue_number: prNumber,
+              body: lines.join('\n'),
+            });
+
+            core.info('Action-item comment posted.');
+
+            // Fail the check if there are still unresolvable criticals so the
+            // PR cannot be merged until a human or agent addresses them.
+            if (needsHuman) {
+              core.setFailed(
+                'Critical issues require code changes before this PR can merge. ' +
+                'See the self-heal comment for a checklist.'
+              );
+            }

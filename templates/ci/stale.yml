@@ -1,0 +1,61 @@
+---
+# Stale issues and PRs workflow
+# Marks issues and PRs as stale after inactivity, then closes them.
+#
+# Usage in consumer repo:
+#   Copy to .github/workflows/stale.yml. Adjust days-before-stale and
+#   days-before-close to match your team's cadence.
+
+name: Close Stale Issues and PRs After Inactivity
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'   # every Monday at 08:00 UTC
+  workflow_dispatch:       # allow manual trigger
+  workflow_call:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    name: Enforce activity policy — warn, then close inactive issues and PRs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Apply stale labels and close issues and PRs that exceed inactivity thresholds
+        uses: actions/stale@v9
+        with:
+          # ── Issues ────────────────────────────────────────────────────
+          days-before-issue-stale: 30
+          days-before-issue-close: 7
+          stale-issue-label: 'status: stale'
+          stale-issue-message: >
+            This issue has been open for 30 days without activity. If it is
+            still relevant, please leave a comment or remove the `status: stale`
+            label. It will be closed in 7 days if no further activity occurs.
+          close-issue-message: >
+            Closing due to inactivity. If this is still a problem, please open a
+            new issue with updated context.
+          close-issue-reason: not_planned
+
+          # ── Pull requests ─────────────────────────────────────────────
+          days-before-pr-stale: 14
+          days-before-pr-close: 7
+          stale-pr-label: 'status: stale'
+          stale-pr-message: >
+            This PR has been open for 14 days without activity. If it is still
+            being worked on, please leave a comment or push a new commit. It
+            will be closed in 7 days if no further activity occurs.
+          close-pr-message: >
+            Closing due to inactivity. The branch is still available if you want
+            to reopen or cherry-pick the changes.
+
+          # ── Exemptions ───────────────────────────────────────────────
+          exempt-issue-labels: 'status: pinned,priority: critical,type: bug'
+          exempt-pr-labels: 'status: pinned,status: blocked'
+          exempt-all-milestones: true
+
+          # ── Limits ───────────────────────────────────────────────────
+          operations-per-run: 100    # avoid GitHub API rate limits

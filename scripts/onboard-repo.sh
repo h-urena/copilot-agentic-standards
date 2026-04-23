@@ -5,6 +5,13 @@
 #   ./scripts/onboard-repo.sh --repo ../my-project --stack typescript
 #   ./scripts/onboard-repo.sh --repo /path/to/repo --stack python
 #   ./scripts/onboard-repo.sh --repo /path/to/repo --stack typescript+python  (multi-stack)
+#   ./scripts/onboard-repo.sh --repo ../new-service --stack python --create
+#   ./scripts/onboard-repo.sh --repo ../existing   --stack python --force
+#
+# Options:
+#   --create      Create the GitHub repo (via gh CLI) and clone it before onboarding
+#   --force       Overwrite files that are normally skipped when they already exist
+#   --visibility  public|private — used with --create (default: private)
 #
 # What it does:
 #   1. Copies the composed copilot-instructions.md to .github/
@@ -25,7 +32,8 @@
 #  13. Copies labeler.yml to .github/labeler.yml
 #  14. Copies Docker templates (Dockerfile, .dockerignore, docker-compose.yml)
 #  15. Copies stack-specific CI pipeline template
-#  16. Prints branch protection setup instructions
+#  16. Copies Copilot Skill files to .github/skills/
+#  17. Prints branch protection setup instructions
 
 set -euo pipefail
 
@@ -33,19 +41,28 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 usage() {
-  echo "Usage: $0 --repo <path> --stack <stack>"
+  echo "Usage: $0 --repo <path> --stack <stack> [--create] [--force] [--visibility public|private]"
   echo ""
   echo "Options:"
-  echo "  --repo   Path to the target repository"
-  echo "  --stack  Stack name (typescript, python, csharp)"
+  echo "  --repo        Path to the target repository (must exist, unless --create is used)"
+  echo "  --stack       Stack name: typescript, python, csharp, or multi e.g. typescript+python"
+  echo "  --create      Create the GitHub repo via gh CLI and clone it before onboarding"
+  echo "  --force       Overwrite files that are normally skipped when they already exist"
+  echo "  --visibility  Repository visibility when using --create (default: private)"
   echo ""
-  echo "Example:"
+  echo "Examples:"
   echo "  $0 --repo ../my-project --stack typescript"
+  echo "  $0 --repo ../new-service --stack python --create"
+  echo "  $0 --repo ../new-service --stack python --create --visibility public"
+  echo "  $0 --repo ../existing-project --stack python --force"
   exit 1
 }
 
 REPO_PATH=""
 STACK=""
+CREATE=false
+FORCE=false
+VISIBILITY=private
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -57,6 +74,22 @@ while [[ $# -gt 0 ]]; do
       STACK="$2"
       shift 2
       ;;
+    --create)
+      CREATE=true
+      shift
+      ;;
+    --force)
+      FORCE=true
+      shift
+      ;;
+    --visibility)
+      VISIBILITY="$2"
+      if [[ "$VISIBILITY" != "public" && "$VISIBILITY" != "private" ]]; then
+        echo "Error: --visibility must be 'public' or 'private'"
+        exit 1
+      fi
+      shift 2
+      ;;
     *)
       echo "Unknown option: $1"
       usage
@@ -66,6 +99,30 @@ done
 
 if [ -z "$REPO_PATH" ] || [ -z "$STACK" ]; then
   usage
+fi
+
+# --create: provision the GitHub repo and clone it before onboarding
+if [ "$CREATE" = true ]; then
+  if [ -d "$REPO_PATH" ]; then
+    echo "Error: --create specified but '$REPO_PATH' already exists."
+    echo "       Use --force to re-onboard an existing repo (without --create)."
+    exit 1
+  fi
+  if ! command -v gh > /dev/null 2>&1; then
+    echo "Error: 'gh' CLI is required for --create. Install from https://cli.github.com"
+    exit 1
+  fi
+  GH_USER="$(gh api user --jq .login)"
+  REPO_NAME="$(basename "$REPO_PATH")"
+  echo "Creating GitHub repository: ${GH_USER}/${REPO_NAME} (${VISIBILITY})..."
+  if [ "$VISIBILITY" = "private" ]; then
+    gh repo create "${GH_USER}/${REPO_NAME}" --private
+  else
+    gh repo create "${GH_USER}/${REPO_NAME}" --public
+  fi
+  git clone "https://github.com/${GH_USER}/${REPO_NAME}.git" "$REPO_PATH"
+  echo "  ✓ Repository created and cloned to $REPO_PATH"
+  echo ""
 fi
 
 if [ ! -d "$REPO_PATH" ]; then
@@ -95,6 +152,13 @@ fi
 REPO_PATH="$(cd "$REPO_PATH" && pwd)"
 echo "Onboarding: $REPO_PATH (stack: $STACK)"
 echo ""
+
+# Returns 0 (true) if the destination file should be written.
+# Normal mode: skip files that already exist (idempotent re-runs).
+# --force mode: always write, pulling in the latest version.
+should_write() {
+  [ "$FORCE" = true ] || [ ! -f "$1" ]
+}
 
 # 1. Copilot instructions
 mkdir -p "$REPO_PATH/.github"
@@ -134,10 +198,18 @@ for tmpl in "$ROOT_DIR"/templates/pull-request/*.md; do
   echo "  ✓ .github/PULL_REQUEST_TEMPLATE/$(basename "$tmpl")"
 done
 
-# 5. Sync workflow + pr-description workflow
+# 5. Sync workflow + pr-description workflow + self-heal workflow
 mkdir -p "$REPO_PATH/.github/workflows"
 cp "$ROOT_DIR/workflows/sync/pull-standards.yml" "$REPO_PATH/.github/workflows/pull-standards.yml"
 echo "  ✓ .github/workflows/pull-standards.yml"
+
+for wf in pr-description.yml self-heal.yml; do
+  WF_SRC="$ROOT_DIR/.github/workflows/$wf"
+  if [ -f "$WF_SRC" ]; then
+    cp "$WF_SRC" "$REPO_PATH/.github/workflows/$wf"
+    echo "  ✓ .github/workflows/$wf"
+  fi
+done
 
 # 6. MCP config (use pre-composed merged file if available, else merge on-the-fly, else copy stack file)
 COMPOSED_MCP="$ROOT_DIR/composed/${SORTED_STACK}.mcp.json"
@@ -213,7 +285,7 @@ fi
 # 9. Dependabot config — use stack-specific template if available, fall back to base (idempotent)
 DEPENDABOT_STACK_TMPL="$ROOT_DIR/templates/dependabot.${PRIMARY_STACK}.yml"
 DEPENDABOT_BASE_TMPL="$ROOT_DIR/templates/dependabot.yml"
-if [ ! -f "$REPO_PATH/.github/dependabot.yml" ]; then
+if should_write "$REPO_PATH/.github/dependabot.yml"; then
   mkdir -p "$REPO_PATH/.github"
   if [ -f "$DEPENDABOT_STACK_TMPL" ]; then
     cp "$DEPENDABOT_STACK_TMPL" "$REPO_PATH/.github/dependabot.yml"
@@ -228,8 +300,7 @@ fi
 EXT_TMPL="$ROOT_DIR/templates/vscode/extensions.${PRIMARY_STACK}.json"
 if [ -f "$EXT_TMPL" ]; then
   mkdir -p "$REPO_PATH/.vscode"
-  # Only write if .vscode/extensions.json doesn't already exist (idempotent)
-  if [ ! -f "$REPO_PATH/.vscode/extensions.json" ]; then
+  if should_write "$REPO_PATH/.vscode/extensions.json"; then
     cp "$EXT_TMPL" "$REPO_PATH/.vscode/extensions.json"
     echo "  ✓ .vscode/extensions.json (${PRIMARY_STACK} recommendations)"
   fi
@@ -237,21 +308,21 @@ fi
 
 # 11. Project memory bootstrap template
 MEMORY_TMPL="$ROOT_DIR/templates/memory/project-context.md"
-if [ -f "$MEMORY_TMPL" ] && [ ! -f "$REPO_PATH/.github/project-context.md" ]; then
+if [ -f "$MEMORY_TMPL" ] && should_write "$REPO_PATH/.github/project-context.md"; then
   cp "$MEMORY_TMPL" "$REPO_PATH/.github/project-context.md"
   echo "  ✓ .github/project-context.md (memory bootstrap — fill in project details)"
 fi
 
 # 12. EditorConfig
 EDITORCONFIG_TMPL="$ROOT_DIR/templates/.editorconfig"
-if [ -f "$EDITORCONFIG_TMPL" ] && [ ! -f "$REPO_PATH/.editorconfig" ]; then
+if [ -f "$EDITORCONFIG_TMPL" ] && should_write "$REPO_PATH/.editorconfig"; then
   cp "$EDITORCONFIG_TMPL" "$REPO_PATH/.editorconfig"
   echo "  ✓ .editorconfig"
 fi
 
 # 13. Labeler config (used by pr-automation workflow)
 LABELER_TMPL="$ROOT_DIR/templates/labeler.yml"
-if [ -f "$LABELER_TMPL" ] && [ ! -f "$REPO_PATH/.github/labeler.yml" ]; then
+if [ -f "$LABELER_TMPL" ] && should_write "$REPO_PATH/.github/labeler.yml"; then
   cp "$LABELER_TMPL" "$REPO_PATH/.github/labeler.yml"
   echo "  ✓ .github/labeler.yml"
 fi
@@ -259,25 +330,33 @@ fi
 # 14. Docker templates (Dockerfile, .dockerignore, docker-compose.yml)
 DOCKER_TMPL_DIR="$ROOT_DIR/templates/docker"
 DOCKERFILE_TMPL="$DOCKER_TMPL_DIR/Dockerfile.${PRIMARY_STACK}"
-if [ -f "$DOCKERFILE_TMPL" ] && [ ! -f "$REPO_PATH/Dockerfile" ]; then
+if [ -f "$DOCKERFILE_TMPL" ] && should_write "$REPO_PATH/Dockerfile"; then
   cp "$DOCKERFILE_TMPL" "$REPO_PATH/Dockerfile"
   echo "  ✓ Dockerfile (${PRIMARY_STACK} template)"
 fi
-if [ -f "$DOCKER_TMPL_DIR/.dockerignore" ] && [ ! -f "$REPO_PATH/.dockerignore" ]; then
+if [ -f "$DOCKER_TMPL_DIR/.dockerignore" ] && should_write "$REPO_PATH/.dockerignore"; then
   cp "$DOCKER_TMPL_DIR/.dockerignore" "$REPO_PATH/.dockerignore"
   echo "  ✓ .dockerignore"
 fi
-if [ -f "$DOCKER_TMPL_DIR/docker-compose.yml" ] && [ ! -f "$REPO_PATH/docker-compose.yml" ]; then
+if [ -f "$DOCKER_TMPL_DIR/docker-compose.yml" ] && should_write "$REPO_PATH/docker-compose.yml"; then
   cp "$DOCKER_TMPL_DIR/docker-compose.yml" "$REPO_PATH/docker-compose.yml"
   echo "  ✓ docker-compose.yml (development template)"
 fi
 
 # 15. CI pipeline template
 CI_TMPL="$ROOT_DIR/templates/ci/ci.${PRIMARY_STACK}.yml"
-if [ -f "$CI_TMPL" ] && [ ! -f "$REPO_PATH/.github/workflows/ci.yml" ]; then
+if [ -f "$CI_TMPL" ] && should_write "$REPO_PATH/.github/workflows/ci.yml"; then
   mkdir -p "$REPO_PATH/.github/workflows"
   cp "$CI_TMPL" "$REPO_PATH/.github/workflows/ci.yml"
   echo "  ✓ .github/workflows/ci.yml (${PRIMARY_STACK} pipeline)"
+fi
+
+# 16. Copilot Skill files
+SKILLS_SRC="$ROOT_DIR/skills"
+if [ -d "$SKILLS_SRC" ]; then
+  mkdir -p "$REPO_PATH/.github/skills"
+  cp "$SKILLS_SRC"/*.skill.md "$REPO_PATH/.github/skills/"
+  echo "  ✓ .github/skills/ (Copilot Skill files)"
 fi
 
 echo ""

@@ -71,6 +71,26 @@
 <!-- Caveats, quirks, and footguns that cost time to rediscover -->
 -
 
+## Memory strategy
+
+<!-- How agents should manage memory in this project -->
+
+### File-based memory (this file)
+Use `project-context.md` as the **source of truth** for long-lived project facts:
+- Architecture decisions, domain glossary, environment variable catalogue
+- Conventions that diverge from base copilot instructions
+- Known gotchas that survive between sessions
+
+Update this file when a decision changes, a new service is added, or a new gotcha is discovered.
+
+### MCP memory server (session context)
+Use the `memory` MCP server for **in-session working memory**:
+- Current task state and progress
+- Temporary reasoning steps
+- Notes that expire when the session ends
+
+Do **not** store secrets, credentials, or personal data in either memory store.
+
 ## Agent notes
 
 <!-- Insights and patterns discovered while working on this project -->
