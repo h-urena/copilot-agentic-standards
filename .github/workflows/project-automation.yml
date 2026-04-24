@@ -74,7 +74,11 @@ jobs:
           github-token: ${{ secrets.PR_TOKEN || github.token }}
           script: |
             if ('${{ secrets.PR_TOKEN }}' === '') {
-              core.setFailed('PR_TOKEN secret is not configured. Add a classic PAT with the project scope as a repository secret named PR_TOKEN. See workflow header comment for setup instructions.');
+              core.setFailed(
+                'PR_TOKEN secret is not configured. Add a classic PAT with the project ' +
+                'scope as a repository secret named PR_TOKEN. ' +
+                'See workflow header comment for setup instructions.'
+              );
               return;
             }
 
@@ -153,7 +157,11 @@ jobs:
           github-token: ${{ secrets.PR_TOKEN || github.token }}
           script: |
             if ('${{ secrets.PR_TOKEN }}' === '') {
-              core.setFailed('PR_TOKEN secret is not configured. Add a classic PAT with the project scope as a repository secret named PR_TOKEN. See workflow header comment for setup instructions.');
+              core.setFailed(
+                'PR_TOKEN secret is not configured. Add a classic PAT with the project ' +
+                'scope as a repository secret named PR_TOKEN. ' +
+                'See workflow header comment for setup instructions.'
+              );
               return;
             }
 
@@ -249,7 +257,11 @@ jobs:
           github-token: ${{ secrets.PR_TOKEN || github.token }}
           script: |
             if ('${{ secrets.PR_TOKEN }}' === '') {
-              core.setFailed('PR_TOKEN secret is not configured. Add a classic PAT with the project scope as a repository secret named PR_TOKEN. See workflow header comment for setup instructions.');
+              core.setFailed(
+                'PR_TOKEN secret is not configured. Add a classic PAT with the project ' +
+                'scope as a repository secret named PR_TOKEN. ' +
+                'See workflow header comment for setup instructions.'
+              );
               return;
             }
 
@@ -376,7 +388,11 @@ jobs:
           github-token: ${{ secrets.PR_TOKEN || github.token }}
           script: |
             if ('${{ secrets.PR_TOKEN }}' === '') {
-              core.setFailed('PR_TOKEN secret is not configured. Add a classic PAT with the project scope as a repository secret named PR_TOKEN. See workflow header comment for setup instructions.');
+              core.setFailed(
+                'PR_TOKEN secret is not configured. Add a classic PAT with the project ' +
+                'scope as a repository secret named PR_TOKEN. ' +
+                'See workflow header comment for setup instructions.'
+              );
               return;
             }
 

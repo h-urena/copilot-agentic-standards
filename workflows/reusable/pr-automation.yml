@@ -34,7 +34,7 @@ on:
 
 jobs:
   auto-assign:
-    name: Assign PR to author
+    name: Enforce PR auto-assigned to its author
     if: ${{ inputs.auto-assign-author }}
     runs-on: ubuntu-latest
     permissions:
@@ -56,17 +56,17 @@ jobs:
             });
 
   label:
-    name: Apply path-based labels
+    name: Enforce path-based label classification
     if: ${{ inputs.enable-labeler }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
     steps:
-      - name: Checkout
+      - name: Checkout repository for label config access
         uses: actions/checkout@v6
 
-      - name: Label PR
+      - name: Apply path-based labels from labeler.yml
         uses: actions/labeler@v6
         with:
           configuration-path: .github/labeler.yml

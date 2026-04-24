@@ -45,7 +45,7 @@ permissions:
 
 jobs:
   auto-assign:
-    name: Assign PR to author
+    name: Enforce PR auto-assigned to its author
     if: ${{ github.event_name != 'workflow_call' || inputs.auto-assign-author }}
     runs-on: ubuntu-latest
     steps:
@@ -74,7 +74,7 @@ jobs:
             });
 
   label:
-    name: Apply path-based labels
+    name: Enforce path-based label classification
     # Only runs when explicitly enabled; requires .github/labeler.yml in the caller's repo
     if: ${{ inputs.enable-labeler == true }}
     runs-on: ubuntu-latest
@@ -82,10 +82,10 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - name: Checkout
+      - name: Checkout repository for label config access
         uses: actions/checkout@v6
 
-      - name: Label PR
+      - name: Apply path-based labels from labeler.yml
         uses: actions/labeler@v6
         with:
           configuration-path: .github/labeler.yml
