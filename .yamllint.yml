@@ -3,3 +3,4 @@ rules:
   line-length:
     max: 120
     level: error
+  new-lines: disable  # Windows uses CRLF; git handles conversion
