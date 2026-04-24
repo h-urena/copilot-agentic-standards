@@ -46,7 +46,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 usage() {
-  echo "Usage: $0 --repo <path> --stack <stack> [--create] [--force] [--visibility public|private] [--project-name <name>]"
+  echo "Usage: $0 --repo <path> --stack <stack> [--create] [--force] \
+[--visibility public|private] [--project-name <name>]"
   echo ""
   echo "Options:"
   echo "  --repo          Path to the target repository (must exist, unless --create is used)"
@@ -379,22 +380,32 @@ _REPO_FULL=""
 _REPO_OWNER_LOGIN=""
 _REPO_NAME_SLUG=""
 if command -v gh > /dev/null 2>&1; then
-  _REPO_FULL="$(git -C "$REPO_PATH" remote get-url origin 2>/dev/null | sed -E 's|.*[:/]([^/]+/[^/]+)(\.git)?$|\1|')" || true
+  _REPO_FULL="$(git -C "$REPO_PATH" remote get-url origin 2>/dev/null | \
+sed -E 's|.*[:/]([^/]+/[^/]+)(\.git)?$|\1|')" || true
   _REPO_OWNER_LOGIN="$(echo "$_REPO_FULL" | cut -d'/' -f1)"
   _REPO_NAME_SLUG="$(echo "$_REPO_FULL" | cut -d'/' -f2)"
 fi
 
 # 17. Conventional commit labels (idempotent — --force updates if already exists)
 if [ -n "$_REPO_FULL" ]; then
-  gh label create "feat"     --repo "$_REPO_FULL" --description "New feature"                            --color "0075ca" --force 2>/dev/null
-  gh label create "fix"      --repo "$_REPO_FULL" --description "Bug fix"                                --color "d73a4a" --force 2>/dev/null
-  gh label create "chore"    --repo "$_REPO_FULL" --description "Maintenance, tooling, config"           --color "e4e669" --force 2>/dev/null
-  gh label create "docs"     --repo "$_REPO_FULL" --description "Documentation changes"                  --color "0075ca" --force 2>/dev/null
-  gh label create "refactor" --repo "$_REPO_FULL" --description "Code restructuring, no behavior change" --color "c5def5" --force 2>/dev/null
-  gh label create "perf"     --repo "$_REPO_FULL" --description "Performance improvement"                --color "0e8a16" --force 2>/dev/null
-  gh label create "test"     --repo "$_REPO_FULL" --description "Tests only"                             --color "f9c74f" --force 2>/dev/null
-  gh label create "ci"       --repo "$_REPO_FULL" --description "CI/CD pipeline changes"                 --color "000000" --force 2>/dev/null
-  gh label create "style"    --repo "$_REPO_FULL" --description "Formatting, whitespace"                 --color "ffffff" --force 2>/dev/null
+  gh label create "feat"     --repo "$_REPO_FULL" --description "New feature" \
+    --color "0075ca" --force 2>/dev/null
+  gh label create "fix"      --repo "$_REPO_FULL" --description "Bug fix" \
+    --color "d73a4a" --force 2>/dev/null
+  gh label create "chore"    --repo "$_REPO_FULL" --description "Maintenance, tooling, config" \
+    --color "e4e669" --force 2>/dev/null
+  gh label create "docs"     --repo "$_REPO_FULL" --description "Documentation changes" \
+    --color "0075ca" --force 2>/dev/null
+  gh label create "refactor" --repo "$_REPO_FULL" --description "Code restructuring, no behavior change" \
+    --color "c5def5" --force 2>/dev/null
+  gh label create "perf"     --repo "$_REPO_FULL" --description "Performance improvement" \
+    --color "0e8a16" --force 2>/dev/null
+  gh label create "test"     --repo "$_REPO_FULL" --description "Tests only" \
+    --color "f9c74f" --force 2>/dev/null
+  gh label create "ci"       --repo "$_REPO_FULL" --description "CI/CD pipeline changes" \
+    --color "000000" --force 2>/dev/null
+  gh label create "style"    --repo "$_REPO_FULL" --description "Formatting, whitespace" \
+    --color "ffffff" --force 2>/dev/null
   echo "  ✓ Conventional commit labels (feat, fix, chore, docs, refactor, perf, test, ci, style)"
 fi
 
@@ -409,9 +420,17 @@ if [ -n "$_REPO_OWNER_LOGIN" ]; then
   # as literals without triggering SC2016 (which fires on $ inside single-quoted strings).
   _GQL_GET_OWNER_ID="query(\$login:String!){user(login:\$login){id}}"
   _GQL_LIST_PROJECTS="query(\$login:String!){user(login:\$login){projectsV2(first:20){nodes{id,title}}}}"
-  _GQL_CREATE_PROJECT="mutation(\$ownerId:ID!,\$title:String!){createProjectV2(input:{ownerId:\$ownerId,title:\$title}){projectV2{id}}}"
-  _GQL_GET_STATUS_FIELD="query(\$id:ID!){node(id:\$id){...on ProjectV2{field(name:\"Status\"){...on ProjectV2SingleSelectField{id}}}}}"
-  _GQL_SET_STATUS_OPTIONS="mutation(\$fid:ID!){updateProjectV2Field(input:{fieldId:\$fid,singleSelectOptions:[{name:\"Todo\",color:GRAY,description:\"\"},{name:\"In Progress\",color:BLUE,description:\"\"},{name:\"In Review\",color:YELLOW,description:\"PR open, awaiting review\"},{name:\"Done\",color:GREEN,description:\"\"}]}){projectV2Field{...on ProjectV2SingleSelectField{options{name}}}}}"
+  _GQL_CREATE_PROJECT="mutation(\$ownerId:ID!,\$title:String!)"
+  _GQL_CREATE_PROJECT+="{createProjectV2(input:{ownerId:\$ownerId,title:\$title}){projectV2{id}}}"
+  _GQL_GET_STATUS_FIELD="query(\$id:ID!){node(id:\$id){...on ProjectV2"
+  _GQL_GET_STATUS_FIELD+="{field(name:\"Status\"){...on ProjectV2SingleSelectField{id}}}}}"
+  _GQL_SET_STATUS_OPTIONS="mutation(\$fid:ID!){updateProjectV2Field(input:{fieldId:\$fid,"
+  _GQL_SET_STATUS_OPTIONS+="singleSelectOptions:["
+  _GQL_SET_STATUS_OPTIONS+="{name:\"Todo\",color:GRAY,description:\"\"},"
+  _GQL_SET_STATUS_OPTIONS+="{name:\"In Progress\",color:BLUE,description:\"\"},"
+  _GQL_SET_STATUS_OPTIONS+="{name:\"In Review\",color:YELLOW,description:\"PR open, awaiting review\"},"
+  _GQL_SET_STATUS_OPTIONS+="{name:\"Done\",color:GREEN,description:\"\"}]"
+  _GQL_SET_STATUS_OPTIONS+="}){projectV2Field{...on ProjectV2SingleSelectField{options{name}}}}}"
 
   _OWNER_NODE_ID="$(_gh_project api graphql \
     -f query="$_GQL_GET_OWNER_ID" \
@@ -462,8 +481,10 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 echo "Run the following commands from inside the target repo (requires admin access):"
 echo ""
-printf '%s\n' "  REPO_FULL=\"\$(git -C \"$REPO_PATH\" remote get-url origin | sed -E 's|.*[:/]([^/]+/[^/]+)(.git)?\$|\\1|')\""
-echo "  DEFAULT_BRANCH=\"\$(git -C \"$REPO_PATH\" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|.*/||' || echo main)\""
+printf '%s\n' "  REPO_FULL=\"\$(git -C \"$REPO_PATH\" remote get-url origin | \
+sed -E 's|.*[:/]([^/]+/[^/]+)(.git)?\$|\\1|')\""
+echo "  DEFAULT_BRANCH=\"\$(git -C \"$REPO_PATH\" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | \
+sed 's|.*/||' || echo main)\""
 echo ""
 echo "  gh api repos/\${REPO_FULL}/branches/\${DEFAULT_BRANCH}/protection \\"
 echo "    --method PUT \\"
