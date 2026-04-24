@@ -82,7 +82,7 @@ jobs:
 
       - name: Validate YAML syntax across all workflow and config files
         run: |
-          yamllint -d "{extends: relaxed, rules: {line-length: {max: 120}}}" \
+          yamllint \
             .github/workflows/ \
             workflows/ \
             templates/dependabot.yml \
