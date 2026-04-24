@@ -1,3 +1,5 @@
+# Activate once after cloning: pip install pre-commit && pre-commit install
+# Lint all files manually: pre-commit run --all-files
 repos:
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.35.1

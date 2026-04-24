@@ -205,6 +205,25 @@ mcp/                   MCP server configs (base + per-stack)
 scripts/               compose.sh, validate-composed.sh, onboard-repo.sh
 ```
 
+### Local development setup
+
+Run these once after cloning:
+
+```bash
+# 1. Install the pre-commit framework (requires Python)
+pip install pre-commit
+
+# 2. Register the hooks defined in .pre-commit-config.yaml
+pre-commit install
+```
+
+After that, every `git commit` automatically lints staged `*.yml`/`*.yaml` files with yamllint
+(max 120 chars/line). To lint all files without committing:
+
+```bash
+pre-commit run --all-files
+```
+
 ### Composing instruction files
 
 `scripts/compose.sh` merges `instructions/base.md` with a stack file into a single ready-to-use
