@@ -56,7 +56,7 @@ Every `.yml` change **must** use the absolute latest action versions. Flag anyth
 | `actions/setup-python` | `@v6` |
 | `actions/setup-dotnet` | `@v5` |
 
-**Node runtime:** Flag any action using Node 20 runtime — all actions must be Node 24 compatible.
+**Node runtime:** Flag any action pinned to a version that bundles a Node 20 runtime when a Node 24-compatible release exists. Note: `actions/github-script` bundles its own Node runtime — it cannot be overridden via a `node-version` input (that parameter does not exist; it is silently ignored). Upgrading requires a major version bump of the action itself (e.g., `@v10` when a Node 24 release ships). Do not add `node-version:` as an input to `actions/github-script`.
 
 **Modern syntax:** Enforce `$GITHUB_OUTPUT`. Flag `set-output`, `save-state`, and `get-state` as deprecated.
 
