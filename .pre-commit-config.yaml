@@ -1,0 +1,14 @@
+# Activate once after cloning: pip install pre-commit && pre-commit install
+# Lint all files manually: pre-commit run --all-files
+repos:
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        files: \.(yml|yaml)$
+
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.44.0
+    hooks:
+      - id: markdownlint
+        files: \.md$

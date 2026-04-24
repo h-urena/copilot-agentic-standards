@@ -33,7 +33,7 @@ that, `pull-standards.yml` keeps the repo in sync automatically.
 ### What gets copied by `onboard-repo.sh`
 
 | File / folder | Destination | Purpose |
-|---------------|-------------|---------|
+| ------------- | ----------- | ------- |
 | `composed/<stack>-copilot-instructions.md` | `.github/copilot-instructions.md` | Universal + stack-specific Copilot rules |
 | `instructions/code-review.instructions.md` | `.github/` | Generic code review checklist |
 | `instructions/code-review-<stack>.instructions.md` | `.github/` | Stack-specific review checklist |
@@ -41,9 +41,6 @@ that, `pull-standards.yml` keeps the repo in sync automatically.
 | `templates/pull-request/` | `.github/PULL_REQUEST_TEMPLATE/` | Default and hotfix PR templates |
 | `workflows/sync/pull-standards.yml` | `.github/workflows/` | Keeps standards in sync weekly |
 | `composed/<stack>.mcp.json` | `.vscode/mcp.json` | MCP server config for Copilot tools |
-
-
-00
 | `.github/prompts/implementation/` | `.github/prompts/implementation/` | Implementation prompts (governance, feature, bug, refactor, kickoff, tests, docs) |
 | `.github/prompts/review/` | `.github/prompts/review/` | Review and audit prompts |
 | `.github/prompts/scaffolds/` | `.github/prompts/scaffolds/` | Scaffold prompts (CRUD, auth, DB, frontend) |
@@ -70,6 +67,7 @@ For projects combining stacks (e.g., TypeScript frontend + Python API), use the 
 ```
 
 This produces:
+
 - `composed/python+typescript-copilot-instructions.md` — base + both stack instructions
 - `composed/python+typescript.mcp.json` — merged MCP config from all stacks
 - Code review checklists for all included stacks
@@ -92,7 +90,7 @@ subfolders: `implementation/`, `review/`, `scaffolds/`, and `personas/`.
 **Implementation prompts** (`.github/prompts/implementation/`)
 
 | Prompt | Purpose |
-|--------|---------|
+| ------ | ------- |
 | `governance.prompt.md` | Full governance workflow — run before any change (issue → branch → PR) |
 | `implement-feature.prompt.md` | End-to-end feature implementation: design, code, tests, PR |
 | `fix-bug.prompt.md` | Systematic bug fix: reproduce → root cause → targeted fix → regression test |
@@ -106,7 +104,7 @@ subfolders: `implementation/`, `review/`, `scaffolds/`, and `personas/`.
 **Review prompts** (`.github/prompts/review/`)
 
 | Prompt | Purpose |
-|--------|---------|
+| ------ | ------- |
 | `audit.prompt.md` | Standards audit: validate a branch diff against all project rules |
 | `security-audit.prompt.md` | OWASP-focused security audit: secrets, auth, injection, dependencies |
 | `performance-audit.prompt.md` | Performance audit: N+1 queries, missing indexes, caching, bundle size |
@@ -115,7 +113,7 @@ subfolders: `implementation/`, `review/`, `scaffolds/`, and `personas/`.
 **Scaffold prompts** (`.github/prompts/scaffolds/`)
 
 | Prompt | Purpose |
-|--------|---------|
+| ------ | ------- |
 | `crud-api.prompt.md` | Scaffold a CRUD API: routes, models, validation, service layer, tests |
 | `auth.prompt.md` | Wire auth: identity provider, middleware, route protection, audit logging |
 | `database.prompt.md` | Set up database: connection, ORM, migrations, seeding, health check |
@@ -127,7 +125,7 @@ subfolders: `implementation/`, `review/`, `scaffolds/`, and `personas/`.
 **Persona prompts** (`.github/prompts/personas/`)
 
 | Prompt | Purpose |
-|--------|---------|
+| ------ | ------- |
 | `persona-devops-engineer.prompt.md` | Adopt a DevOps Engineer perspective for infra, CI/CD, and deployment review |
 | `persona-principal-engineer.prompt.md` | Adopt a Principal Engineer perspective for architecture and design review |
 | `persona-qa-engineer.prompt.md` | Adopt a Senior QA Engineer perspective for coverage and quality risk review |
@@ -142,7 +140,7 @@ because they are **complete, ready-to-use operational files** — agents load th
 never fill them in. They are distributed to downstream repos as `.github/skills/`.
 
 | Skill file | Purpose |
-|------------|---------|
+| ---------- | ------- |
 | `test-generation.skill.md` | Write comprehensive test suites: AAA, mocks, coverage plan, Testcontainers |
 | `code-analysis.skill.md` | Five-phase deep code analysis: correctness, security, performance, maintainability |
 | `api-design-review.skill.md` | API contract review: URL design, status codes, security, rate limiting |
@@ -161,7 +159,7 @@ Use `project-context.md` for long-lived facts that survive between sessions.
 ### Supported stacks
 
 | Stack | Instruction file | Code review checklist | MCP config |
-|-------|-----------------|----------------------|------------|
+| ----- | --------------- | -------------------- | ---------- |
 | TypeScript | `instructions/stacks/typescript.md` | `instructions/code-review-typescript.instructions.md` | `mcp/typescript.mcp.json` |
 | Python | `instructions/stacks/python.md` | `instructions/code-review-python.instructions.md` | `mcp/python.mcp.json` |
 | C# | `instructions/stacks/csharp.md` | `instructions/code-review-csharp.instructions.md` | `mcp/csharp.mcp.json` |
@@ -175,7 +173,7 @@ Use `project-context.md` for long-lived facts that survive between sessions.
 
 ### Repo structure
 
-```
+```text
 instructions/          Copilot instruction files (base + per-stack)
   base.md              Universal rules — inherited by all stacks
   stacks/              Additive per-stack rules (typescript, python, csharp)
@@ -205,6 +203,39 @@ mcp/                   MCP server configs (base + per-stack)
 scripts/               compose.sh, validate-composed.sh, onboard-repo.sh
 ```
 
+### Local development setup
+
+**Prerequisites** (install once globally, skip if already present):
+
+| Tool | Required for | Install |
+| ---- | ------------ | ------- |
+| `bash` (≥4) | `onboard-repo.sh` | macOS: `brew install bash`; Linux: built-in; Windows: Git Bash or WSL |
+| `gh` CLI | `onboard-repo.sh` — creating repos, labels, project boards | <https://cli.github.com> |
+| `jq` | `onboard-repo.sh` — merging MCP configs on-the-fly (optional; falls back gracefully) | `brew install jq` / `apt install jq` |
+| `GH_PROJECT_PAT` | `onboard-repo.sh` — auto-creating GitHub Project boards | Classic PAT with `project` scope (fine-grained PATs not supported) |
+| Python + `pre-commit` | YAML lint hook at commit time | `pip install pre-commit` |
+
+**Step 1 — Install the pre-commit framework (global, skip if already installed):**
+
+```bash
+pip install pre-commit
+```
+
+**Step 2 — Register the hooks for this repo (required once per clone):**
+
+```bash
+pre-commit install
+```
+
+After that, every `git commit` automatically lints staged `*.yml`/`*.yaml` files with yamllint
+(max 120 chars/line).
+
+> **Ad-hoc:** To lint all files without committing (e.g. before raising a PR):
+>
+> ```bash
+> pre-commit run --all-files
+> ```
+
 ### Composing instruction files
 
 `scripts/compose.sh` merges `instructions/base.md` with a stack file into a single ready-to-use
@@ -231,7 +262,7 @@ CI runs `scripts/validate-composed.sh` on every PR to ensure composed files are 
 ### Workflows
 
 | Workflow | Location | Type | Purpose |
-|----------|----------|------|---------|
+| -------- | -------- | ---- | ------- |
 | `pr-description.yml` | `.github/workflows/` | Reusable | Auto-fills PR body from commit messages on open/sync |
 | `code-review.yml` | `.github/workflows/` | Reusable | Tiered automated code review (critical + suggestions) |
 | `auto-fix.yml` | `.github/workflows/` | Reusable | Auto-fixes bot REQUEST_CHANGES reviews; posts agent-ready checklist for code issues |
