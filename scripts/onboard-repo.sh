@@ -23,7 +23,7 @@
 #   2. Copies code-review.instructions.md and stack-specific code-review-<stack>.instructions.md to .github/
 #   3. Copies domain instruction files (*.instructions.md, excluding code-review) to .github/
 #   4. Copies PR templates to .github/PULL_REQUEST_TEMPLATE/
-#   5. Copies the pull-standards sync workflow to .github/workflows/
+#   5. Copies all distributable workflows from .github/workflows/ (excludes validate.yml)
 #   6. Copies the composed MCP config to .vscode/mcp.json (base + stack merged)
 #  7. Copies .github/prompts/implementation/ (implementation agent prompts)
 #  7a. Copies .github/prompts/review/ (review and audit prompts)
@@ -226,17 +226,20 @@ for tmpl in "$ROOT_DIR"/templates/pull-request/*.md; do
   echo "  ✓ .github/PULL_REQUEST_TEMPLATE/$(basename "$tmpl")"
 done
 
-# 5. Sync workflow + pr-description workflow + self-heal workflow
+# 5. Sync workflow + all distributable agentic workflows
+#    validate.yml is excluded — it is internal to the standards repo only.
 mkdir -p "$REPO_PATH/.github/workflows"
 cp "$ROOT_DIR/workflows/sync/pull-standards.yml" "$REPO_PATH/.github/workflows/pull-standards.yml"
 echo "  ✓ .github/workflows/pull-standards.yml"
 
-for wf in pr-description.yml self-heal.yml; do
-  WF_SRC="$ROOT_DIR/.github/workflows/$wf"
-  if [ -f "$WF_SRC" ]; then
-    cp "$WF_SRC" "$REPO_PATH/.github/workflows/$wf"
-    echo "  ✓ .github/workflows/$wf"
-  fi
+for WF_SRC in "$ROOT_DIR/.github/workflows/"*.yml; do
+  [ -f "$WF_SRC" ] || continue
+  wf="$(basename "$WF_SRC")"
+  case "$wf" in
+    validate.yml) continue ;;  # internal to copilot-agentic-standards only
+  esac
+  cp "$WF_SRC" "$REPO_PATH/.github/workflows/$wf"
+  echo "  ✓ .github/workflows/$wf"
 done
 
 # 6. MCP config (use pre-composed merged file if available, else merge on-the-fly, else copy stack file)
