@@ -73,7 +73,7 @@ jobs:
           sync-labels: true
 
   welcome-comment:
-    name: Welcome first-time contributor
+    name: Enforce first-contribution welcome comment
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
