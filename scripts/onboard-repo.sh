@@ -23,12 +23,9 @@
 #   2. Copies code-review.instructions.md and stack-specific code-review-<stack>.instructions.md to .github/
 #   3. Copies domain instruction files (*.instructions.md, excluding code-review) to .github/
 #   4. Copies PR templates to .github/PULL_REQUEST_TEMPLATE/
-#   5. Copies the pull-standards sync workflow to .github/workflows/
+#   5. Copies all distributable workflows from .github/workflows/ (excludes validate.yml)
 #   6. Copies the composed MCP config to .vscode/mcp.json (base + stack merged)
-#  7. Copies .github/prompts/implementation/ (implementation agent prompts)
-#  7a. Copies .github/prompts/review/ (review and audit prompts)
-#  7b. Copies .github/prompts/scaffolds/ (scaffold prompts)
-#  7c. Copies .github/prompts/personas/ (persona prompts)
+#   7. Copies all .github/prompts/ subdirectories (implementation, review, scaffolds, personas, ...)
 #   8. Writes .github/CODEOWNERS with the detected repo owner
 #   9. Copies stack-specific dependabot.yml template (idempotent)
 #  10. Copies .vscode/extensions.json with stack-specific extension recommendations
@@ -36,7 +33,7 @@
 #  12. Copies .editorconfig to repo root
 #  13. Copies labeler.yml to .github/labeler.yml
 #  14. Copies Docker templates (Dockerfile, .dockerignore, docker-compose.yml)
-#  15. Copies stack-specific CI pipeline template
+#  15. Copies stack-specific CI pipeline + release.yml + stale.yml templates
 #  16. Copies Copilot Skill files to .github/skills/
 #  17. Creates conventional commit labels (feat, fix, chore, docs, refactor, perf, test, ci, style)
 #  18. Creates GitHub Project board with columns: Todo → In Progress → In Review → Done
@@ -226,17 +223,20 @@ for tmpl in "$ROOT_DIR"/templates/pull-request/*.md; do
   echo "  ✓ .github/PULL_REQUEST_TEMPLATE/$(basename "$tmpl")"
 done
 
-# 5. Sync workflow + pr-description workflow + self-heal workflow
+# 5. Sync workflow + all distributable agentic workflows
+#    validate.yml is excluded — it is internal to the standards repo only.
 mkdir -p "$REPO_PATH/.github/workflows"
 cp "$ROOT_DIR/workflows/sync/pull-standards.yml" "$REPO_PATH/.github/workflows/pull-standards.yml"
 echo "  ✓ .github/workflows/pull-standards.yml"
 
-for wf in pr-description.yml self-heal.yml; do
-  WF_SRC="$ROOT_DIR/.github/workflows/$wf"
-  if [ -f "$WF_SRC" ]; then
-    cp "$WF_SRC" "$REPO_PATH/.github/workflows/$wf"
-    echo "  ✓ .github/workflows/$wf"
-  fi
+for WF_SRC in "$ROOT_DIR/.github/workflows/"*.yml; do
+  [ -f "$WF_SRC" ] || continue
+  wf="$(basename "$WF_SRC")"
+  case "$wf" in
+    validate.yml) continue ;;  # internal to copilot-agentic-standards only
+  esac
+  cp "$WF_SRC" "$REPO_PATH/.github/workflows/$wf"
+  echo "  ✓ .github/workflows/$wf"
 done
 
 # 6. MCP config (use pre-composed merged file if available, else merge on-the-fly, else copy stack file)
@@ -259,36 +259,16 @@ elif [ -f "$MCP_FILE" ]; then
   fi
 fi
 
-# 7. Implementation prompts
-IMPL_PROMPTS_SRC="$ROOT_DIR/.github/prompts/implementation"
-if [ -d "$IMPL_PROMPTS_SRC" ]; then
-  mkdir -p "$REPO_PATH/.github/prompts/implementation"
-  cp "$IMPL_PROMPTS_SRC"/*.prompt.md "$REPO_PATH/.github/prompts/implementation/"
-  echo "  ✓ .github/prompts/implementation/ (implementation prompts)"
-fi
-
-# 7a. Review prompts
-REVIEW_PROMPTS_SRC="$ROOT_DIR/.github/prompts/review"
-if [ -d "$REVIEW_PROMPTS_SRC" ]; then
-  mkdir -p "$REPO_PATH/.github/prompts/review"
-  cp "$REVIEW_PROMPTS_SRC"/*.prompt.md "$REPO_PATH/.github/prompts/review/"
-  echo "  ✓ .github/prompts/review/ (review and audit prompts)"
-fi
-
-# 7b. Scaffold prompts
-SCAFFOLDS_PROMPTS_SRC="$ROOT_DIR/.github/prompts/scaffolds"
-if [ -d "$SCAFFOLDS_PROMPTS_SRC" ]; then
-  mkdir -p "$REPO_PATH/.github/prompts/scaffolds"
-  cp "$SCAFFOLDS_PROMPTS_SRC"/*.prompt.md "$REPO_PATH/.github/prompts/scaffolds/"
-  echo "  ✓ .github/prompts/scaffolds/ (scaffold prompts)"
-fi
-
-# 7c. Persona prompts
-PERSONAS_SRC="$ROOT_DIR/.github/prompts/personas"
-if [ -d "$PERSONAS_SRC" ]; then
-  mkdir -p "$REPO_PATH/.github/prompts/personas"
-  cp "$PERSONAS_SRC"/*.prompt.md "$REPO_PATH/.github/prompts/personas/"
-  echo "  ✓ .github/prompts/personas/ (persona prompts)"
+# 7. Prompt files — loop over all subdirectories so new categories are picked up automatically.
+PROMPTS_SRC="$ROOT_DIR/.github/prompts"
+if [ -d "$PROMPTS_SRC" ]; then
+  for prompt_dir in "$PROMPTS_SRC"/*/; do
+    [ -d "$prompt_dir" ] || continue
+    subdir="$(basename "$prompt_dir")"
+    mkdir -p "$REPO_PATH/.github/prompts/$subdir"
+    cp "$prompt_dir"*.prompt.md "$REPO_PATH/.github/prompts/$subdir/" 2>/dev/null || true
+    echo "  ✓ .github/prompts/$subdir/"
+  done
 fi
 
 # 8. CODEOWNERS (detect repo owner from git remote)
@@ -371,13 +351,20 @@ if [ -f "$DOCKER_TMPL_DIR/docker-compose.yml" ] && should_write "$REPO_PATH/dock
   echo "  ✓ docker-compose.yml (development template)"
 fi
 
-# 15. CI pipeline template
+# 15. CI pipeline template (stack-specific) + general CI support templates
 CI_TMPL="$ROOT_DIR/templates/ci/ci.${PRIMARY_STACK}.yml"
 if [ -f "$CI_TMPL" ] && should_write "$REPO_PATH/.github/workflows/ci.yml"; then
   mkdir -p "$REPO_PATH/.github/workflows"
   cp "$CI_TMPL" "$REPO_PATH/.github/workflows/ci.yml"
   echo "  ✓ .github/workflows/ci.yml (${PRIMARY_STACK} pipeline)"
 fi
+# release.yml and stale.yml are stack-agnostic; deploy once (idempotent — users may customise them).
+for _ci_tmpl in release.yml stale.yml; do
+  if [ -f "$ROOT_DIR/templates/ci/$_ci_tmpl" ] && should_write "$REPO_PATH/.github/workflows/$_ci_tmpl"; then
+    cp "$ROOT_DIR/templates/ci/$_ci_tmpl" "$REPO_PATH/.github/workflows/$_ci_tmpl"
+    echo "  ✓ .github/workflows/$_ci_tmpl"
+  fi
+done
 
 # 16. Copilot Skill files
 SKILLS_SRC="$ROOT_DIR/skills"
