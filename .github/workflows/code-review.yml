@@ -276,7 +276,8 @@ jobs:
               event,
             });
 
-            core.info(`Review posted: ${event} | 🚨 ${critical.length} | 💡 ${suggestions.length} | ✅ ${passing.length}`);
+            core.info(`Review posted: ${event} | 🚨 ${critical.length} | 💡 ${suggestions.length} | \
+✅ ${passing.length}`);
 
             if (hasCritical) {
               core.setFailed(`Code review found ${critical.length} critical item(s) requiring action.`);
