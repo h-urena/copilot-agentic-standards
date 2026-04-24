@@ -7,7 +7,7 @@
 #   In Review   — PR opened → repo owner assigned as reviewer
 #   Done        — PR approved by the owner OR merged
 #
-# ── Setup required ────────────────────────────────────────────────────────────
+# -- Setup required ------------------------------------------------------------
 # Add a repository secret named PR_TOKEN containing a classic PAT
 # with the following scope:
 #   project   — required for GitHub Projects v2 GraphQL API (addProjectV2ItemById)
@@ -16,7 +16,7 @@
 # requires the `project` scope which is only available on classic PATs for
 # personal (non-organisation) accounts.
 #
-# ── Consumer repo usage ───────────────────────────────────────────────────────
+# -- Consumer repo usage -------------------------------------------------------
 # jobs:
 #   board:
 #     uses: h-urena/copilot-agentic-standards/.github/workflows/project-automation.yml@main
@@ -62,7 +62,7 @@ permissions:
   issues: read
 
 jobs:
-  # ── Add newly created issue to board as "Todo" ────────────────────────────
+  # -- Add newly created issue to board as "Todo" ----------------------------
   issue-to-todo:
     name: Issue opened → Todo
     if: github.event_name == 'issues'
@@ -75,8 +75,8 @@ jobs:
           script: |
             if ('${{ secrets.PR_TOKEN }}' === '') {
               core.setFailed(
-                'PR_TOKEN secret is not configured. Add a classic PAT with the project ' +
-                'scope as a repository secret named PR_TOKEN. ' +
+                'PR_TOKEN secret is not configured. Add a classic PAT with the ' +
+                'project scope as a repository secret named PR_TOKEN. ' +
                 'See workflow header comment for setup instructions.'
               );
               return;
@@ -143,7 +143,7 @@ jobs:
 
             core.info(`Issue #${issue.number} added to project board with status "Todo".`);
 
-  # ── Move linked issue to "In Progress" when a branch is pushed ────────────
+  # -- Move linked issue to "In Progress" when a branch is pushed ------------
   branch-to-in-progress:
     name: Branch pushed → In Progress
     if: github.event_name == 'push'
@@ -158,8 +158,8 @@ jobs:
           script: |
             if ('${{ secrets.PR_TOKEN }}' === '') {
               core.setFailed(
-                'PR_TOKEN secret is not configured. Add a classic PAT with the project ' +
-                'scope as a repository secret named PR_TOKEN. ' +
+                'PR_TOKEN secret is not configured. Add a classic PAT with the ' +
+                'project scope as a repository secret named PR_TOKEN. ' +
                 'See workflow header comment for setup instructions.'
               );
               return;
@@ -245,7 +245,7 @@ jobs:
                 });
             }
 
-  # ── Move linked issue to "In Review" when PR is opened ────────────────────
+  # -- Move linked issue to "In Review" when PR is opened --------------------
   pr-to-in-review:
     name: PR opened → In Review
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
@@ -258,8 +258,8 @@ jobs:
           script: |
             if ('${{ secrets.PR_TOKEN }}' === '') {
               core.setFailed(
-                'PR_TOKEN secret is not configured. Add a classic PAT with the project ' +
-                'scope as a repository secret named PR_TOKEN. ' +
+                'PR_TOKEN secret is not configured. Add a classic PAT with the ' +
+                'project scope as a repository secret named PR_TOKEN. ' +
                 'See workflow header comment for setup instructions.'
               );
               return;
@@ -367,7 +367,7 @@ jobs:
               core.info(`Issue #${issueNumber} moved to '${statusName}' on project board.`);
             }
 
-  # ── Move linked issue to "Done" when PR is approved or merged ───────────────
+  # -- Move linked issue to "Done" when PR is approved or merged ---------------
   approval-to-done:
     name: PR approved/merged → Done
     if: >
@@ -389,8 +389,8 @@ jobs:
           script: |
             if ('${{ secrets.PR_TOKEN }}' === '') {
               core.setFailed(
-                'PR_TOKEN secret is not configured. Add a classic PAT with the project ' +
-                'scope as a repository secret named PR_TOKEN. ' +
+                'PR_TOKEN secret is not configured. Add a classic PAT with the ' +
+                'project scope as a repository secret named PR_TOKEN. ' +
                 'See workflow header comment for setup instructions.'
               );
               return;
