@@ -86,4 +86,6 @@ jobs:
             .github/workflows/ \
             workflows/ \
             templates/dependabot.yml \
-            .github/dependabot.yml
+            .github/dependabot.yml \
+            .yamllint.yml \
+            .pre-commit-config.yaml
