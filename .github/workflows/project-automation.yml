@@ -366,7 +366,7 @@ jobs:
        github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     permissions:
-      contents: write      # required for enablePullRequestAutoMerge
+      contents: write # required for enablePullRequestAutoMerge
       pull-requests: write # required for enablePullRequestAutoMerge
       issues: read
     steps:

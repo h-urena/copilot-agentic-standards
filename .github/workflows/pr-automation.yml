@@ -1,4 +1,4 @@
-# PR Automation
+# Auto-assign PRs, apply labels, and welcome contributors
 #
 # Dual-trigger:
 #   1. pull_request — runs automatically on PRs in this repo
@@ -19,7 +19,7 @@
 # the auto-created "update standards" PRs to trigger CI, use a fine-grained PAT
 # or GitHub App token in pull-standards.yml instead.
 
-name: PR Automation
+name: Auto-assign PRs, apply labels, and welcome contributors
 
 on:
   pull_request:
