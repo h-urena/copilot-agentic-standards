@@ -207,13 +207,15 @@ scripts/               compose.sh, validate-composed.sh, onboard-repo.sh
 
 ### Local development setup
 
-Run these once after cloning:
+**Step 1 — Install the pre-commit framework (global, skip if already installed):**
 
 ```bash
-# 1. Install the pre-commit framework (requires Python)
 pip install pre-commit
+```
 
-# 2. Register the hooks defined in .pre-commit-config.yaml
+**Step 2 — Register the hooks for this repo (required once per clone):**
+
+```bash
 pre-commit install
 ```
 
