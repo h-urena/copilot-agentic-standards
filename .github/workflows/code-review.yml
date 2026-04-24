@@ -39,7 +39,7 @@ jobs:
             const owner = context.repo.owner;
             const repo  = context.repo.repo;
 
-            // ── 1. Gather PR metadata ────────────────────────────────────────
+            // -- 1. Gather PR metadata ----------------------------------------
             const { data: pr } = await github.rest.pulls.get({
               owner, repo, pull_number: prNumber,
             });
@@ -86,7 +86,7 @@ jobs:
             const testFiles    = files.filter(f =>  isTestFile(f.filename));
             const sensitiveFiles = sourceFiles.filter(f => isSensitivePath(f.filename));
 
-            // ── 2. Run checks ────────────────────────────────────────────────
+            // -- 2. Run checks ------------------------------------------------
 
             // 🚨 Critical checks (trigger REQUEST_CHANGES)
             const critical = [];
@@ -156,7 +156,7 @@ jobs:
               );
             }
 
-            // ── 💡 Suggestions (COMMENT only) ───────────────────────────────
+            // -- 💡 Suggestions (COMMENT only) -------------------------------
             const suggestions = [];
 
             if (prBody.trim().length < 20) {
@@ -207,7 +207,7 @@ jobs:
               );
             }
 
-            // ── ✅ Passing checks ────────────────────────────────────────────
+            // -- ✅ Passing checks --------------------------------------------
             const passing = [];
 
             if (CC_RE.test(prTitle))          passing.push('PR title follows Conventional Commits');
@@ -220,7 +220,7 @@ jobs:
                                                passing.push('Test files updated alongside source code');
             if (totalChanges <= 400)           passing.push(`PR size is reasonable (${totalChanges} lines)`);
 
-            // ── 3. Build review body ─────────────────────────────────────────
+            // -- 3. Build review body -----------------------------------------
             const hasCritical = critical.length > 0;
 
             let body = `## Automated Code Review\n\n`;
@@ -250,7 +250,7 @@ jobs:
 
             body += `\n---\n*Automated review by \`code-review.yml\`. Last run: ${new Date().toISOString()}*`;
 
-            // ── 4. Dismiss stale bot REQUEST_CHANGES reviews ─────────────────
+            // -- 4. Dismiss stale bot REQUEST_CHANGES reviews -----------------
             const { data: existingReviews } = await github.rest.pulls.listReviews({
               owner, repo, pull_number: prNumber,
             });
@@ -267,7 +267,7 @@ jobs:
               }
             }
 
-            // ── 5. Post review ───────────────────────────────────────────────
+            // -- 5. Post review -----------------------------------------------
             const event = hasCritical ? 'REQUEST_CHANGES' : 'COMMENT';
 
             await github.rest.pulls.createReview({

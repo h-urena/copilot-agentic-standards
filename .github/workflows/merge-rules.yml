@@ -50,11 +50,12 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          npm install --save-dev \
-            @commitlint/cli \
-            @commitlint/config-conventional
           echo '{"extends":["@commitlint/config-conventional"]}' > .commitlintrc.json
-          echo "$PR_TITLE" | npx commitlint --verbose
+          echo "$PR_TITLE" | npx \
+            --yes \
+            --package=@commitlint/cli@20.5.0 \
+            --package=@commitlint/config-conventional@20.5.0 \
+            commitlint --verbose
 
   squash-check:
     name: Enforce squash-merge is enabled in repository settings
