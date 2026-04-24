@@ -220,11 +220,12 @@ pre-commit install
 ```
 
 After that, every `git commit` automatically lints staged `*.yml`/`*.yaml` files with yamllint
-(max 120 chars/line). To lint all files without committing:
+(max 120 chars/line).
 
-```bash
-pre-commit run --all-files
-```
+> **Ad-hoc:** To lint all files without committing (e.g. before raising a PR):
+> ```bash
+> pre-commit run --all-files
+> ```
 
 ### Composing instruction files
 
