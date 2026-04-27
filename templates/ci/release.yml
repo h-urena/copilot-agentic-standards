@@ -37,7 +37,7 @@ jobs:
       - name: Ensure Node.js runtime is available for semantic-release
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Ensure semantic-release and all changelog plugins are installed at pinned versions
         run: |
@@ -57,7 +57,7 @@ jobs:
       # - name: Setup Node.js (project)
       #   uses: actions/setup-node@v6
       #   with:
-      #     node-version: 22
+      #     node-version: 24
       #     cache: pnpm
       # - name: Install dependencies
       #   run: pnpm install --frozen-lockfile
@@ -70,7 +70,7 @@ jobs:
       # - name: Setup Python
       #   uses: actions/setup-python@v6
       #   with:
-      #     python-version: "3.12"
+      #     python-version: "3.14"
       # - name: Build wheel
       #   run: |
       #     pip install build
