@@ -1,0 +1,6 @@
+{
+  "_comment": "Single source of truth for pinned runtime versions across all stack templates. Updated automatically by workflows/sync/bump-runtime-versions.yml.",
+  "python": "3.12",
+  "node": "22",
+  "dotnet": "9.0"
+}
