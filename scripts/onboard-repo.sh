@@ -442,10 +442,12 @@ if [ -n "$_REPO_OWNER_LOGIN" ]; then
 
   if [ -n "$_OWNER_NODE_ID" ]; then
     # Idempotent guard — reuse the existing board if one with this name already exists.
-    _NEW_PROJECT_ID="$(_gh_project api graphql \
+    # Use $ENV.BOARD_NAME_JQ in the jq filter instead of interpolating _BOARD_NAME directly,
+    # which would allow jq injection if the name contains " or \ characters.
+    _NEW_PROJECT_ID="$(BOARD_NAME_JQ="$_BOARD_NAME" _gh_project api graphql \
       -f query="$_GQL_LIST_PROJECTS" \
       -f login="$_REPO_OWNER_LOGIN" \
-      --jq ".data.user.projectsV2.nodes[] | select(.title == \"${_BOARD_NAME}\") | .id" \
+      --jq '.data.user.projectsV2.nodes[] | select(.title == $ENV.BOARD_NAME_JQ) | .id' \
       2>/dev/null | head -n1 || true)"
 
     if [ -z "$_NEW_PROJECT_ID" ]; then
