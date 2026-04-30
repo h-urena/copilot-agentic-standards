@@ -84,6 +84,10 @@ without it.
 | Test strategy, quality risks, or edge case coverage | `#qa-engineer` |
 | Requirements, user stories, or acceptance criteria | `#product-manager` |
 
+> **Agent mode:** `#prompt-name` is human chat syntax. When running as an agent, use `read_file`
+> on each prompt's file path instead. The complete path-to-file dispatch tables for Steps 4 and 5
+> are in `.github/prompts/implementation/governance.prompt.md`.
+
 **Implementation rules (this repo):**
 - Make only the changes required to resolve the issue.
 - Do not refactor unrelated code or add unrequested features.
@@ -107,6 +111,9 @@ Run these review prompts before opening the PR — zero exceptions:
 - `#security-audit` — any PR touching workflows, scripts, permissions, auth, or external inputs.
 - `#dependency-audit` — any PR that adds, removes, or changes a dependency.
 - `#performance-audit` — any PR touching database queries, caching, or data-intensive operations.
+
+> **Agent mode:** Use `read_file` on the matching path from the Step 5 dispatch table in
+> `.github/prompts/implementation/governance.prompt.md`.
 
 **Step 6 — Commit using Conventional Commits**
 

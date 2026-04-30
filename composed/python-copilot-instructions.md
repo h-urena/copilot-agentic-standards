@@ -93,6 +93,10 @@ without it.
 | Test strategy, quality risks, or edge case coverage | `#qa-engineer` |
 | Requirements, user stories, or acceptance criteria | `#product-manager` |
 
+> **Agent mode:** `#prompt-name` is human chat syntax. When running as an agent, use `read_file`
+> on each prompt's file path instead. The complete path-to-file dispatch tables for Steps 4 and 5
+> are in `.github/prompts/implementation/governance.prompt.md`.
+
 **Implementation rules:**
 - Make only the changes required to resolve the issue.
 - Do not refactor unrelated code or add unrequested features.
@@ -110,6 +114,8 @@ Run all of the following in order. Zero errors allowed — do not proceed with a
    - `#security-audit` — any PR touching auth, data access, external inputs, or dependencies.
    - `#dependency-audit` — any PR that adds, removes, or changes a dependency (lockfile, manifest, or version pin).
    - `#performance-audit` — any PR touching database queries, caching, pagination, or frontend bundle output.
+   > **Agent mode:** Use `read_file` on the matching path from the Step 5 dispatch table in
+   > `.github/prompts/implementation/governance.prompt.md`.
 5. **Pre-commit hooks** — run `pre-commit run --all-files` if `.pre-commit-config.yaml` exists.
 6. **Composed files** — if the repo has `validate-composed.sh`, run it and commit any regenerated
    files before pushing.
