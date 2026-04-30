@@ -51,6 +51,27 @@
 
 - Validate all environment variables at application startup using `pydantic-settings`. Never read `os.environ` inline at call sites — fail fast on missing or malformed config.
 
+## Stack validation
+
+Run these commands in order at Step 5. All must pass with zero errors before committing.
+
+```bash
+# Lint — zero errors
+ruff check .
+
+# Format check — no unformatted files
+ruff format --check .
+
+# Type-check — zero errors (strict mode)
+mypy .
+
+# Tests — all must pass
+pytest
+
+# Dependency audit — no known vulnerabilities
+pip-audit
+```
+
 ## Testing
 
 - **Unit tests**: Use `pytest`. Mock external dependencies with `pytest-mock` or `unittest.mock`. Follow the Arrange-Act-Assert pattern.

@@ -53,8 +53,8 @@ jobs:
           echo '{"extends":["@commitlint/config-conventional"]}' > .commitlintrc.json
           echo "$PR_TITLE" | npx \
             --yes \
-            --package=@commitlint/cli@20.5.0 \
-            --package=@commitlint/config-conventional@20.5.0 \
+            --package=@commitlint/cli@20.5.3 \
+            --package=@commitlint/config-conventional@20.5.3 \
             commitlint --verbose
 
   squash-check:

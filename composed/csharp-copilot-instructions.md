@@ -18,52 +18,155 @@ These are universal rules that apply to **every** repository regardless of langu
 - Do not leave dead code, commented-out code, or TODO comments without a linked issue.
 - Treat compiler/linter warnings as errors.
 
-## MANDATORY pre-flight — do this before touching any file
+## MANDATORY pre-flight — execute every step, every time, before touching any file
 
-> **STOP.** Do not create, edit, or delete any file until all four steps below are complete.
+> **STOP.** Do not create, edit, or delete any file until all nine steps below are complete.
 > This applies to every change, no matter how small or "obvious".
 
 **Step 1 — Verify main is up to date**
 
 ```bash
-git checkout main && git pull origin main
+git checkout main
+git pull origin main
 ```
 
 **Step 2 — Create a GitHub issue**
+
+- Title: `<type>(<scope>): <short description>` using Conventional Commits format
+- Body: describe the problem, proposed solution, and acceptance criteria
+- Assign to yourself
+- Record the issue number — you will need it for every subsequent step
 
 ```bash
 gh issue create --title "<type>(scope): short description" --body "Problem, solution, acceptance criteria" --assignee @me
 ```
 
-Record the issue number. You cannot proceed without it.
-
 **Step 3 — Create a branch linked to that issue**
 
-```bash
-git checkout -b <type>/<issue-number>-<short-slug>
-# e.g. feat/42-add-pr-description-workflow
-```
+Branch naming format: `<type>/<issue-number>-<short-slug>`
 
 Valid types: `feat` `fix` `docs` `style` `refactor` `perf` `test` `build` `ci` `chore` `hotfix`
 
-**Step 4 — Make ALL changes on that branch, then open a PR**
+Examples: `feat/42-add-oauth-flow`, `fix/99-null-crash-on-login`, `chore/35-mvp-hardening`
 
 ```bash
-gh pr create --title "<type>(scope): description" --body "Closes #<issue-number>"
+git checkout -b <type>/<issue-number>-<short-slug>
+```
+
+**Step 4 — Implement the change**
+
+Before writing any code, invoke the matching prompt for the task type. Do not start implementing
+without it.
+
+**Implementation prompts — invoke at the start of this step based on task type:**
+
+| Task | Invoke |
+| ---- | ------ |
+| Implementing a new feature | `#implement-feature` |
+| Fixing a bug | `#fix-bug` |
+| Writing or updating tests | `#write-tests` |
+| Refactoring existing code | `#refactor` |
+| Writing documentation | `#write-docs` |
+| Recording an architecture decision | `#create-adr` |
+| Deploying a service | `#deploy` |
+| Bootstrapping a new project | `#project-kickoff` |
+
+**Scaffold prompts — invoke at the start of this step when building a new system component:**
+
+| Building | Invoke |
+| -------- | ------ |
+| A new CRUD resource | `#crud-api` |
+| Authentication / authorisation | `#auth` |
+| A new database, ORM, or migrations | `#database` |
+| A new UI component | `#frontend` |
+| An async background worker | `#background-jobs` |
+| A notifications system | `#notifications` |
+| A multi-service monorepo | `#monorepo` |
+
+**Persona prompts — invoke concurrently when the work touches their domain:**
+
+| Domain | Invoke |
+| ------ | ------ |
+| System design, service decomposition, or ADR | `#architect` |
+| Architecture quality or long-term maintainability concerns | `#principal-engineer` |
+| CI/CD, infrastructure, containerisation, or deployment | `#devops-engineer` |
+| Test strategy, quality risks, or edge case coverage | `#qa-engineer` |
+| Requirements, user stories, or acceptance criteria | `#product-manager` |
+
+> **Agent mode:** `#prompt-name` is human chat syntax. When running as an agent, use `read_file`
+> on each prompt's file path instead. The complete path-to-file dispatch tables for Steps 4 and 5
+> are in `.github/prompts/implementation/governance.prompt.md`.
+
+**Implementation rules:**
+- Make only the changes required to resolve the issue.
+- Do not refactor unrelated code or add unrequested features.
+- If modifying any source file that feeds a composed output, edit the source and regenerate.
+
+**Step 5 — Run local validation**
+
+Run all of the following in order. Zero errors allowed — do not proceed with any failing check.
+
+1. **Lint** — run the stack linter. Zero warnings. (Commands in the **Stack validation** section below.)
+2. **Type-check** — run the stack type checker in strict mode. Zero errors.
+3. **Tests** — run the full test suite. All must pass.
+4. **Review prompts** — run before opening the PR. Zero exceptions.
+   - `#audit` — every PR without exception.
+   - `#security-audit` — any PR touching auth, data access, external inputs, or dependencies.
+   - `#dependency-audit` — any PR that adds, removes, or changes a dependency (lockfile, manifest, or version pin).
+   - `#performance-audit` — any PR touching database queries, caching, pagination, or frontend bundle output.
+   > **Agent mode:** Use `read_file` on the matching path from the Step 5 dispatch table in
+   > `.github/prompts/implementation/governance.prompt.md`.
+5. **Pre-commit hooks** — run `pre-commit run --all-files` if `.pre-commit-config.yaml` exists.
+6. **Composed files** — if the repo has `validate-composed.sh`, run it and commit any regenerated
+   files before pushing.
+
+**Step 6 — Commit using Conventional Commits**
+
+```bash
+git add -A
+git commit -m "<type>(<scope>): <description>
+
+<body explaining what and why>
+
+Closes #<issue-number>"
+```
+
+> The subject line must be **≤ 100 characters** — `commitlint` enforces this in CI.
+
+**Step 7 — Push and open a Pull Request**
+
+```bash
+git push origin <branch-name>
+gh pr create \
+  --title "<type>(<scope>): <description>" \
+  --body "Closes #<issue-number>
+
+## Changes
+- <what changed and why it matters>
+
+## Why
+- <problem solved or requirement met>" \
+  --assignee @me
+```
+
+**Step 8 — Wait for all CI checks to pass**
+
+Do not merge until every required check is green. If any check fails, fix it on the branch and
+push again. Never bypass checks.
+
+**Step 9 — Merge via squash only**
+
+```bash
+gh pr merge <pr-number> --squash --delete-branch
 ```
 
 If you skipped any step, stop immediately, undo your changes (`git checkout main`), and restart from Step 1.
 
-## Agentic workflow
-
-Before making any code change, always execute these steps in order:
-
-1. **Create a GitHub issue** describing the problem or feature. Use `gh issue create` with a clear title and body.
-2. **Create a branch** from `main` following the naming format `<type>/<issue-number>-<short-slug>` (e.g. `feat/42-add-oauth-flow`). Use `git checkout -b`.
-3. **Make the changes** on that branch — never commit directly to `main`.
-4. **Open a PR** that references the issue with `Closes #N` in the body.
-
-Do not skip or defer any of these steps, even for small or "obvious" fixes.
+**Non-negotiable rules:**
+- Never push directly to `main`
+- Never use `--force` on `main`
+- Never skip CI
+- Every change must trace to an issue number
 
 ## Branch strategy
 
@@ -101,14 +204,14 @@ Do not skip or defer any of these steps, even for small or "obvious" fixes.
 
 ## Project board lifecycle
 
-Every issue moves through these statuses automatically via CI:
+All card transitions are **automated by `project-automation.yml`** — never move cards manually.
 
-| Status          | Trigger                                                                                                 |
+| Status          | Automated trigger                                                                                       |
 | --------------- | ------------------------------------------------------------------------------------------------------- |
-| **Todo**        | Issue created and added to the board                                                                    |
+| **Todo**        | Issue created (added to board automatically on `issues: opened`)                                        |
 | **In Progress** | Branch matching the issue number is pushed                                                              |
 | **In Review**   | PR is opened (owner is auto-assigned as reviewer)                                                       |
-| **Done**        | PR is approved → card moves to Done and squash auto-merge is armed; fires once all required checks pass |
+| **Done**        | PR is approved → squash auto-merge fires once all required checks pass                                 |
 
 ## Code review expectations
 
@@ -175,6 +278,20 @@ Every issue moves through these statuses automatically via CI:
 - Prefer well-maintained, widely-used packages over obscure alternatives.
 - Remove unused dependencies promptly.
 
+## Dependabot PRs
+
+When Dependabot opens a PR, follow these steps without exception:
+
+1. Wait for all CI checks to pass.
+2. **Patch or minor bump + green CI** — merge immediately:
+   ```bash
+   gh pr merge <pr-number> --squash --delete-branch
+   ```
+3. **Major version bump** — read the package changelog, check for breaking changes, update affected
+   code and tests on a new branch (following Steps 1–9 of the pre-flight above), then merge.
+4. Never merge a Dependabot PR with failing CI.
+5. Never close a Dependabot PR without merging it unless the dependency is being intentionally removed.
+
 ## Error handling
 
 - Handle errors explicitly. Do not swallow exceptions silently.
@@ -182,6 +299,69 @@ Every issue moves through these statuses automatically via CI:
 - Log errors with sufficient context for debugging (timestamp, request ID, stack trace).
 - Return meaningful error messages to callers; do not expose internal details to end users.
 - No problems stated in the 'Problems' tab should be ignored. If a problem is not actionable, it should be suppressed with a comment explaining why. Otherwise, all problems should be addressed before merging.
+
+## Available prompts
+
+Full reference of all available prompts. Invocation rules are in **Step 4** (implementation and
+scaffold prompts) and **Step 5** (review prompts). Use this table as a quick reference.
+
+### Implementation — invoke at Step 4 before writing any code
+
+| Invoke | When to use |
+| ------ | ----------- |
+| `#governance` | **Before any change** — the full pre-flight workflow (issue → branch → implement → validate → PR → merge) |
+| `#implement-feature` | Implementing a new feature end-to-end |
+| `#fix-bug` | Diagnosing and fixing a bug — reproduce first, then trace root cause |
+| `#write-tests` | Writing tests for existing code |
+| `#refactor` | Refactoring without changing observable behaviour |
+| `#write-docs` | Generating or updating README, API docs, ADRs, or changelogs |
+| `#create-adr` | Recording an architecture decision in `docs/decisions/` |
+| `#deploy` | Deploying a service — pre-deploy checks, health verification, rollback plan |
+| `#project-kickoff` | Bootstrapping a brand-new project from scratch |
+
+### Review — run at Step 5 before opening the PR
+
+| Invoke | When to use |
+| ------ | ----------- |
+| `#audit` | **Every PR** — validate the branch diff against all project standards |
+| `#security-audit` | Every PR touching auth, data access, external inputs, or dependencies |
+| `#performance-audit` | PRs touching database queries, caching, or frontend bundles |
+| `#dependency-audit` | When adding, removing, or upgrading any dependency |
+
+### Scaffolds — invoke at Step 4 when building a new system component
+
+| Invoke | When to use |
+| ------ | ----------- |
+| `#crud-api` | Scaffolding a new CRUD resource (routes, models, validation, tests, migrations) |
+| `#auth` | Wiring authentication and authorisation into a project |
+| `#database` | Setting up a new database, ORM, migrations, and health checks |
+| `#frontend` | Scaffolding a new UI component (structure, a11y, state management, tests) |
+| `#background-jobs` | Scaffolding an async worker (queue, retry policy, dead-letter handling) |
+| `#notifications` | Scaffolding email, webhook, or push notifications with retry and opt-out |
+| `#monorepo` | Scaffolding a multi-service monorepo layout with per-service CI |
+
+### Personas — invoke concurrently at Step 4 when the work touches their domain
+
+| Invoke | When to use |
+| ------ | ----------- |
+| `#architect` | System design, service decomposition, ADR facilitation |
+| `#principal-engineer` | Architecture review, abstraction quality, long-term maintainability |
+| `#devops-engineer` | CI/CD, containerisation, IaC, secrets management, deployment reliability |
+| `#qa-engineer` | Test coverage, quality risks, edge cases, regression strategy |
+| `#product-manager` | PRDs, user stories, acceptance criteria, feature scoping |
+
+## Available skills
+
+Skills are specialised knowledge files. Load the relevant file at the start of any task in that
+domain — do not rely on general knowledge alone. Skills live in `.github/skills/`.
+
+| Load this file | When |
+| -------------- | ---- |
+| `.github/skills/test-generation.skill.md` | Writing any test suite |
+| `.github/skills/code-analysis.skill.md` | Performing a deep code review or analysis |
+| `.github/skills/api-design-review.skill.md` | Reviewing any PR that adds or changes API endpoints |
+| `.github/skills/performance-profiling.skill.md` | Investigating or auditing performance |
+| `.github/skills/data-migration.skill.md` | Working on any database schema migration or data backfill |
 
 ---
 
@@ -252,6 +432,24 @@ Every issue moves through these statuses automatically via CI:
 - Every service exposes a `/health` endpoint. Register health checks with `AddHealthChecks()` and map them with `MapHealthChecks("/health")`.
 - Add dependency health checks (database, message broker, external APIs) so the health endpoint reflects true service readiness.
 - Use `Activity` and OpenTelemetry for distributed tracing in services that participate in a larger system.
+
+## Stack validation
+
+Run these commands in order at Step 5. All must pass with zero errors before committing.
+
+```bash
+# Format check — no unformatted files
+dotnet format --verify-no-changes
+
+# Build — zero errors and zero warnings
+dotnet build -warnaserror
+
+# Tests — all must pass
+dotnet test
+
+# Dependency audit — no known vulnerabilities
+dotnet list package --vulnerable
+```
 
 ## Testing
 

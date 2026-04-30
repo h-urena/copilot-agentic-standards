@@ -47,6 +47,26 @@
 - Pass a child logger with request-scoped context (request ID, user ID) through the call chain — use `logger.child({ requestId })` per request.
 - Log at appropriate levels. Never log PII, tokens, or full request/response bodies.
 
+## Stack validation
+
+Run these commands in order at Step 5. All must pass with zero errors before committing.
+
+```bash
+# Lint — zero ESLint errors or warnings
+npm run lint
+
+# Type-check — zero TypeScript errors (strict mode)
+npm run typecheck
+
+# Tests — all must pass
+npm test
+
+# Dependency audit — no high or critical vulnerabilities
+npm audit --audit-level=high
+```
+
+If the project uses `pnpm`, substitute `pnpm run lint`, `pnpm run typecheck`, `pnpm test`, `pnpm audit --audit-level=high`.
+
 ## Testing
 
 - **Unit tests**: Use **Vitest** for all new TypeScript projects. It has native TypeScript/ESM support (no `ts-jest` wrapper), a Jest-compatible API (`describe`/`it`/`expect`), and runs significantly faster. Use Jest only if a project is already committed to it — the migration cost is low, but don't migrate just to migrate.
