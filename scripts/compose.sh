@@ -143,6 +143,12 @@ if [ "$TARGET" = "all" ]; then
     compose_stack "$stack"
     compose_mcp "$stack"
   done
+  # Re-compose any multi-stack files that already exist in composed/
+  for multi_file in "$COMPOSED_DIR"/*+*-copilot-instructions.md; do
+    [ -f "$multi_file" ] || continue
+    multi_name="$(basename "$multi_file" -copilot-instructions.md)"
+    compose_multi_stack "$multi_name"
+  done
   echo "Done."
 elif [[ "$TARGET" == *"+"* ]]; then
   echo "Composing multi-stack: $TARGET..."
