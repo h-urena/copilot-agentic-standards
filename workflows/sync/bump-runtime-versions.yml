@@ -10,7 +10,7 @@
 # which reads versions.json and applies the same substitutions to their existing
 # CI workflow files and Dockerfiles.
 
-name: Bump Pinned Runtime Versions
+name: Keep Runtime Versions Current Across All Templates
 
 on:
   schedule:
@@ -23,12 +23,12 @@ permissions:
 
 jobs:
   bump:
-    name: Detect and bump outdated runtime versions
+    name: Ensure all templates reflect latest stable runtime releases
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # ── Detect latest stable runtimes via endoflife.date ──
 
@@ -94,7 +94,7 @@ jobs:
 
       # ── Apply version bumps to versions.json and all template files ──
 
-      - name: Bump Python version
+      - name: Patch Python version strings across all CI and Docker templates
         if: steps.current.outputs.python != steps.python.outputs.version
         env:
           OLD: ${{ steps.current.outputs.python }}
@@ -111,7 +111,7 @@ jobs:
           sed -i "s/FROM python:${OLD}-slim/FROM python:${NEW}-slim/g" \
             templates/docker/Dockerfile.python
 
-      - name: Bump Node.js version
+      - name: Patch Node.js LTS version strings across all CI and Docker templates
         if: steps.current.outputs.node != steps.node.outputs.version
         env:
           OLD: ${{ steps.current.outputs.node }}
@@ -131,7 +131,7 @@ jobs:
           sed -i "s/FROM node:${OLD}-alpine/FROM node:${NEW}-alpine/g" \
             templates/docker/Dockerfile.typescript
 
-      - name: Bump .NET version
+      - name: Patch .NET version strings across all CI and Docker templates
         if: steps.current.outputs.dotnet != steps.dotnet.outputs.version
         env:
           OLD: ${{ steps.current.outputs.dotnet }}
@@ -152,7 +152,7 @@ jobs:
 
       # ── Open PR if anything changed ──
 
-      - name: Check for changes
+      - name: Determine whether any template files were modified
         id: changes
         run: |
           if git diff --quiet; then
@@ -162,7 +162,7 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Build PR body
+      - name: Compose PR description with version change summary
         if: steps.changes.outputs.changed == 'true'
         id: pr_body
         env:
@@ -191,7 +191,7 @@ jobs:
           # Write body to file to avoid shell quoting issues
           printf '%s' "$BODY" > /tmp/pr_body.txt
 
-      - name: Commit and push version bump branch
+      - name: Persist version changes to a dedicated bump branch
         if: steps.changes.outputs.changed == 'true'
         run: |
           set -euo pipefail
@@ -204,7 +204,7 @@ jobs:
           git push origin "$BRANCH"
           echo "BUMP_BRANCH=$BRANCH" >> "$GITHUB_ENV"
 
-      - name: Open PR for runtime version bumps (idempotent)
+      - name: Open review PR for runtime version bumps (idempotent)
         if: steps.changes.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -216,7 +216,7 @@ jobs:
             gh pr create \
               --title "chore(templates): bump pinned runtime versions" \
               --body-file /tmp/pr_body.txt \
-              --base main \
+              --base "${{ github.event.repository.default_branch }}" \
               --head "$BUMP_BRANCH" \
               --label "chore"
           else
