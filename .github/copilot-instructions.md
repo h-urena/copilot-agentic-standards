@@ -46,8 +46,47 @@ git checkout -b <type>/<issue-number>-<short-slug>
 
 **Step 4 — Implement the change**
 
-- Make only the changes required to resolve the issue
-- Do not refactor unrelated code or add unrequested features
+Before writing any code, invoke the matching prompt for the task type. Do not start implementing
+without it.
+
+**Implementation prompts — invoke at the start of this step based on task type:**
+
+| Task | Invoke |
+| ---- | ------ |
+| Implementing a new feature | `#implement-feature` |
+| Fixing a bug | `#fix-bug` |
+| Writing or updating tests | `#write-tests` |
+| Refactoring existing code | `#refactor` |
+| Writing documentation | `#write-docs` |
+| Recording an architecture decision | `#create-adr` |
+| Deploying a service | `#deploy` |
+| Bootstrapping a new project | `#project-kickoff` |
+
+**Scaffold prompts — invoke at the start of this step when building a new system component:**
+
+| Building | Invoke |
+| -------- | ------ |
+| A new CRUD resource | `#crud-api` |
+| Authentication / authorisation | `#auth` |
+| A new database, ORM, or migrations | `#database` |
+| A new UI component | `#frontend` |
+| An async background worker | `#background-jobs` |
+| A notifications system | `#notifications` |
+| A multi-service monorepo | `#monorepo` |
+
+**Persona prompts — invoke concurrently when the work touches their domain:**
+
+| Domain | Invoke |
+| ------ | ------ |
+| System design, service decomposition, or ADR | `#architect` |
+| Architecture quality or long-term maintainability concerns | `#principal-engineer` |
+| CI/CD, infrastructure, containerisation, or deployment | `#devops-engineer` |
+| Test strategy, quality risks, or edge case coverage | `#qa-engineer` |
+| Requirements, user stories, or acceptance criteria | `#product-manager` |
+
+**Implementation rules (this repo):**
+- Make only the changes required to resolve the issue.
+- Do not refactor unrelated code or add unrequested features.
 - If editing composed files is needed, edit the source (`instructions/`) and regenerate: `./scripts/compose.sh all`
 
 **Step 5 — Run local validation**
@@ -152,10 +191,10 @@ moves it to **In Review**; merge moves it to **Done**. Never move cards manually
 
 ## Available prompts
 
-Prompts are invocable agent workflows. Invoke with `#<name>` in VS Code Copilot Chat.
-**Use the correct prompt for every task — never implement, fix, scaffold, or review without it.**
+Full reference of all available prompts. Invocation rules are in **Step 4** (implementation and
+scaffold prompts) and **Step 5** (review prompts). Use this table as a quick reference.
 
-### Implementation
+### Implementation — invoke at Step 4 before writing any code
 
 | Invoke | When to use |
 | ------ | ----------- |
@@ -169,7 +208,7 @@ Prompts are invocable agent workflows. Invoke with `#<name>` in VS Code Copilot 
 | `#deploy` | Deploying a service — pre-deploy checks, health verification, rollback plan |
 | `#project-kickoff` | Bootstrapping a brand-new project from scratch |
 
-### Review — run before opening every PR
+### Review — run at Step 5 before opening the PR
 
 | Invoke | When to use |
 | ------ | ----------- |
@@ -178,7 +217,7 @@ Prompts are invocable agent workflows. Invoke with `#<name>` in VS Code Copilot 
 | `#performance-audit` | PRs touching data-intensive operations |
 | `#dependency-audit` | When adding, removing, or upgrading any dependency |
 
-### Scaffolds
+### Scaffolds — invoke at Step 4 when building a new system component
 
 | Invoke | When to use |
 | ------ | ----------- |
@@ -190,7 +229,7 @@ Prompts are invocable agent workflows. Invoke with `#<name>` in VS Code Copilot 
 | `#notifications` | Scaffolding notifications |
 | `#monorepo` | Scaffolding a multi-service monorepo |
 
-### Personas
+### Personas — invoke concurrently at Step 4 when the work touches their domain
 
 | Invoke | When to use |
 | ------ | ----------- |
