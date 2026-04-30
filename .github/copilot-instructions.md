@@ -63,8 +63,11 @@ shellcheck scripts/*.sh
 
 Fix all errors before continuing. If `validate-composed.sh` reports stale files, commit the regenerated output before pushing.
 
-Also run `#audit` on the branch before opening the PR. Run `#security-audit` on any change
-touching workflows, scripts, or permissions.
+Run these review prompts before opening the PR — zero exceptions:
+- `#audit` — every PR without exception.
+- `#security-audit` — any PR touching workflows, scripts, permissions, auth, or external inputs.
+- `#dependency-audit` — any PR that adds, removes, or changes a dependency.
+- `#performance-audit` — any PR touching database queries, caching, or data-intensive operations.
 
 **Step 6 — Commit using Conventional Commits**
 

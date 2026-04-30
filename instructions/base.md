@@ -62,9 +62,11 @@ Run all of the following in order. Zero errors allowed — do not proceed with a
 1. **Lint** — run the stack linter. Zero warnings. (Commands in the **Stack validation** section below.)
 2. **Type-check** — run the stack type checker in strict mode. Zero errors.
 3. **Tests** — run the full test suite. All must pass.
-4. **Security** — scan your diff for secrets, unsanitised inputs, broken auth, or injection vectors.
-   Run `#security-audit` on any change touching auth, data access, or external inputs.
-   Run `#audit` on every PR before opening it.
+4. **Review prompts** — run before opening the PR. Zero exceptions.
+   - `#audit` — every PR without exception.
+   - `#security-audit` — any PR touching auth, data access, external inputs, or dependencies.
+   - `#dependency-audit` — any PR that adds, removes, or changes a dependency (lockfile, manifest, or version pin).
+   - `#performance-audit` — any PR touching database queries, caching, pagination, or frontend bundle output.
 5. **Pre-commit hooks** — run `pre-commit run --all-files` if `.pre-commit-config.yaml` exists.
 6. **Composed files** — if the repo has `validate-composed.sh`, run it and commit any regenerated
    files before pushing.
