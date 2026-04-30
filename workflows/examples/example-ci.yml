@@ -20,14 +20,14 @@ permissions:
 jobs:
   merge-rules:
     name: Merge Rules
-    uses: h-urena/copilot-agentic-standards/.github/workflows/merge-rules.yml@main
+    uses: h-urena/copilot-agentic-standards/.github/workflows/merge-rules.yml@86c5acf98f7f2aa66b66f5f728de4f290c3160b0  # main
     with:
       require-linear-history: true
       commitlint-enabled: true
 
   pr-automation:
     name: PR Automation
-    uses: h-urena/copilot-agentic-standards/.github/workflows/pr-automation.yml@main
+    uses: h-urena/copilot-agentic-standards/.github/workflows/pr-automation.yml@86c5acf98f7f2aa66b66f5f728de4f290c3160b0  # main
     with:
       auto-assign-author: true
       enable-labeler: false # set to true once you add .github/labeler.yml

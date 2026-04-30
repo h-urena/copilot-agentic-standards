@@ -25,20 +25,20 @@ jobs:
   # ── Governance checks (reusable from standards repo) ──
   merge-rules:
     if: github.event_name == 'pull_request'
-    uses: h-urena/copilot-agentic-standards/.github/workflows/merge-rules.yml@main
+    uses: h-urena/copilot-agentic-standards/.github/workflows/merge-rules.yml@86c5acf98f7f2aa66b66f5f728de4f290c3160b0  # main
     permissions:
       contents: read
       pull-requests: read
 
   pr-description:
     if: github.event_name == 'pull_request'
-    uses: h-urena/copilot-agentic-standards/.github/workflows/pr-description.yml@main
+    uses: h-urena/copilot-agentic-standards/.github/workflows/pr-description.yml@86c5acf98f7f2aa66b66f5f728de4f290c3160b0  # main
     permissions:
       pull-requests: write
 
   pr-automation:
     if: github.event_name == 'pull_request'
-    uses: h-urena/copilot-agentic-standards/.github/workflows/pr-automation.yml@main
+    uses: h-urena/copilot-agentic-standards/.github/workflows/pr-automation.yml@86c5acf98f7f2aa66b66f5f728de4f290c3160b0  # main
     permissions:
       contents: read
       pull-requests: write
@@ -48,7 +48,7 @@ jobs:
 
   code-review:
     if: github.event_name == 'pull_request'
-    uses: h-urena/copilot-agentic-standards/.github/workflows/code-review.yml@main
+    uses: h-urena/copilot-agentic-standards/.github/workflows/code-review.yml@86c5acf98f7f2aa66b66f5f728de4f290c3160b0  # main
     permissions:
       contents: read
       pull-requests: write

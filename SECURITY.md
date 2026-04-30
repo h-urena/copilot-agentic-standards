@@ -42,6 +42,20 @@ All GitHub Actions `uses:` references **must** be pinned to a full 40-character 
 
 Pinning is validated by the dependency audit prompt (`.github/prompts/review/dependency-audit.prompt.md`).
 
+### Reusable workflow pinning
+
+All `uses:` references to reusable workflows (including those sourced from this repository) **must** also be pinned to a full 40-character commit SHA with a branch or tag comment. Using a mutable ref such as `@main` means that any future commit — including a malicious one from a compromised account — would automatically run against all consumer repositories:
+
+```yaml
+# Correct — pinned to a specific commit SHA
+uses: h-urena/copilot-agentic-standards/.github/workflows/pr-automation.yml@86c5acf98f7f2aa66b66f5f728de4f290c3160b0  # main
+
+# Incorrect — mutable ref, supply-chain risk
+uses: h-urena/copilot-agentic-standards/.github/workflows/pr-automation.yml@main
+```
+
+When the standards repo is updated (e.g., via the `pull-standards` sync workflow), consumer repos **must** update the pinned SHA at the same time. Treat SHA bumps with the same care as dependency upgrades: review the diff between the old and new SHA before merging.
+
 ### Adding a new action
 
 Before adding a new third-party action:
