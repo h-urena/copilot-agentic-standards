@@ -57,8 +57,16 @@ git checkout -b <type>/<issue-number>-<short-slug>
 
 **Step 5 — Run local validation**
 
-Run whatever validation the stack requires (linting, type-checking, tests) before committing.
-If the repo has a `validate-composed.sh` script, run it and fix any stale files.
+Run all of the following in order. Zero errors allowed — do not proceed with any failing check.
+
+1. **Lint** — run the stack linter. Zero warnings. (Commands in the **Stack validation** section below.)
+2. **Type-check** — run the stack type checker in strict mode. Zero errors.
+3. **Tests** — run the full test suite. All must pass.
+4. **Security** — scan your diff for secrets, unsanitised inputs, broken auth, or injection vectors.
+   For significant changes invoke the `#security-audit` prompt before opening the PR.
+5. **Pre-commit hooks** — run `pre-commit run --all-files` if `.pre-commit-config.yaml` exists.
+6. **Composed files** — if the repo has `validate-composed.sh`, run it and commit any regenerated
+   files before pushing.
 
 **Step 6 — Commit using Conventional Commits**
 
@@ -79,7 +87,13 @@ Closes #<issue-number>"
 git push origin <branch-name>
 gh pr create \
   --title "<type>(<scope>): <description>" \
-  --body "Closes #<issue-number>" \
+  --body "Closes #<issue-number>
+
+## Changes
+- <what changed and why it matters>
+
+## Why
+- <problem solved or requirement met>" \
   --assignee @me
 ```
 
@@ -138,14 +152,14 @@ If you skipped any step, stop immediately, undo your changes (`git checkout main
 
 ## Project board lifecycle
 
-Every issue moves through these statuses automatically via CI:
+All card transitions are **automated by `project-automation.yml`** — never move cards manually.
 
-| Status          | Trigger                                                                                                 |
+| Status          | Automated trigger                                                                                       |
 | --------------- | ------------------------------------------------------------------------------------------------------- |
-| **Todo**        | Issue created and added to the board                                                                    |
+| **Todo**        | Issue created (added to board automatically on `issues: opened`)                                        |
 | **In Progress** | Branch matching the issue number is pushed                                                              |
 | **In Review**   | PR is opened (owner is auto-assigned as reviewer)                                                       |
-| **Done**        | PR is approved → card moves to Done and squash auto-merge is armed; fires once all required checks pass |
+| **Done**        | PR is approved → squash auto-merge fires once all required checks pass                                 |
 
 ## Code review expectations
 
@@ -211,6 +225,20 @@ Every issue moves through these statuses automatically via CI:
 - Audit new dependencies before adding: check maintenance status, license, bundle size.
 - Prefer well-maintained, widely-used packages over obscure alternatives.
 - Remove unused dependencies promptly.
+
+## Dependabot PRs
+
+When Dependabot opens a PR, follow these steps without exception:
+
+1. Wait for all CI checks to pass.
+2. **Patch or minor bump + green CI** — merge immediately:
+   ```bash
+   gh pr merge <pr-number> --squash --delete-branch
+   ```
+3. **Major version bump** — read the package changelog, check for breaking changes, update affected
+   code and tests on a new branch (following Steps 1–9 of the pre-flight above), then merge.
+4. Never merge a Dependabot PR with failing CI.
+5. Never close a Dependabot PR without merging it unless the dependency is being intentionally removed.
 
 ## Error handling
 

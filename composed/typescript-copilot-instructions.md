@@ -61,8 +61,16 @@ git checkout -b <type>/<issue-number>-<short-slug>
 
 **Step 5 — Run local validation**
 
-Run whatever validation the stack requires (linting, type-checking, tests) before committing.
-If the repo has a `validate-composed.sh` script, run it and fix any stale files.
+Run all of the following in order. Zero errors allowed — do not proceed with any failing check.
+
+1. **Lint** — run the stack linter. Zero warnings. (Commands in the **Stack validation** section below.)
+2. **Type-check** — run the stack type checker in strict mode. Zero errors.
+3. **Tests** — run the full test suite. All must pass.
+4. **Security** — scan your diff for secrets, unsanitised inputs, broken auth, or injection vectors.
+   For significant changes invoke the `#security-audit` prompt before opening the PR.
+5. **Pre-commit hooks** — run `pre-commit run --all-files` if `.pre-commit-config.yaml` exists.
+6. **Composed files** — if the repo has `validate-composed.sh`, run it and commit any regenerated
+   files before pushing.
 
 **Step 6 — Commit using Conventional Commits**
 
@@ -83,7 +91,13 @@ Closes #<issue-number>"
 git push origin <branch-name>
 gh pr create \
   --title "<type>(<scope>): <description>" \
-  --body "Closes #<issue-number>" \
+  --body "Closes #<issue-number>
+
+## Changes
+- <what changed and why it matters>
+
+## Why
+- <problem solved or requirement met>" \
   --assignee @me
 ```
 
@@ -142,14 +156,14 @@ If you skipped any step, stop immediately, undo your changes (`git checkout main
 
 ## Project board lifecycle
 
-Every issue moves through these statuses automatically via CI:
+All card transitions are **automated by `project-automation.yml`** — never move cards manually.
 
-| Status          | Trigger                                                                                                 |
+| Status          | Automated trigger                                                                                       |
 | --------------- | ------------------------------------------------------------------------------------------------------- |
-| **Todo**        | Issue created and added to the board                                                                    |
+| **Todo**        | Issue created (added to board automatically on `issues: opened`)                                        |
 | **In Progress** | Branch matching the issue number is pushed                                                              |
 | **In Review**   | PR is opened (owner is auto-assigned as reviewer)                                                       |
-| **Done**        | PR is approved → card moves to Done and squash auto-merge is armed; fires once all required checks pass |
+| **Done**        | PR is approved → squash auto-merge fires once all required checks pass                                 |
 
 ## Code review expectations
 
@@ -216,6 +230,20 @@ Every issue moves through these statuses automatically via CI:
 - Prefer well-maintained, widely-used packages over obscure alternatives.
 - Remove unused dependencies promptly.
 
+## Dependabot PRs
+
+When Dependabot opens a PR, follow these steps without exception:
+
+1. Wait for all CI checks to pass.
+2. **Patch or minor bump + green CI** — merge immediately:
+   ```bash
+   gh pr merge <pr-number> --squash --delete-branch
+   ```
+3. **Major version bump** — read the package changelog, check for breaking changes, update affected
+   code and tests on a new branch (following Steps 1–9 of the pre-flight above), then merge.
+4. Never merge a Dependabot PR with failing CI.
+5. Never close a Dependabot PR without merging it unless the dependency is being intentionally removed.
+
 ## Error handling
 
 - Handle errors explicitly. Do not swallow exceptions silently.
@@ -274,6 +302,26 @@ Every issue moves through these statuses automatically via CI:
 - Use **`pino`** for structured JSON logging in Node.js services. Never use `console.log` in production code paths.
 - Pass a child logger with request-scoped context (request ID, user ID) through the call chain — use `logger.child({ requestId })` per request.
 - Log at appropriate levels. Never log PII, tokens, or full request/response bodies.
+
+## Stack validation
+
+Run these commands in order at Step 5. All must pass with zero errors before committing.
+
+```bash
+# Lint — zero ESLint errors or warnings
+npm run lint
+
+# Type-check — zero TypeScript errors (strict mode)
+npm run typecheck
+
+# Tests — all must pass
+npm test
+
+# Dependency audit — no high or critical vulnerabilities
+npm audit --audit-level=high
+```
+
+If the project uses `pnpm`, substitute `pnpm run lint`, `pnpm run typecheck`, `pnpm test`, `pnpm audit --audit-level=high`.
 
 ## Testing
 

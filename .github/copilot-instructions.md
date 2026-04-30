@@ -82,7 +82,13 @@ Closes #<issue-number>"
 git push origin <branch-name>
 gh pr create \
   --title "<type>(<scope>): <description>" \
-  --body "Closes #<issue-number>" \
+  --body "Closes #<issue-number>
+
+## Changes
+- <what changed and why it matters>
+
+## Why
+- <problem solved or requirement met>" \
   --assignee @me
 ```
 
@@ -111,6 +117,21 @@ If you skipped any step, stop immediately, undo your changes (`git checkout main
 - Never use `--force` on `main`
 - Never skip CI
 - Every change must trace to an issue number
+
+**Project board:** `project-automation.yml` drives all card transitions automatically. Creating the
+issue (Step 2) adds it to **Todo**; pushing the branch moves it to **In Progress**; opening the PR
+moves it to **In Review**; merge moves it to **Done**. Never move cards manually.
+
+**Dependabot PRs:** When Dependabot opens a PR, follow these steps without exception:
+1. Wait for all CI checks to pass.
+2. **Patch or minor bump + green CI** — merge immediately:
+   ```bash
+   gh pr merge <pr-number> --squash --delete-branch
+   ```
+3. **Major version bump** — read the package changelog, check for breaking changes, update affected
+   code and tests on a new branch (following Steps 1–9 above), then merge.
+4. Never merge a Dependabot PR with failing CI.
+5. Never close a Dependabot PR without merging it unless the dependency is being intentionally removed.
 
 ---
 

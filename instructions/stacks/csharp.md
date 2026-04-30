@@ -66,6 +66,24 @@
 - Add dependency health checks (database, message broker, external APIs) so the health endpoint reflects true service readiness.
 - Use `Activity` and OpenTelemetry for distributed tracing in services that participate in a larger system.
 
+## Stack validation
+
+Run these commands in order at Step 5. All must pass with zero errors before committing.
+
+```bash
+# Format check — no unformatted files
+dotnet format --verify-no-changes
+
+# Build — zero errors and zero warnings
+dotnet build -warnaserror
+
+# Tests — all must pass
+dotnet test
+
+# Dependency audit — no known vulnerabilities
+dotnet list package --vulnerable
+```
+
 ## Testing
 
 - **Unit tests**: Use xUnit. Use FluentAssertions for readable assertions. Use `Fact` and `Theory` attributes.
