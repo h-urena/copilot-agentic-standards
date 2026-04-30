@@ -100,55 +100,22 @@ jobs:
             fi
           fi
 
-          # Update implementation prompts (.github/prompts/implementation/*.prompt.md)
-          if [ -d "$TEMP_DIR/.github/prompts/implementation" ]; then
-            mkdir -p .github/prompts/implementation
-            for prompt in "$TEMP_DIR/.github/prompts/implementation"/*.prompt.md; do
-              [ -f "$prompt" ] || continue
-              fname=$(basename "$prompt")
-              if ! diff -q ".github/prompts/implementation/$fname" "$prompt" > /dev/null 2>&1; then
-                cp "$prompt" ".github/prompts/implementation/$fname"
-                CHANGED=true
-              fi
-            done
-          fi
-
-          # Update review prompts (.github/prompts/review/*.prompt.md)
-          if [ -d "$TEMP_DIR/.github/prompts/review" ]; then
-            mkdir -p .github/prompts/review
-            for prompt in "$TEMP_DIR/.github/prompts/review"/*.prompt.md; do
-              [ -f "$prompt" ] || continue
-              fname=$(basename "$prompt")
-              if ! diff -q ".github/prompts/review/$fname" "$prompt" > /dev/null 2>&1; then
-                cp "$prompt" ".github/prompts/review/$fname"
-                CHANGED=true
-              fi
-            done
-          fi
-
-          # Update scaffold prompts (.github/prompts/scaffolds/*.prompt.md)
-          if [ -d "$TEMP_DIR/.github/prompts/scaffolds" ]; then
-            mkdir -p .github/prompts/scaffolds
-            for prompt in "$TEMP_DIR/.github/prompts/scaffolds"/*.prompt.md; do
-              [ -f "$prompt" ] || continue
-              fname=$(basename "$prompt")
-              if ! diff -q ".github/prompts/scaffolds/$fname" "$prompt" > /dev/null 2>&1; then
-                cp "$prompt" ".github/prompts/scaffolds/$fname"
-                CHANGED=true
-              fi
-            done
-          fi
-
-          # Update persona prompts (.github/prompts/personas/*.prompt.md)
-          if [ -d "$TEMP_DIR/.github/prompts/personas" ]; then
-            mkdir -p .github/prompts/personas
-            for prompt in "$TEMP_DIR/.github/prompts/personas"/*.prompt.md; do
-              [ -f "$prompt" ] || continue
-              fname=$(basename "$prompt")
-              if ! diff -q ".github/prompts/personas/$fname" "$prompt" > /dev/null 2>&1; then
-                cp "$prompt" ".github/prompts/personas/$fname"
-                CHANGED=true
-              fi
+          # Update all prompt subdirectories (.github/prompts/*/*.prompt.md)
+          # Generic loop — picks up any new subdirectory added to the standards repo
+          # automatically (matches onboard-repo.sh step 7).
+          if [ -d "$TEMP_DIR/.github/prompts" ]; then
+            for prompt_dir in "$TEMP_DIR/.github/prompts"/*/; do
+              [ -d "$prompt_dir" ] || continue
+              subdir=$(basename "$prompt_dir")
+              mkdir -p ".github/prompts/$subdir"
+              for prompt in "$prompt_dir"*.prompt.md; do
+                [ -f "$prompt" ] || continue
+                fname=$(basename "$prompt")
+                if ! diff -q ".github/prompts/$subdir/$fname" "$prompt" > /dev/null 2>&1; then
+                  cp "$prompt" ".github/prompts/$subdir/$fname"
+                  CHANGED=true
+                fi
+              done
             done
           fi
 
@@ -165,24 +132,23 @@ jobs:
             done
           fi
 
-          # Update pr-description workflow if present in this repo
-          PR_DESC_SRC="$TEMP_DIR/.github/workflows/pr-description.yml"
-          if [ -f "$PR_DESC_SRC" ]; then
+          # Update all distributable agentic workflows (.github/workflows/*.yml)
+          # Generic loop — mirrors onboard-repo.sh step 5.
+          # Excludes validate.yml (internal to standards repo) and pull-standards.yml itself
+          # (consumer repos may customise their sync schedule).
+          if [ -d "$TEMP_DIR/.github/workflows" ]; then
             mkdir -p .github/workflows
-            if ! diff -q ".github/workflows/pr-description.yml" "$PR_DESC_SRC" > /dev/null 2>&1; then
-              cp "$PR_DESC_SRC" .github/workflows/pr-description.yml
-              CHANGED=true
-            fi
-          fi
-
-          # Update self-heal workflow if present in this repo
-          SELF_HEAL_SRC="$TEMP_DIR/.github/workflows/self-heal.yml"
-          if [ -f "$SELF_HEAL_SRC" ]; then
-            mkdir -p .github/workflows
-            if ! diff -q ".github/workflows/self-heal.yml" "$SELF_HEAL_SRC" > /dev/null 2>&1; then
-              cp "$SELF_HEAL_SRC" .github/workflows/self-heal.yml
-              CHANGED=true
-            fi
+            for wf in "$TEMP_DIR/.github/workflows"/*.yml; do
+              [ -f "$wf" ] || continue
+              wf_name=$(basename "$wf")
+              case "$wf_name" in
+                validate.yml|pull-standards.yml) continue ;;
+              esac
+              if ! diff -q ".github/workflows/$wf_name" "$wf" > /dev/null 2>&1; then
+                cp "$wf" ".github/workflows/$wf_name"
+                CHANGED=true
+              fi
+            done
           fi
 
           # Update domain instruction files (.github/*.instructions.md),
