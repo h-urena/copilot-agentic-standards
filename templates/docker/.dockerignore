@@ -16,6 +16,9 @@ coverage
 *.env
 *.env.*
 !*.env.example
+*.pem
+*.key
+*.p12
 .DS_Store
 Thumbs.db
 docker-compose*.yml
