@@ -1,6 +1,6 @@
 extends: relaxed
 rules:
   line-length:
-    max: 120
+    max: 160  # 40-char SHA-pinned `uses:` lines can reach ~130 chars; 160 gives safe headroom
     level: error
   new-lines: disable  # Windows uses CRLF; git handles conversion
