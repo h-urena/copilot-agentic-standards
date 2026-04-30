@@ -387,25 +387,28 @@ sed -E 's|.*[:/]([^/]+/[^/]+)(\.git)?$|\1|')" || true
 fi
 
 # 17. Conventional commit labels (idempotent — --force updates if already exists)
+#     All creates are independent API calls — run them in parallel to cut label setup
+#     time from ~4.5 s (9 × sequential round-trip) to ~500 ms.
 if [ -n "$_REPO_FULL" ]; then
   gh label create "feat"     --repo "$_REPO_FULL" --description "New feature" \
-    --color "0075ca" --force 2>/dev/null
+    --color "0075ca" --force 2>/dev/null &
   gh label create "fix"      --repo "$_REPO_FULL" --description "Bug fix" \
-    --color "d73a4a" --force 2>/dev/null
+    --color "d73a4a" --force 2>/dev/null &
   gh label create "chore"    --repo "$_REPO_FULL" --description "Maintenance, tooling, config" \
-    --color "e4e669" --force 2>/dev/null
+    --color "e4e669" --force 2>/dev/null &
   gh label create "docs"     --repo "$_REPO_FULL" --description "Documentation changes" \
-    --color "0075ca" --force 2>/dev/null
+    --color "0075ca" --force 2>/dev/null &
   gh label create "refactor" --repo "$_REPO_FULL" --description "Code restructuring, no behavior change" \
-    --color "c5def5" --force 2>/dev/null
+    --color "c5def5" --force 2>/dev/null &
   gh label create "perf"     --repo "$_REPO_FULL" --description "Performance improvement" \
-    --color "0e8a16" --force 2>/dev/null
+    --color "0e8a16" --force 2>/dev/null &
   gh label create "test"     --repo "$_REPO_FULL" --description "Tests only" \
-    --color "f9c74f" --force 2>/dev/null
+    --color "f9c74f" --force 2>/dev/null &
   gh label create "ci"       --repo "$_REPO_FULL" --description "CI/CD pipeline changes" \
-    --color "000000" --force 2>/dev/null
+    --color "000000" --force 2>/dev/null &
   gh label create "style"    --repo "$_REPO_FULL" --description "Formatting, whitespace" \
-    --color "ffffff" --force 2>/dev/null
+    --color "ffffff" --force 2>/dev/null &
+  wait
   echo "  ✓ Conventional commit labels (feat, fix, chore, docs, refactor, perf, test, ci, style)"
 fi
 
