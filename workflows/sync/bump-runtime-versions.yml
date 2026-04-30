@@ -1,0 +1,224 @@
+# Bump Runtime Versions — Scheduled Workflow
+#
+# Runs weekly in THIS repo (copilot-agentic-standards). Queries endoflife.date
+# to detect new stable releases of Python, Node.js, and .NET, then updates
+# versions.json and all template files that embed those version strings,
+# and opens a PR so the bump can be reviewed before merging.
+#
+# Trickle-down to consumer repos: once this PR is merged, consumer repos pick up
+# the new versions on their next weekly sync via workflows/sync/pull-standards.yml,
+# which reads versions.json and applies the same substitutions to their existing
+# CI workflow files and Dockerfiles.
+
+name: Keep Runtime Versions Current Across All Templates
+
+on:
+  schedule:
+    - cron: "0 10 * * 1" # Every Monday at 10:00 UTC (after pull-standards runs at 09:00)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    name: Ensure all templates reflect latest stable runtime releases
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # ── Detect latest stable runtimes via endoflife.date ──
+
+      - name: Detect latest stable Python minor version
+        id: python
+        run: |
+          set -euo pipefail
+          TODAY=$(date -I)
+          # Latest cycle whose releaseDate has passed and EOL is still in the future
+          LATEST=$(curl -sSf https://endoflife.date/api/python.json \
+            | jq -r --arg today "$TODAY" \
+              '[.[] | select(.releaseDate <= $today and (.eol == false or .eol > $today))
+                | .cycle]
+              | sort_by(split(".") | map(tonumber))
+              | last')
+          echo "version=$LATEST" >> "$GITHUB_OUTPUT"
+          echo "Detected latest stable Python: $LATEST"
+
+      - name: Detect latest stable LTS Node.js major version
+        id: node
+        run: |
+          set -euo pipefail
+          TODAY=$(date -I)
+          # Latest LTS cycle whose releaseDate has passed and EOL is still in the future
+          LATEST=$(curl -sSf https://endoflife.date/api/nodejs.json \
+            | jq -r --arg today "$TODAY" \
+              '[.[] | select(.lts != false and .releaseDate <= $today
+                and (.eol == false or .eol > $today))
+                | .cycle]
+              | sort_by(tonumber)
+              | last')
+          echo "version=$LATEST" >> "$GITHUB_OUTPUT"
+          echo "Detected latest stable LTS Node.js: $LATEST"
+
+      - name: Detect latest stable .NET version
+        id: dotnet
+        run: |
+          set -euo pipefail
+          TODAY=$(date -I)
+          # Latest cycle whose releaseDate has passed and EOL is still in the future
+          LATEST=$(curl -sSf https://endoflife.date/api/dotnet.json \
+            | jq -r --arg today "$TODAY" \
+              '[.[] | select(.releaseDate <= $today and (.eol == false or .eol > $today))
+                | .cycle]
+              | sort_by(split(".") | map(tonumber))
+              | last')
+          echo "version=$LATEST" >> "$GITHUB_OUTPUT"
+          echo "Detected latest stable .NET: $LATEST"
+
+      # ── Read current pinned versions from source of truth ──
+
+      - name: Read current versions from versions.json
+        id: current
+        run: |
+          set -euo pipefail
+          PY=$(jq -r '.python' versions.json)
+          NODE=$(jq -r '.node' versions.json)
+          DOTNET=$(jq -r '.dotnet' versions.json)
+          echo "python=$PY"   >> "$GITHUB_OUTPUT"
+          echo "node=$NODE"   >> "$GITHUB_OUTPUT"
+          echo "dotnet=$DOTNET" >> "$GITHUB_OUTPUT"
+          echo "Current: Python=$PY  Node=$NODE  .NET=$DOTNET"
+
+      # ── Apply version bumps to versions.json and all template files ──
+
+      - name: Patch Python version strings across all CI and Docker templates
+        if: steps.current.outputs.python != steps.python.outputs.version
+        env:
+          OLD: ${{ steps.current.outputs.python }}
+          NEW: ${{ steps.python.outputs.version }}
+        run: |
+          set -euo pipefail
+          echo "Bumping Python $OLD → $NEW"
+          # versions.json
+          jq --arg v "$NEW" '.python = $v' versions.json > versions.tmp && mv versions.tmp versions.json
+          # CI workflow (python-version: "X.Y")
+          sed -i "s/python-version: \"${OLD}\"/python-version: \"${NEW}\"/g" \
+            templates/ci/ci.python.yml
+          # Dockerfiles (python:X.Y-slim)
+          sed -i "s/FROM python:${OLD}-slim/FROM python:${NEW}-slim/g" \
+            templates/docker/Dockerfile.python
+
+      - name: Patch Node.js LTS version strings across all CI and Docker templates
+        if: steps.current.outputs.node != steps.node.outputs.version
+        env:
+          OLD: ${{ steps.current.outputs.node }}
+          NEW: ${{ steps.node.outputs.version }}
+        run: |
+          set -euo pipefail
+          echo "Bumping Node.js $OLD → $NEW"
+          # versions.json
+          jq --arg v "$NEW" '.node = $v' versions.json > versions.tmp && mv versions.tmp versions.json
+          # CI workflows (node-version: "X")
+          sed -i "s/node-version: \"${OLD}\"/node-version: \"${NEW}\"/g" \
+            templates/ci/ci.typescript.yml
+          # release.yml uses unquoted: node-version: X
+          sed -i "s/node-version: ${OLD}$/node-version: ${NEW}/g" \
+            templates/ci/release.yml
+          # Dockerfiles (node:X-alpine)
+          sed -i "s/FROM node:${OLD}-alpine/FROM node:${NEW}-alpine/g" \
+            templates/docker/Dockerfile.typescript
+
+      - name: Patch .NET version strings across all CI and Docker templates
+        if: steps.current.outputs.dotnet != steps.dotnet.outputs.version
+        env:
+          OLD: ${{ steps.current.outputs.dotnet }}
+          NEW: ${{ steps.dotnet.outputs.version }}
+        run: |
+          set -euo pipefail
+          echo "Bumping .NET $OLD → $NEW"
+          # versions.json
+          jq --arg v "$NEW" '.dotnet = $v' versions.json > versions.tmp && mv versions.tmp versions.json
+          # CI workflow (dotnet-version: "X.Y.x")
+          sed -i "s/dotnet-version: \"${OLD}\.x\"/dotnet-version: \"${NEW}.x\"/g" \
+            templates/ci/ci.csharp.yml
+          # Dockerfiles (dotnet/sdk:X.Y-alpine, dotnet/aspnet:X.Y-alpine)
+          sed -i "s|dotnet/sdk:${OLD}-alpine|dotnet/sdk:${NEW}-alpine|g" \
+            templates/docker/Dockerfile.csharp
+          sed -i "s|dotnet/aspnet:${OLD}-alpine|dotnet/aspnet:${NEW}-alpine|g" \
+            templates/docker/Dockerfile.csharp
+
+      # ── Open PR if anything changed ──
+
+      - name: Determine whether any template files were modified
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "All runtime versions are already up to date."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compose PR description with version change summary
+        if: steps.changes.outputs.changed == 'true'
+        id: pr_body
+        env:
+          PY_OLD: ${{ steps.current.outputs.python }}
+          PY_NEW: ${{ steps.python.outputs.version }}
+          NODE_OLD: ${{ steps.current.outputs.node }}
+          NODE_NEW: ${{ steps.node.outputs.version }}
+          DOTNET_OLD: ${{ steps.current.outputs.dotnet }}
+          DOTNET_NEW: ${{ steps.dotnet.outputs.version }}
+        run: |
+          set -euo pipefail
+          BODY="Automated bump of pinned runtime versions detected via [endoflife.date](https://endoflife.date)."$'\n\n'
+          BODY+="| Runtime | Old | New |"$'\n'
+          BODY+="|---------|-----|-----|"$'\n'
+          if [ "$PY_OLD" != "$PY_NEW" ]; then
+            BODY+="| Python | \`$PY_OLD\` | \`$PY_NEW\` |"$'\n'
+          fi
+          if [ "$NODE_OLD" != "$NODE_NEW" ]; then
+            BODY+="| Node.js LTS | \`$NODE_OLD\` | \`$NODE_NEW\` |"$'\n'
+          fi
+          if [ "$DOTNET_OLD" != "$DOTNET_NEW" ]; then
+            BODY+="| .NET | \`$DOTNET_OLD\` | \`$DOTNET_NEW\` |"$'\n'
+          fi
+          BODY+=$'\n'"Consumer repos receive these bumps automatically"
+          BODY+=" on their next weekly sync via \`pull-standards.yml\`."
+          # Write body to file to avoid shell quoting issues
+          printf '%s' "$BODY" > /tmp/pr_body.txt
+
+      - name: Persist version changes to a dedicated bump branch
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          BRANCH="chore/bump-runtime-versions-$(date +%Y%m%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add versions.json templates/ci/ templates/docker/
+          git commit -m "chore(templates): bump pinned runtime versions"
+          git push origin "$BRANCH"
+          echo "BUMP_BRANCH=$BRANCH" >> "$GITHUB_ENV"
+
+      - name: Open review PR for runtime version bumps (idempotent)
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Only open a new PR if one isn't already open for this branch
+          EXISTING=$(gh pr list --head "$BUMP_BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -z "$EXISTING" ]; then
+            gh pr create \
+              --title "chore(templates): bump pinned runtime versions" \
+              --body-file /tmp/pr_body.txt \
+              --base "${{ github.event.repository.default_branch }}" \
+              --head "$BUMP_BRANCH" \
+              --label "chore"
+          else
+            echo "PR #$EXISTING already open for branch $BUMP_BRANCH — skipping."
+          fi

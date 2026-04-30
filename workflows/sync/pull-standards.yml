@@ -198,6 +198,44 @@ jobs:
             fi
           done
 
+          # Apply runtime version bumps from versions.json to consumer repo CI/Docker files.
+          # This ensures that when bump-runtime-versions.yml updates the standards repo,
+          # the new versions trickle down to all consumer repos on their next weekly sync.
+          if [ -f "$TEMP_DIR/versions.json" ]; then
+            PY_NEW=$(jq -r '.python' "$TEMP_DIR/versions.json")
+            NODE_NEW=$(jq -r '.node' "$TEMP_DIR/versions.json")
+            DOTNET_NEW=$(jq -r '.dotnet' "$TEMP_DIR/versions.json")
+
+            # Files to patch in the consumer repo (non-exhaustive; covers the standard layout)
+            CI_YML=".github/workflows/ci.yml"
+
+            if [ -f "$CI_YML" ]; then
+              BEFORE=$(md5sum "$CI_YML")
+              sed -i -E \
+                -e "s/python-version: \"[0-9]+\.[0-9]+\"/python-version: \"${PY_NEW}\"/g" \
+                -e "s/node-version: \"[0-9]+\"/node-version: \"${NODE_NEW}\"/g" \
+                -e "s/node-version: [0-9]+$/node-version: ${NODE_NEW}/g" \
+                -e "s/dotnet-version: \"[0-9]+\.[0-9]+\.x\"/dotnet-version: \"${DOTNET_NEW}.x\"/g" \
+                "$CI_YML"
+              AFTER=$(md5sum "$CI_YML")
+              if [ "$BEFORE" != "$AFTER" ]; then CHANGED=true; fi
+            fi
+
+            # Apply to any Dockerfile found within the first three directory levels
+            while IFS= read -r -d '' dockerfile; do
+              BEFORE=$(md5sum "$dockerfile")
+              sed -i -E \
+                -e "s|FROM python:[0-9]+\.[0-9]+-slim|FROM python:${PY_NEW}-slim|g" \
+                -e "s|FROM node:[0-9]+-alpine|FROM node:${NODE_NEW}-alpine|g" \
+                -e "s|dotnet/sdk:[0-9]+\.[0-9]+-alpine|dotnet/sdk:${DOTNET_NEW}-alpine|g" \
+                -e "s|dotnet/aspnet:[0-9]+\.[0-9]+-alpine|dotnet/aspnet:${DOTNET_NEW}-alpine|g" \
+                "$dockerfile"
+              AFTER=$(md5sum "$dockerfile")
+              if [ "$BEFORE" != "$AFTER" ]; then CHANGED=true; fi
+            done < <(find . -maxdepth 3 \( -name "Dockerfile" -o -name "Dockerfile.*" \) \
+                       -not -path "./.git/*" -print0)
+          fi
+
           rm -rf "$TEMP_DIR"
 
           echo "changed=$CHANGED" >> "$GITHUB_ENV"
@@ -234,8 +272,9 @@ jobs:
                 repo: context.repo.repo,
                 title: 'chore: update agentic standards from upstream',
                 body: `Automated PR — syncs Copilot instructions, PR templates, ` +
-                  `code-review checklists, MCP config, agent prompts, and ` +
-                  `domain instruction files from [copilot-agentic-standards](${repo}).`,
+                  `code-review checklists, MCP config, agent prompts, ` +
+                  `domain instruction files, and pinned runtime versions ` +
+                  `(Python / Node.js / .NET) from [copilot-agentic-standards](${repo}).`,
                 head: process.env.UPDATE_BRANCH,
                 base: 'main',
               });

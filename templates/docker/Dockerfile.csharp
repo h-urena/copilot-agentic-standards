@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ── Stage 1: Build ──
-FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /src
 
 COPY *.sln .
@@ -13,7 +13,7 @@ COPY . .
 RUN dotnet publish src/Api/Api.csproj -c Release -o /app/publish --no-restore
 
 # ── Stage 2: Production ──
-FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS production
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS production
 WORKDIR /app
 
 RUN addgroup -g 1001 -S appgroup && \
