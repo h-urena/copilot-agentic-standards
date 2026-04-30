@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Add issue to project board as Todo
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           github-token: ${{ secrets.PR_TOKEN || github.token }}
           script: |
@@ -150,7 +150,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Move issue to In Progress
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           # Fall back to GITHUB_TOKEN so the action never crashes when the secret is absent.
           # The script itself exits early if PR_TOKEN is not configured.
@@ -252,7 +252,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Request review and move to In Review
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           github-token: ${{ secrets.PR_TOKEN || github.token }}
           script: |
@@ -383,7 +383,7 @@ jobs:
       issues: read
     steps:
       - name: Move linked issues to Done
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           github-token: ${{ secrets.PR_TOKEN || github.token }}
           script: |
@@ -492,7 +492,7 @@ jobs:
       # status checks pass. Skipped on the pull_request:closed safety-net trigger.
       - name: Enable squash auto-merge
         if: github.event_name == 'pull_request_review'
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const pr = context.payload.pull_request;
