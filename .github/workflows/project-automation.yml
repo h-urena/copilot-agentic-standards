@@ -70,10 +70,14 @@ jobs:
     steps:
       - name: Add issue to project board as Todo
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        env:
+          HAS_PR_TOKEN: ${{ secrets.PR_TOKEN != '' }}
+          INPUT_PROJECT_OWNER: ${{ inputs.project-owner }}
+          INPUT_PROJECT_NUMBER: ${{ inputs.project-number }}
         with:
           github-token: ${{ secrets.PR_TOKEN || github.token }}
           script: |
-            if ('${{ secrets.PR_TOKEN }}' === '') {
+            if (process.env.HAS_PR_TOKEN !== 'true') {
               core.setFailed(
                 'PR_TOKEN secret is not configured. Add a classic PAT with the ' +
                 'project scope as a repository secret named PR_TOKEN. ' +
@@ -82,8 +86,8 @@ jobs:
               return;
             }
 
-            const PROJECT_OWNER  = '${{ inputs.project-owner }}' || context.repo.owner;
-            const PROJECT_NUMBER = parseInt('${{ inputs.project-number }}' || '4', 10);
+            const PROJECT_OWNER  = process.env.INPUT_PROJECT_OWNER || context.repo.owner;
+            const PROJECT_NUMBER = parseInt(process.env.INPUT_PROJECT_NUMBER || '4', 10);
 
             const issue = context.payload.issue;
             const issueNodeId = issue.node_id;
@@ -151,12 +155,16 @@ jobs:
     steps:
       - name: Move issue to In Progress
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        env:
+          HAS_PR_TOKEN: ${{ secrets.PR_TOKEN != '' }}
+          INPUT_PROJECT_OWNER: ${{ inputs.project-owner }}
+          INPUT_PROJECT_NUMBER: ${{ inputs.project-number }}
         with:
           # Fall back to GITHUB_TOKEN so the action never crashes when the secret is absent.
           # The script itself exits early if PR_TOKEN is not configured.
           github-token: ${{ secrets.PR_TOKEN || github.token }}
           script: |
-            if ('${{ secrets.PR_TOKEN }}' === '') {
+            if (process.env.HAS_PR_TOKEN !== 'true') {
               core.setFailed(
                 'PR_TOKEN secret is not configured. Add a classic PAT with the ' +
                 'project scope as a repository secret named PR_TOKEN. ' +
@@ -165,8 +173,8 @@ jobs:
               return;
             }
 
-            const PROJECT_OWNER  = '${{ inputs.project-owner }}' || context.repo.owner;
-            const PROJECT_NUMBER = parseInt('${{ inputs.project-number }}' || '4', 10);
+            const PROJECT_OWNER  = process.env.INPUT_PROJECT_OWNER || context.repo.owner;
+            const PROJECT_NUMBER = parseInt(process.env.INPUT_PROJECT_NUMBER || '4', 10);
 
             const branch = context.ref.replace('refs/heads/', '');
 
@@ -253,10 +261,15 @@ jobs:
     steps:
       - name: Request review and move to In Review
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        env:
+          HAS_PR_TOKEN: ${{ secrets.PR_TOKEN != '' }}
+          INPUT_PROJECT_OWNER: ${{ inputs.project-owner }}
+          INPUT_PROJECT_NUMBER: ${{ inputs.project-number }}
+          INPUT_REPO_OWNER: ${{ inputs.repo-owner }}
         with:
           github-token: ${{ secrets.PR_TOKEN || github.token }}
           script: |
-            if ('${{ secrets.PR_TOKEN }}' === '') {
+            if (process.env.HAS_PR_TOKEN !== 'true') {
               core.setFailed(
                 'PR_TOKEN secret is not configured. Add a classic PAT with the ' +
                 'project scope as a repository secret named PR_TOKEN. ' +
@@ -265,9 +278,9 @@ jobs:
               return;
             }
 
-            const PROJECT_OWNER  = '${{ inputs.project-owner }}' || context.repo.owner;
-            const PROJECT_NUMBER = parseInt('${{ inputs.project-number }}' || '4', 10);
-            const REPO_OWNER     = '${{ inputs.repo-owner }}' || context.repo.owner;
+            const PROJECT_OWNER  = process.env.INPUT_PROJECT_OWNER || context.repo.owner;
+            const PROJECT_NUMBER = parseInt(process.env.INPUT_PROJECT_NUMBER || '4', 10);
+            const REPO_OWNER     = process.env.INPUT_REPO_OWNER || context.repo.owner;
 
             const pr       = context.payload.pull_request;
             const prNumber = pr.number;
@@ -384,10 +397,14 @@ jobs:
     steps:
       - name: Move linked issues to Done
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        env:
+          HAS_PR_TOKEN: ${{ secrets.PR_TOKEN != '' }}
+          INPUT_PROJECT_OWNER: ${{ inputs.project-owner }}
+          INPUT_PROJECT_NUMBER: ${{ inputs.project-number }}
         with:
           github-token: ${{ secrets.PR_TOKEN || github.token }}
           script: |
-            if ('${{ secrets.PR_TOKEN }}' === '') {
+            if (process.env.HAS_PR_TOKEN !== 'true') {
               core.setFailed(
                 'PR_TOKEN secret is not configured. Add a classic PAT with the ' +
                 'project scope as a repository secret named PR_TOKEN. ' +
@@ -396,8 +413,8 @@ jobs:
               return;
             }
 
-            const PROJECT_OWNER  = '${{ inputs.project-owner }}' || context.repo.owner;
-            const PROJECT_NUMBER = parseInt('${{ inputs.project-number }}' || '4', 10);
+            const PROJECT_OWNER  = process.env.INPUT_PROJECT_OWNER || context.repo.owner;
+            const PROJECT_NUMBER = parseInt(process.env.INPUT_PROJECT_NUMBER || '4', 10);
 
             const body   = context.payload.pull_request.body ?? '';
             const branch = context.payload.pull_request.head.ref;

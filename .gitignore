@@ -11,3 +11,11 @@ Thumbs.db
 # Temp
 tmp/
 *.tmp
+
+# Secrets — never commit environment files
+.env
+.env.local
+.env.production
+.env.staging
+*.pem
+*.key

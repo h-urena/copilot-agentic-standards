@@ -51,6 +51,8 @@ jobs:
     steps:
       - name: Auto-assign PR to its author
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        env:
+          INPUT_REPO_OWNER: ${{ inputs.repo-owner }}
         with:
           script: |
             const pr = context.payload.pull_request;
@@ -61,7 +63,7 @@ jobs:
 
             // When a bot (Copilot, Dependabot, github-actions[bot], etc.) opens the PR,
             // assign the repo owner as the responsible human instead of the bot login.
-            const repoOwner = '${{ inputs.repo-owner }}' || context.repo.owner;
+            const repoOwner = process.env.INPUT_REPO_OWNER || context.repo.owner;
             const assignee = isBot ? repoOwner : author;
 
             core.info(`PR author: ${author} (bot: ${isBot}) → assigning: ${assignee}`);
