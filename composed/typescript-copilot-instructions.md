@@ -54,17 +54,6 @@ gh pr create --title "<type>(scope): description" --body "Closes #<issue-number>
 
 If you skipped any step, stop immediately, undo your changes (`git checkout main`), and restart from Step 1.
 
-## Agentic workflow
-
-Before making any code change, always execute these steps in order:
-
-1. **Create a GitHub issue** describing the problem or feature. Use `gh issue create` with a clear title and body.
-2. **Create a branch** from `main` following the naming format `<type>/<issue-number>-<short-slug>` (e.g. `feat/42-add-oauth-flow`). Use `git checkout -b`.
-3. **Make the changes** on that branch — never commit directly to `main`.
-4. **Open a PR** that references the issue with `Closes #N` in the body.
-
-Do not skip or defer any of these steps, even for small or "obvious" fixes.
-
 ## Branch strategy
 
 - **`main`** is the default, protected branch. All changes merge into `main` via pull request.

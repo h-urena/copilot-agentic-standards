@@ -44,7 +44,7 @@ gh pr create --title "<type>(scope): description" --body "Closes #<issue-number>
 ```
 
 If you skipped any step, stop immediately, undo your changes (`git checkout main`), and restart from Step 1.
-The full governance workflow with validation steps is in `.github/prompts/governance.prompt.md`.
+The full governance workflow with validation steps is in `.github/prompts/implementation/governance.prompt.md`.
 
 ---
 

@@ -15,7 +15,51 @@ adopt with a single bootstrap script.
 
 ## For teams adopting the standards
 
-### Quick start — bootstrap an existing repo
+### Quick start — green field (new project)
+
+Use this path when creating a brand-new repository from scratch.
+
+**Step 1 — Choose a stack**
+
+| Stack | Use when |
+| ----- | -------- |
+| `typescript` | Node.js APIs, full-stack apps, CLIs, or any JS/TS project |
+| `python` | Data pipelines, ML workloads, Django/FastAPI services |
+| `csharp` | .NET APIs, background services, or any C# project |
+| `typescript+python` | Projects with a TypeScript frontend and a Python backend |
+
+**Step 2 — Run the bootstrap script with `--create`**
+
+```bash
+git clone https://github.com/h-urena/copilot-agentic-standards.git
+./copilot-agentic-standards/scripts/onboard-repo.sh \
+  --repo ../my-new-project \
+  --stack typescript \
+  --create
+```
+
+The `--create` flag creates the GitHub repository, clones it locally, copies all standards files
+into it, creates conventional-commit labels, and provisions a GitHub Project board.
+
+**Step 3 — Complete post-setup (once, by the repo owner)**
+
+After the script finishes, do these steps once:
+
+1. **Enable branch protection on `main`** — follow the `gh api` commands printed by the script
+   at the end of its run.
+2. **Fill in `.github/project-context.md`** — open it and answer the prompted sections so agents
+   have project context without re-exploring the codebase every session.
+3. **Verify CI is green** — open the repo on GitHub and confirm the initial workflow runs pass.
+4. **Pin `pull-standards.yml`** — it was already copied; confirm it is enabled under
+   Settings → Actions → Workflows.
+
+---
+
+### Quick start — brown field (existing repo)
+
+Use this path when applying the standards to a repo that already exists.
+
+**Step 1 — Run the bootstrap script (no `--create` flag)**
 
 ```bash
 # Remotely (no clone needed)
@@ -27,8 +71,29 @@ git clone https://github.com/h-urena/copilot-agentic-standards.git
 ./copilot-agentic-standards/scripts/onboard-repo.sh --repo ../my-project --stack python
 ```
 
-The script copies everything listed in the table below into the target repo. Run it once; after
-that, `pull-standards.yml` keeps the repo in sync automatically.
+The script is idempotent — it skips files that already exist. Pass `--force` to overwrite
+existing files (use with care if you have customised them).
+
+**Step 2 — Review what was added**
+
+```bash
+cd ../my-project
+git status   # review the new/modified files before committing
+```
+
+Key files to inspect: `.github/copilot-instructions.md`, `.vscode/mcp.json`,
+`.github/workflows/pull-standards.yml`.
+
+**Step 3 — Complete post-setup (once, by the repo owner)**
+
+1. **Enable branch protection on `main`** — run the `gh api` commands printed by the script.
+2. **Fill in `.github/project-context.md`** — open it and fill in the project-specific sections.
+3. **Commit and push the bootstrapped files** — open a PR following the governance workflow
+   (`.github/prompts/implementation/governance.prompt.md`).
+4. **Verify CI is green** — confirm `pull-standards.yml` and any other new workflows pass.
+
+The script copies everything listed in the table below. Run it once; after that,
+`pull-standards.yml` keeps the repo in sync automatically.
 
 ### What gets copied by `onboard-repo.sh`
 
@@ -74,8 +139,34 @@ This produces:
 
 ### Keep standards in sync
 
-`pull-standards.yml` runs every Monday at 09:00 UTC and opens a PR when this repo changes.
-Enable it by running `onboard-repo.sh` once, or copy the workflow manually:
+`pull-standards.yml` runs every Monday at 09:00 UTC and opens a PR on the downstream repo when
+anything in this standards repo changes. Running `onboard-repo.sh` installs it automatically.
+
+**What it updates on each run:**
+
+- `.github/copilot-instructions.md` — from the latest composed file for the repo's stack
+- All domain instruction files (`api-design`, `auth-patterns`, `db-patterns`, etc.)
+- Code review checklists (generic + stack-specific)
+- All prompt files under `.github/prompts/`
+- Skill files under `.github/skills/`
+- PR description and merge-rules reusable workflows
+- Runtime version pins in `ci.yml` and `Dockerfile` (Python, Node.js, .NET) from `versions.json`
+
+**How to apply latest changes manually**
+
+1. Go to your repo on GitHub → Actions → `pull-standards` workflow.
+2. Click **Run workflow** → **Run workflow** (no inputs needed).
+3. The workflow opens a PR titled `chore: update standards from h-urena/copilot-agentic-standards`.
+4. Review the diff in that PR — it shows exactly which files changed.
+5. Merge the PR. Standards are now up to date.
+
+**Stack detection**
+
+The workflow reads the first five lines of `.github/copilot-instructions.md` for a comment like
+`<!-- Stack: typescript -->`. This comment is written by `onboard-repo.sh`. Do not remove or
+move it, or the sync workflow will silently skip updating the main instructions file.
+
+**If you don't yet have the workflow**
 
 ```bash
 cp workflows/sync/pull-standards.yml ../my-project/.github/workflows/pull-standards.yml
@@ -298,10 +389,7 @@ jobs:
 
 ### Contributing
 
-1. Follow `.github/prompts/governance.prompt.md` (create issue → branch → PR).
-2. Edit source files only — never files in `composed/`.
-3. Run `./scripts/compose.sh all && ./scripts/validate-composed.sh` before pushing.
-4. Open a PR with a Conventional Commits title: `type(scope): description`.
+Follow `.github/prompts/implementation/governance.prompt.md` for the full workflow (create issue → branch → implement → validate → PR). The governance prompt is the single source of truth — do not add inline steps here that can drift.
 
 ## License
 
