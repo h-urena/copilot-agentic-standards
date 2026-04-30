@@ -186,7 +186,8 @@ jobs:
           if [ "$DOTNET_OLD" != "$DOTNET_NEW" ]; then
             BODY+="| .NET | \`$DOTNET_OLD\` | \`$DOTNET_NEW\` |"$'\n'
           fi
-          BODY+=$'\n'"Consumer repos receive these bumps automatically on their next weekly sync via \`pull-standards.yml\`."
+          BODY+=$'\n'"Consumer repos receive these bumps automatically"
+          BODY+=" on their next weekly sync via \`pull-standards.yml\`."
           # Write body to file to avoid shell quoting issues
           printf '%s' "$BODY" > /tmp/pr_body.txt
 
