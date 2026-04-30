@@ -63,6 +63,9 @@ shellcheck scripts/*.sh
 
 Fix all errors before continuing. If `validate-composed.sh` reports stale files, commit the regenerated output before pushing.
 
+Also run `#audit` on the branch before opening the PR. Run `#security-audit` on any change
+touching workflows, scripts, or permissions.
+
 **Step 6 — Commit using Conventional Commits**
 
 ```bash
@@ -143,3 +146,66 @@ moves it to **In Review**; merge moves it to **Done**. Never move cards manually
 4. Workflow files must use `workflow_call` trigger for reusable workflows.
 5. Follow conventional commits: `feat:`, `fix:`, `docs:`, `chore:`. Add a `scope` when applicable (e.g., `feat(frontend): add UI component`).
 6. Shell scripts must pass `shellcheck` with zero warnings and use `set -euo pipefail`. Never suppress a warning with `# shellcheck disable` as a first resort — fix the root cause. For SC2016 (dollar sign in single quotes), assign the string with double quotes and `\$` to produce a literal `$` without shell expansion (e.g. `Q="query(\$id:ID!){...}"`). Single-quoted assignment still triggers SC2016 — do not use it.
+
+## Available prompts
+
+Prompts are invocable agent workflows. Invoke with `#<name>` in VS Code Copilot Chat.
+**Use the correct prompt for every task — never implement, fix, scaffold, or review without it.**
+
+### Implementation
+
+| Invoke | When to use |
+| ------ | ----------- |
+| `#governance` | **Before any change** — full pre-flight (issue → branch → implement → validate → PR → merge) |
+| `#implement-feature` | Implementing a new feature end-to-end |
+| `#fix-bug` | Diagnosing and fixing a bug — reproduce first, then trace root cause |
+| `#write-tests` | Writing tests for existing code |
+| `#refactor` | Refactoring without changing observable behaviour |
+| `#write-docs` | Generating or updating README, API docs, ADRs, or changelogs |
+| `#create-adr` | Recording an architecture decision |
+| `#deploy` | Deploying a service — pre-deploy checks, health verification, rollback plan |
+| `#project-kickoff` | Bootstrapping a brand-new project from scratch |
+
+### Review — run before opening every PR
+
+| Invoke | When to use |
+| ------ | ----------- |
+| `#audit` | **Every PR** — validate the branch diff against all project standards |
+| `#security-audit` | Every PR touching workflows, scripts, or permissions |
+| `#performance-audit` | PRs touching data-intensive operations |
+| `#dependency-audit` | When adding, removing, or upgrading any dependency |
+
+### Scaffolds
+
+| Invoke | When to use |
+| ------ | ----------- |
+| `#crud-api` | Scaffolding a new CRUD resource |
+| `#auth` | Wiring authentication and authorisation |
+| `#database` | Setting up a new database, ORM, migrations |
+| `#frontend` | Scaffolding a new UI component |
+| `#background-jobs` | Scaffolding an async worker |
+| `#notifications` | Scaffolding notifications |
+| `#monorepo` | Scaffolding a multi-service monorepo |
+
+### Personas
+
+| Invoke | When to use |
+| ------ | ----------- |
+| `#architect` | System design, service decomposition, ADR facilitation |
+| `#principal-engineer` | Architecture review, abstraction quality, long-term maintainability |
+| `#devops-engineer` | CI/CD, containerisation, IaC, secrets management |
+| `#qa-engineer` | Test coverage, quality risks, edge cases |
+| `#product-manager` | PRDs, user stories, acceptance criteria |
+
+## Available skills
+
+Skills are specialised knowledge files. Load the relevant file at the start of any task in that
+domain. In this repo skills live in `skills/`.
+
+| Load this file | When |
+| -------------- | ---- |
+| `skills/test-generation.skill.md` | Writing any test suite |
+| `skills/code-analysis.skill.md` | Performing a deep code review or analysis |
+| `skills/api-design-review.skill.md` | Reviewing any PR that adds or changes API endpoints |
+| `skills/performance-profiling.skill.md` | Investigating or auditing performance |
+| `skills/data-migration.skill.md` | Working on any database schema migration or data backfill |

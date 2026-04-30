@@ -67,7 +67,8 @@ Run all of the following in order. Zero errors allowed — do not proceed with a
 2. **Type-check** — run the stack type checker in strict mode. Zero errors.
 3. **Tests** — run the full test suite. All must pass.
 4. **Security** — scan your diff for secrets, unsanitised inputs, broken auth, or injection vectors.
-   For significant changes invoke the `#security-audit` prompt before opening the PR.
+   Run `#security-audit` on any change touching auth, data access, or external inputs.
+   Run `#audit` on every PR before opening it.
 5. **Pre-commit hooks** — run `pre-commit run --all-files` if `.pre-commit-config.yaml` exists.
 6. **Composed files** — if the repo has `validate-composed.sh`, run it and commit any regenerated
    files before pushing.
@@ -251,6 +252,70 @@ When Dependabot opens a PR, follow these steps without exception:
 - Log errors with sufficient context for debugging (timestamp, request ID, stack trace).
 - Return meaningful error messages to callers; do not expose internal details to end users.
 - No problems stated in the 'Problems' tab should be ignored. If a problem is not actionable, it should be suppressed with a comment explaining why. Otherwise, all problems should be addressed before merging.
+
+## Available prompts
+
+Prompts are invocable agent workflows. Invoke with `#<name>` in VS Code Copilot Chat (the filename
+without extension). **Use the correct prompt for every task — never implement, fix, scaffold, or
+review without invoking the relevant prompt first.**
+
+### Implementation
+
+| Invoke | When to use |
+| ------ | ----------- |
+| `#governance` | **Before any change** — the full pre-flight workflow (issue → branch → implement → validate → PR → merge) |
+| `#implement-feature` | Implementing a new feature end-to-end |
+| `#fix-bug` | Diagnosing and fixing a bug — reproduce first, then trace root cause |
+| `#write-tests` | Writing tests for existing code |
+| `#refactor` | Refactoring without changing observable behaviour |
+| `#write-docs` | Generating or updating README, API docs, ADRs, or changelogs |
+| `#create-adr` | Recording an architecture decision in `docs/decisions/` |
+| `#deploy` | Deploying a service — pre-deploy checks, health verification, rollback plan |
+| `#project-kickoff` | Bootstrapping a brand-new project from scratch |
+
+### Review — run these before opening every PR
+
+| Invoke | When to use |
+| ------ | ----------- |
+| `#audit` | **Every PR** — validate the branch diff against all project standards |
+| `#security-audit` | Every PR touching auth, data access, external inputs, or dependencies |
+| `#performance-audit` | PRs touching database queries, caching, or frontend bundles |
+| `#dependency-audit` | When adding, removing, or upgrading any dependency |
+
+### Scaffolds
+
+| Invoke | When to use |
+| ------ | ----------- |
+| `#crud-api` | Scaffolding a new CRUD resource (routes, models, validation, tests, migrations) |
+| `#auth` | Wiring authentication and authorisation into a project |
+| `#database` | Setting up a new database, ORM, migrations, and health checks |
+| `#frontend` | Scaffolding a new UI component (structure, a11y, state management, tests) |
+| `#background-jobs` | Scaffolding an async worker (queue, retry policy, dead-letter handling) |
+| `#notifications` | Scaffolding email, webhook, or push notifications with retry and opt-out |
+| `#monorepo` | Scaffolding a multi-service monorepo layout with per-service CI |
+
+### Personas — invoke for a specialist review lens
+
+| Invoke | When to use |
+| ------ | ----------- |
+| `#architect` | System design, service decomposition, ADR facilitation |
+| `#principal-engineer` | Architecture review, abstraction quality, long-term maintainability |
+| `#devops-engineer` | CI/CD, containerisation, IaC, secrets management, deployment reliability |
+| `#qa-engineer` | Test coverage, quality risks, edge cases, regression strategy |
+| `#product-manager` | PRDs, user stories, acceptance criteria, feature scoping |
+
+## Available skills
+
+Skills are specialised knowledge files. Load the relevant file at the start of any task in that
+domain — do not rely on general knowledge alone. Skills live in `.github/skills/`.
+
+| Load this file | When |
+| -------------- | ---- |
+| `.github/skills/test-generation.skill.md` | Writing any test suite |
+| `.github/skills/code-analysis.skill.md` | Performing a deep code review or analysis |
+| `.github/skills/api-design-review.skill.md` | Reviewing any PR that adds or changes API endpoints |
+| `.github/skills/performance-profiling.skill.md` | Investigating or auditing performance |
+| `.github/skills/data-migration.skill.md` | Working on any database schema migration or data backfill |
 
 ---
 
