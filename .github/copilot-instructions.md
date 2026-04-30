@@ -9,42 +9,108 @@ You are working on the **copilot-agentic-standards** repo — the single source 
 - Files in `composed/` are **auto-generated** by `scripts/compose.sh`. Never edit them directly.
 - Workflows in `.github/workflows/` use dual triggers (`pull_request` for this repo + `workflow_call` for consumers). Files in `workflows/reusable/` are documentation only.
 
-## MANDATORY pre-flight — do this before touching any file
+## MANDATORY pre-flight — execute every step, every time, before touching any file
 
-> **STOP.** Do not create, edit, or delete any file until all four steps below are complete.
+> **STOP.** Do not create, edit, or delete any file until all nine steps below are complete.
 > This applies to every change, no matter how small or "obvious".
 
 **Step 1 — Verify main is up to date**
 
 ```bash
-git checkout main && git pull origin main
+git checkout main
+git pull origin main
 ```
 
 **Step 2 — Create a GitHub issue**
+
+- Title: `<type>(<scope>): <short description>` using Conventional Commits format
+- Body: describe the problem, proposed solution, and acceptance criteria
+- Assign to yourself
+- Record the issue number — you will need it for every subsequent step
 
 ```bash
 gh issue create --title "<type>(scope): short description" --body "Problem, solution, acceptance criteria" --assignee @me
 ```
 
-Record the issue number. You cannot proceed without it.
-
 **Step 3 — Create a branch linked to that issue**
 
-```bash
-git checkout -b <type>/<issue-number>-<short-slug>
-# e.g. feat/42-add-pr-description-workflow
-```
+Branch naming format: `<type>/<issue-number>-<short-slug>`
 
 Valid types: `feat` `fix` `docs` `style` `refactor` `perf` `test` `build` `ci` `chore` `hotfix`
 
-**Step 4 — Make ALL changes on that branch, then open a PR**
+Examples: `feat/42-add-oauth-flow`, `fix/99-null-crash-on-login`, `chore/35-mvp-hardening`
 
 ```bash
-gh pr create --title "<type>(scope): description" --body "Closes #<issue-number>"
+git checkout -b <type>/<issue-number>-<short-slug>
+```
+
+**Step 4 — Implement the change**
+
+- Make only the changes required to resolve the issue
+- Do not refactor unrelated code or add unrequested features
+- If editing composed files is needed, edit the source (`instructions/`) and regenerate: `./scripts/compose.sh all`
+
+**Step 5 — Run local validation**
+
+```bash
+# Lint all shell scripts
+shellcheck scripts/*.sh
+
+# Re-compose and verify committed files match
+./scripts/compose.sh all
+./scripts/validate-composed.sh
+```
+
+Fix all errors before continuing. If `validate-composed.sh` reports stale files, commit the regenerated output before pushing.
+
+**Step 6 — Commit using Conventional Commits**
+
+```bash
+git add -A
+git commit -m "<type>(<scope>): <description>
+
+<body explaining what and why>
+
+Closes #<issue-number>"
+```
+
+> The subject line must be **≤ 100 characters** — `commitlint` enforces this in CI.
+
+**Step 7 — Push and open a Pull Request**
+
+```bash
+git push origin <branch-name>
+gh pr create \
+  --title "<type>(<scope>): <description>" \
+  --body "Closes #<issue-number>" \
+  --assignee @me
+```
+
+**Step 8 — Wait for all CI checks to pass**
+
+Do not merge until every check is green:
+- `Validate PR title (Conventional Commits)`
+- `Verify squash merge is enabled`
+- `Validate branch name`
+- `Check composed files are fresh`
+- `Lint shell scripts`
+- `Tiered Review` (must not have REQUEST_CHANGES findings)
+
+If any check fails, fix it on the branch and push again. Never bypass checks.
+
+**Step 9 — Merge via squash only**
+
+```bash
+gh pr merge <pr-number> --squash --delete-branch
 ```
 
 If you skipped any step, stop immediately, undo your changes (`git checkout main`), and restart from Step 1.
-The full governance workflow with validation steps is in `.github/prompts/implementation/governance.prompt.md`.
+
+**Non-negotiable rules:**
+- Never push directly to `main`
+- Never use `--force` on `main`
+- Never skip CI
+- Every change must trace to an issue number
 
 ---
 

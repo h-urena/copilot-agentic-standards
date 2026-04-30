@@ -14,41 +14,93 @@ These are universal rules that apply to **every** repository regardless of langu
 - Do not leave dead code, commented-out code, or TODO comments without a linked issue.
 - Treat compiler/linter warnings as errors.
 
-## MANDATORY pre-flight — do this before touching any file
+## MANDATORY pre-flight — execute every step, every time, before touching any file
 
-> **STOP.** Do not create, edit, or delete any file until all four steps below are complete.
+> **STOP.** Do not create, edit, or delete any file until all nine steps below are complete.
 > This applies to every change, no matter how small or "obvious".
 
 **Step 1 — Verify main is up to date**
 
 ```bash
-git checkout main && git pull origin main
+git checkout main
+git pull origin main
 ```
 
 **Step 2 — Create a GitHub issue**
+
+- Title: `<type>(<scope>): <short description>` using Conventional Commits format
+- Body: describe the problem, proposed solution, and acceptance criteria
+- Assign to yourself
+- Record the issue number — you will need it for every subsequent step
 
 ```bash
 gh issue create --title "<type>(scope): short description" --body "Problem, solution, acceptance criteria" --assignee @me
 ```
 
-Record the issue number. You cannot proceed without it.
-
 **Step 3 — Create a branch linked to that issue**
 
-```bash
-git checkout -b <type>/<issue-number>-<short-slug>
-# e.g. feat/42-add-pr-description-workflow
-```
+Branch naming format: `<type>/<issue-number>-<short-slug>`
 
 Valid types: `feat` `fix` `docs` `style` `refactor` `perf` `test` `build` `ci` `chore` `hotfix`
 
-**Step 4 — Make ALL changes on that branch, then open a PR**
+Examples: `feat/42-add-oauth-flow`, `fix/99-null-crash-on-login`, `chore/35-mvp-hardening`
 
 ```bash
-gh pr create --title "<type>(scope): description" --body "Closes #<issue-number>"
+git checkout -b <type>/<issue-number>-<short-slug>
+```
+
+**Step 4 — Implement the change**
+
+- Make only the changes required to resolve the issue
+- Do not refactor unrelated code or add unrequested features
+- If modifying any source file that feeds a composed output, edit the source and regenerate
+
+**Step 5 — Run local validation**
+
+Run whatever validation the stack requires (linting, type-checking, tests) before committing.
+If the repo has a `validate-composed.sh` script, run it and fix any stale files.
+
+**Step 6 — Commit using Conventional Commits**
+
+```bash
+git add -A
+git commit -m "<type>(<scope>): <description>
+
+<body explaining what and why>
+
+Closes #<issue-number>"
+```
+
+> The subject line must be **≤ 100 characters** — `commitlint` enforces this in CI.
+
+**Step 7 — Push and open a Pull Request**
+
+```bash
+git push origin <branch-name>
+gh pr create \
+  --title "<type>(<scope>): <description>" \
+  --body "Closes #<issue-number>" \
+  --assignee @me
+```
+
+**Step 8 — Wait for all CI checks to pass**
+
+Do not merge until every required check is green. If any check fails, fix it on the branch and
+push again. Never bypass checks.
+
+**Step 9 — Merge via squash only**
+
+```bash
+gh pr merge <pr-number> --squash --delete-branch
 ```
 
 If you skipped any step, stop immediately, undo your changes (`git checkout main`), and restart from Step 1.
+
+**Non-negotiable rules:**
+- Never push directly to `main`
+- Never use `--force` on `main`
+- Never skip CI
+- Every change must trace to an issue number
 
 ## Branch strategy
 
