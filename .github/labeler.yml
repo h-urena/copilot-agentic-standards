@@ -7,7 +7,7 @@
 #   1. Add a block under "Stack labels" with the relevant file extensions / lock files.
 #   2. Add the same label name to the issue-labeler.yml STACK_MAP constant.
 
-# ── Stack labels ──
+# ── Stack labels ──────────────────────────────────────────────────────────────
 typescript:
   - changed-files:
       - any-glob-to-any-file:
@@ -35,7 +35,7 @@ csharp:
           - "**/*.sln"
           - "Directory.Build.props"
 
-# ── Layer labels ──
+# ── Layer labels ──────────────────────────────────────────────────────────────
 api:
   - changed-files:
       - any-glob-to-any-file:
@@ -70,7 +70,7 @@ tests:
           - "**/*.spec.*"
           - "e2e/**"
 
-# ── Concern labels ──
+# ── Concern labels ────────────────────────────────────────────────────────────
 documentation:
   - changed-files:
       - any-glob-to-any-file:
