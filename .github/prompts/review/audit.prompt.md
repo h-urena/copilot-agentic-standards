@@ -62,7 +62,7 @@ Every `.yml` change **must** use the absolute latest action versions. Flag anyth
 
 **Shell:** All `.sh` blocks must start with `set -euo pipefail`. All variables must be quoted.
 
-**Line length:** All `.yml` files are linted with `yamllint` at max 120 characters per line. Flag any line exceeding 120 characters — break long shell lines with `\` continuations and extract long strings into variables.
+**Line length:** All `.yml` files are linted with `yamllint` at max 130 characters per line. Flag any line exceeding 130 characters — break long shell lines with `\` continuations and extract long strings into variables.
 
 ---
 
