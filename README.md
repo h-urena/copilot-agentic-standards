@@ -319,7 +319,7 @@ pre-commit install
 ```
 
 After that, every `git commit` automatically lints staged `*.yml`/`*.yaml` files with yamllint
-(max 120 chars/line).
+(max 130 chars/line).
 
 > **Ad-hoc:** To lint all files without committing (e.g. before raising a PR):
 >
