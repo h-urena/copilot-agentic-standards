@@ -30,7 +30,7 @@ jobs:
     uses: h-urena/copilot-agentic-standards/.github/workflows/pr-automation.yml@86c5acf98f7f2aa66b66f5f728de4f290c3160b0  # main
     with:
       auto-assign-author: true
-      enable-labeler: false # set to true once you add .github/labeler.yml
+      enable-labeler: true
 
   # Add your project-specific jobs below
   # build:
