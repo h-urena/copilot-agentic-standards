@@ -14,7 +14,7 @@
 #       uses: h-urena/copilot-agentic-standards/.github/workflows/pr-automation.yml@main
 #       with:
 #         auto-assign-author: true
-#         enable-labeler: false  # set true once .github/labeler.yml exists
+#         enable-labeler: true   # requires .github/labeler.yml in the caller's repo
 #
 # Authentication: uses GITHUB_TOKEN automatically. No secrets need to be passed.
 
@@ -30,7 +30,7 @@ on:
       enable-labeler:
         description: "Apply path-based labels via .github/labeler.yml"
         type: boolean
-        default: false
+        default: true
 
 jobs:
   auto-assign:

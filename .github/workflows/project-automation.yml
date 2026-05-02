@@ -73,7 +73,7 @@ jobs:
         env:
           HAS_PR_TOKEN: ${{ secrets.PR_TOKEN != '' }}
           INPUT_PROJECT_OWNER: ${{ inputs.project-owner }}
-          INPUT_PROJECT_NUMBER: ${{ inputs.project-number }}
+          INPUT_PROJECT_NUMBER: ${{ inputs.project-number || vars.PROJECT_NUMBER }}
         with:
           github-token: ${{ secrets.PR_TOKEN || github.token }}
           script: |
@@ -87,7 +87,7 @@ jobs:
             }
 
             const PROJECT_OWNER  = process.env.INPUT_PROJECT_OWNER || context.repo.owner;
-            const PROJECT_NUMBER = parseInt(process.env.INPUT_PROJECT_NUMBER || '4', 10);
+            const PROJECT_NUMBER = parseInt(process.env.INPUT_PROJECT_NUMBER || '0', 10);
 
             const issue = context.payload.issue;
             const issueNodeId = issue.node_id;
@@ -158,7 +158,7 @@ jobs:
         env:
           HAS_PR_TOKEN: ${{ secrets.PR_TOKEN != '' }}
           INPUT_PROJECT_OWNER: ${{ inputs.project-owner }}
-          INPUT_PROJECT_NUMBER: ${{ inputs.project-number }}
+          INPUT_PROJECT_NUMBER: ${{ inputs.project-number || vars.PROJECT_NUMBER }}
         with:
           # Fall back to GITHUB_TOKEN so the action never crashes when the secret is absent.
           # The script itself exits early if PR_TOKEN is not configured.
@@ -174,7 +174,7 @@ jobs:
             }
 
             const PROJECT_OWNER  = process.env.INPUT_PROJECT_OWNER || context.repo.owner;
-            const PROJECT_NUMBER = parseInt(process.env.INPUT_PROJECT_NUMBER || '4', 10);
+            const PROJECT_NUMBER = parseInt(process.env.INPUT_PROJECT_NUMBER || '0', 10);
 
             const branch = context.ref.replace('refs/heads/', '');
 
@@ -264,7 +264,7 @@ jobs:
         env:
           HAS_PR_TOKEN: ${{ secrets.PR_TOKEN != '' }}
           INPUT_PROJECT_OWNER: ${{ inputs.project-owner }}
-          INPUT_PROJECT_NUMBER: ${{ inputs.project-number }}
+          INPUT_PROJECT_NUMBER: ${{ inputs.project-number || vars.PROJECT_NUMBER }}
           INPUT_REPO_OWNER: ${{ inputs.repo-owner }}
         with:
           github-token: ${{ secrets.PR_TOKEN || github.token }}
@@ -279,7 +279,7 @@ jobs:
             }
 
             const PROJECT_OWNER  = process.env.INPUT_PROJECT_OWNER || context.repo.owner;
-            const PROJECT_NUMBER = parseInt(process.env.INPUT_PROJECT_NUMBER || '4', 10);
+            const PROJECT_NUMBER = parseInt(process.env.INPUT_PROJECT_NUMBER || '0', 10);
             const REPO_OWNER     = process.env.INPUT_REPO_OWNER || context.repo.owner;
 
             const pr       = context.payload.pull_request;
@@ -400,7 +400,7 @@ jobs:
         env:
           HAS_PR_TOKEN: ${{ secrets.PR_TOKEN != '' }}
           INPUT_PROJECT_OWNER: ${{ inputs.project-owner }}
-          INPUT_PROJECT_NUMBER: ${{ inputs.project-number }}
+          INPUT_PROJECT_NUMBER: ${{ inputs.project-number || vars.PROJECT_NUMBER }}
         with:
           github-token: ${{ secrets.PR_TOKEN || github.token }}
           script: |
@@ -414,7 +414,7 @@ jobs:
             }
 
             const PROJECT_OWNER  = process.env.INPUT_PROJECT_OWNER || context.repo.owner;
-            const PROJECT_NUMBER = parseInt(process.env.INPUT_PROJECT_NUMBER || '4', 10);
+            const PROJECT_NUMBER = parseInt(process.env.INPUT_PROJECT_NUMBER || '0', 10);
 
             const body   = context.payload.pull_request.body ?? '';
             const branch = context.payload.pull_request.head.ref;

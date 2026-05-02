@@ -37,7 +37,7 @@ on:
       enable-labeler:
         description: "Apply path-based labels via .github/labeler.yml"
         type: boolean
-        default: false
+        default: true
 
 permissions:
   pull-requests: write

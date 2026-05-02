@@ -1,0 +1,105 @@
+# Issue Labeler
+#
+# Automatically labels newly opened issues by matching the issue title against
+# Conventional Commits type prefixes and stack keywords.
+#
+# Label vocabulary is kept in sync with .github/labeler.yml so that issues and
+# PRs always share the same label set.
+#
+# Dual-trigger:
+#   1. issues — runs automatically on issues in this repo
+#   2. workflow_call — consumer repos call this as a reusable workflow:
+#
+#        permissions:
+#          issues: write
+#        jobs:
+#          issue-labeler:
+#            uses: h-urena/copilot-agentic-standards/.github/workflows/issue-labeler.yml@main
+#
+# Authentication: uses GITHUB_TOKEN automatically. No secrets need to be passed.
+#
+# To add a new stack label, add an entry to STACK_MAP inside the script below
+# and add the corresponding block in .github/labeler.yml.
+
+name: Auto-label new issues from Conventional Commits title prefixes
+
+on:
+  issues:
+    types: [opened, reopened]
+  workflow_call: {}
+
+permissions:
+  issues: write
+
+jobs:
+  label:
+    name: Apply type and stack labels from issue title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply labels derived from Conventional Commits title
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        with:
+          script: |
+            const title = context.payload.issue?.title ?? '';
+            if (!title) return;
+
+            const labels = new Set();
+
+            // ── Conventional Commits type → label ──────────────────────────
+            // Matches "type(scope): …" or "type: …" at the start of the title.
+            const TYPE_MAP = {
+              feat:     'feature',
+              fix:      'bug',
+              docs:     'documentation',
+              doc:      'documentation',
+              chore:    'chore',
+              ci:       'ci',
+              refactor: 'refactor',
+              test:     'tests',
+              tests:    'tests',
+              perf:     'performance',
+              build:    'dependencies',
+            };
+
+            const typeMatch = title.match(/^([a-z]+)(?:\([^)]*\))?:/i);
+            if (typeMatch) {
+              const type = typeMatch[1].toLowerCase();
+              if (TYPE_MAP[type]) labels.add(TYPE_MAP[type]);
+            }
+
+            // ── Stack detection from scope or title body ───────────────────
+            // To add a new stack, append an entry: 'keyword' → 'label-name'.
+            const STACK_MAP = [
+              [/\btypescript\b|\btsx?\b/i, 'typescript'],
+              [/\bpython\b|\bpyproject\b|\bfastapi\b|\bdjango\b|\bflask\b/i, 'python'],
+              [/\bc#\b|\bcsharp\b|\.net\b|\baspnet\b|\blazor\b/i, 'csharp'],
+            ];
+
+            for (const [pattern, label] of STACK_MAP) {
+              if (pattern.test(title)) labels.add(label);
+            }
+
+            // ── Layer / concern detection ──────────────────────────────────
+            const LAYER_MAP = [
+              [/\bapi\b|\broute[s]?\b|\bcontroller[s]?\b|\bendpoint[s]?\b/i, 'api'],
+              [/\bdatabase\b|\bmigration[s]?\b|\bmodel[s]?\b|\bprisma\b|\balembic\b/i, 'database'],
+              [/\bfrontend\b|\bui\b|\bcomponent[s]?\b|\bcss\b|\bstyle[s]?\b/i, 'frontend'],
+              [/\btest[s]?\b|\bspec[s]?\b|\be2e\b/i, 'tests'],
+              [/\bsecurity\b|\bauth\b|\bpermission[s]?\b|\bcredential[s]?\b/i, 'security'],
+              [/\bdependenc(y|ies)\b|\bupgrade\b|\bbump\b|\bpackage[s]?\b/i, 'dependencies'],
+            ];
+
+            for (const [pattern, label] of LAYER_MAP) {
+              if (pattern.test(title)) labels.add(label);
+            }
+
+            if (labels.size === 0) return;
+
+            core.info(`Applying labels: ${[...labels].join(', ')}`);
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              labels: [...labels],
+            });
