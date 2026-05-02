@@ -21,7 +21,7 @@
 # To add a new stack label, add an entry to STACK_MAP inside the script below
 # and add the corresponding block in .github/labeler.yml.
 
-name: Label issues on creation
+name: Auto-label new issues from Conventional Commits title prefixes
 
 on:
   issues:
