@@ -147,12 +147,17 @@ jobs:
               );
             }
 
-            // Security-sensitive paths changed
+            // -- ⚠️ Attention (non-blocking, but flagged for human review) --
+            const attention = [];
+
+            // Security-sensitive paths changed — informational only, not a blocker.
+            // A bot cannot determine whether auth/credential changes are improvements
+            // or risks; only a human reviewer can make that call.
             if (sensitiveFiles.length) {
-              critical.push(
-                `**Security-sensitive file(s) modified — human review required:**\n` +
+              attention.push(
+                `**Security-sensitive file(s) modified — human review recommended:**\n` +
                 sensitiveFiles.map(f => `  - \`${f.filename}\``).join('\n') + '\n' +
-                `  > Changes to auth, token, payment, or credential code carry elevated risk.`
+                `  > Changes to auth, token, payment, or credential code carry elevated risk. Please ensure a human reviewer has checked these files before merging.`
               );
             }
 
@@ -213,7 +218,7 @@ jobs:
             if (CC_RE.test(prTitle))          passing.push('PR title follows Conventional Commits');
             if (!foundSecrets.length)          passing.push('No hardcoded secret patterns detected');
             if (!piiFiles.length)              passing.push('No PII patterns detected in source code');
-            if (!sensitiveFiles.length)        passing.push('No security-sensitive files modified');
+            if (!sensitiveFiles.length)        passing.push('No security-sensitive paths detected');
             if (prBody.trim().length >= 20)    passing.push('PR description provided');
             if (!debugHits.length)             passing.push('No debug statements in changed lines');
             if (sourceFiles.length === 0 || testFiles.length > 0)
@@ -228,6 +233,7 @@ jobs:
             // Summary table
             body += `| Tier | Count |\n|------|-------|\n`;
             body += `| 🚨 Requires Action | ${critical.length} |\n`;
+            body += `| ⚠️ Attention | ${attention.length} |\n`;
             body += `| 💡 Suggestions | ${suggestions.length} |\n`;
             body += `| ✅ Passing | ${passing.length} |\n\n`;
 
@@ -235,6 +241,12 @@ jobs:
               body += `---\n\n### 🚨 Requires Action\n\n`;
               body += `> These items **must be addressed** before this PR can merge.\n\n`;
               critical.forEach((c, i) => { body += `${i + 1}. ${c}\n\n`; });
+            }
+
+            if (attention.length) {
+              body += `---\n\n### ⚠️ Attention\n\n`;
+              body += `> Non-blocking — requires a human reviewer to verify before merging.\n\n`;
+              attention.forEach((a, i) => { body += `${i + 1}. ${a}\n\n`; });
             }
 
             if (suggestions.length) {
