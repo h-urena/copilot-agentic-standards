@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Add issue to project board as Todo
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           HAS_PR_TOKEN: ${{ secrets.PR_TOKEN != '' }}
           INPUT_PROJECT_OWNER: ${{ inputs.project-owner }}
@@ -88,6 +88,13 @@ jobs:
 
             const PROJECT_OWNER  = process.env.INPUT_PROJECT_OWNER || context.repo.owner;
             const PROJECT_NUMBER = parseInt(process.env.INPUT_PROJECT_NUMBER || '0', 10);
+            if (!PROJECT_NUMBER) {
+              core.setFailed(
+                'Project number not configured. Set the PROJECT_NUMBER repository variable ' +
+                '(Settings \u2192 Variables) or pass project-number as a workflow_call input.'
+              );
+              return;
+            }
 
             const issue = context.payload.issue;
             const issueNodeId = issue.node_id;
@@ -154,7 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Move issue to In Progress
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           HAS_PR_TOKEN: ${{ secrets.PR_TOKEN != '' }}
           INPUT_PROJECT_OWNER: ${{ inputs.project-owner }}
@@ -175,6 +182,13 @@ jobs:
 
             const PROJECT_OWNER  = process.env.INPUT_PROJECT_OWNER || context.repo.owner;
             const PROJECT_NUMBER = parseInt(process.env.INPUT_PROJECT_NUMBER || '0', 10);
+            if (!PROJECT_NUMBER) {
+              core.setFailed(
+                'Project number not configured. Set the PROJECT_NUMBER repository variable ' +
+                '(Settings \u2192 Variables) or pass project-number as a workflow_call input.'
+              );
+              return;
+            }
 
             const branch = context.ref.replace('refs/heads/', '');
 
@@ -260,7 +274,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Request review and move to In Review
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           HAS_PR_TOKEN: ${{ secrets.PR_TOKEN != '' }}
           INPUT_PROJECT_OWNER: ${{ inputs.project-owner }}
@@ -281,6 +295,13 @@ jobs:
             const PROJECT_OWNER  = process.env.INPUT_PROJECT_OWNER || context.repo.owner;
             const PROJECT_NUMBER = parseInt(process.env.INPUT_PROJECT_NUMBER || '0', 10);
             const REPO_OWNER     = process.env.INPUT_REPO_OWNER || context.repo.owner;
+            if (!PROJECT_NUMBER) {
+              core.setFailed(
+                'Project number not configured. Set the PROJECT_NUMBER repository variable ' +
+                '(Settings \u2192 Variables) or pass project-number as a workflow_call input.'
+              );
+              return;
+            }
 
             const pr       = context.payload.pull_request;
             const prNumber = pr.number;
@@ -353,12 +374,21 @@ jobs:
               const option = statusField.options.find(o => o.name === statusName);
               if (!option) { core.warning(`Status option '${statusName}' not found.`); return; }
 
-              const addResult = await github.graphql(`
-                mutation($projectId: ID!, $contentId: ID!) {
-                  addProjectV2ItemById(input: { projectId: $projectId contentId: $contentId }) {
-                    item { id }
-                  }
-                }`, { projectId: project.id, contentId: prNodeId });
+              try {
+                const addResult = await github.graphql(`
+                  mutation($projectId: ID!, $contentId: ID!) {
+                    addProjectV2ItemById(input: { projectId: $projectId contentId: $contentId }) {
+                      item { id }
+                    }
+                  }`, { projectId: project.id, contentId: prNodeId });
+                } catch (e) {
+                 core.setFailed(
+                  `addProjectV2ItemById failed: ${e.message}\n` +
+                  'Ensure PR_TOKEN is a classic PAT with the "project" scope. ' +
+                  'Fine-grained PATs cannot write to GitHub Projects v2.'
+                );
+                return;
+              }
 
               const itemId = addResult.addProjectV2ItemById.item.id;
               await github.graphql(`
@@ -396,7 +426,7 @@ jobs:
       issues: read
     steps:
       - name: Move linked issues to Done
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           HAS_PR_TOKEN: ${{ secrets.PR_TOKEN != '' }}
           INPUT_PROJECT_OWNER: ${{ inputs.project-owner }}
@@ -415,6 +445,13 @@ jobs:
 
             const PROJECT_OWNER  = process.env.INPUT_PROJECT_OWNER || context.repo.owner;
             const PROJECT_NUMBER = parseInt(process.env.INPUT_PROJECT_NUMBER || '0', 10);
+            if (!PROJECT_NUMBER) {
+              core.setFailed(
+                'Project number not configured. Set the PROJECT_NUMBER repository variable ' +
+                '(Settings \u2192 Variables) or pass project-number as a workflow_call input.'
+              );
+              return;
+            }
 
             const body   = context.payload.pull_request.body ?? '';
             const branch = context.payload.pull_request.head.ref;
@@ -509,7 +546,7 @@ jobs:
       # status checks pass. Skipped on the pull_request:closed safety-net trigger.
       - name: Enable squash auto-merge
         if: github.event_name == 'pull_request_review'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const pr = context.payload.pull_request;

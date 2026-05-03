@@ -50,6 +50,7 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
+          set -euo pipefail
           echo '{"extends":["@commitlint/config-conventional"]}' > .commitlintrc.json
           echo "$PR_TITLE" | npx \
             --yes \
