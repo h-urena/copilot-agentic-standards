@@ -12,6 +12,9 @@ Thumbs.db
 tmp/
 *.tmp
 
+# Plans — agent working notes, discarded after implementation
+.github/plans/
+
 # Secrets — never commit environment files
 .env
 .env.local
