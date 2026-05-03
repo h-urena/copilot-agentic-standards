@@ -374,15 +374,16 @@ jobs:
               const option = statusField.options.find(o => o.name === statusName);
               if (!option) { core.warning(`Status option '${statusName}' not found.`); return; }
 
+              let addResult;
               try {
-                const addResult = await github.graphql(`
+                addResult = await github.graphql(`
                   mutation($projectId: ID!, $contentId: ID!) {
                     addProjectV2ItemById(input: { projectId: $projectId contentId: $contentId }) {
                       item { id }
                     }
                   }`, { projectId: project.id, contentId: prNodeId });
-                } catch (e) {
-                 core.setFailed(
+              } catch (e) {
+                core.setFailed(
                   `addProjectV2ItemById failed: ${e.message}\n` +
                   'Ensure PR_TOKEN is a classic PAT with the "project" scope. ' +
                   'Fine-grained PATs cannot write to GitHub Projects v2.'

@@ -77,8 +77,8 @@ jobs:
 
   label:
     name: Enforce path-based label classification
-    # Only runs when explicitly enabled; requires .github/labeler.yml in the caller's repo
-    if: ${{ inputs.enable-labeler == true }}
+    # Runs on direct pull_request events always; on workflow_call only when enable-labeler is true
+    if: ${{ github.event_name != 'workflow_call' || inputs.enable-labeler == true }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
