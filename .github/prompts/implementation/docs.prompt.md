@@ -60,6 +60,7 @@ Link to contribution guidelines and PR process.
 ```
 
 **Rules:**
+
 - Every command must be copy-pasteable and work from a fresh clone.
 - No placeholder text like "TODO" or "add later".
 - Use code blocks for all commands.
@@ -78,6 +79,7 @@ For REST APIs, document each endpoint:
 **Inline documentation (required for all public APIs):**
 
 TypeScript:
+
 ```typescript
 /**
  * Retrieves a user by ID.
@@ -88,6 +90,7 @@ TypeScript:
 ```
 
 Python:
+
 ```python
 def get_user(user_id: str) -> User | None:
     """Retrieve a user by ID.
@@ -104,6 +107,7 @@ def get_user(user_id: str) -> User | None:
 ```
 
 C#:
+
 ```csharp
 /// <summary>
 /// Retrieves a user by ID.

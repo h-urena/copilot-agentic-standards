@@ -1,13 +1,16 @@
 # Copilot instructions for this repo
 
-You are working on the **copilot-agentic-standards** repo — the single source of truth for Copilot instructions, reusable workflows, PR templates, and MCP configs that get distributed to all downstream repositories.
+You are working on the **copilot-agentic-standards** repo — the single source of truth for Copilot
+instructions, reusable workflows, PR templates, and MCP configs that get distributed to all downstream
+repositories.
 
 ## Key context
 
 - `instructions/base.md` is the universal instruction set; all stacks inherit from it.
 - Stack-specific files in `instructions/stacks/` are **additive** — they never contradict `base.md`.
 - Files in `composed/` are **auto-generated** by `scripts/compose.sh`. Never edit them directly.
-- Workflows in `.github/workflows/` use dual triggers (`pull_request` for this repo + `workflow_call` for consumers). Files in `workflows/reusable/` are documentation only.
+- Workflows in `.github/workflows/` use dual triggers (`pull_request` for this repo +
+  `workflow_call` for consumers). Files in `workflows/reusable/` are documentation only.
 
 ## MANDATORY pre-flight — execute every step, every time, before touching any file
 
@@ -53,12 +56,12 @@ without it.
 
 | Task | Invoke |
 | ---- | ------ |
-| Implementing a new feature | `#implement-feature` |
-| Fixing a bug | `#fix-bug` |
+| Implementing a new feature | `#feature` |
+| Fixing a bug | `#bug` |
 | Writing or updating tests | `#write-tests` |
 | Refactoring existing code | `#refactor` |
-| Writing documentation | `#write-docs` |
-| Recording an architecture decision | `#create-adr` |
+| Writing documentation | `#docs` |
+| Recording an architecture decision | `#adr` |
 | Deploying a service | `#deploy` |
 | Bootstrapping a new project | `#project-kickoff` |
 
@@ -86,9 +89,10 @@ without it.
 
 > **Agent mode:** `#prompt-name` is human chat syntax. When running as an agent, use `read_file`
 > on each prompt's file path instead. The complete path-to-file dispatch tables for Steps 4 and 5
-> are in `.github/prompts/implementation/governance.prompt.md`.
+> are in `.github/prompts/governance.prompt.md`.
 
 **Implementation rules (this repo):**
+
 - Make only the changes required to resolve the issue.
 - Do not refactor unrelated code or add unrequested features.
 - If editing composed files is needed, edit the source (`instructions/`) and regenerate: `./scripts/compose.sh all`
@@ -107,13 +111,14 @@ shellcheck scripts/*.sh
 Fix all errors before continuing. If `validate-composed.sh` reports stale files, commit the regenerated output before pushing.
 
 Run these review prompts before opening the PR — zero exceptions:
+
 - `#audit` — every PR without exception.
 - `#security-audit` — any PR touching workflows, scripts, permissions, auth, or external inputs.
 - `#dependency-audit` — any PR that adds, removes, or changes a dependency.
 - `#performance-audit` — any PR touching database queries, caching, or data-intensive operations.
 
 > **Agent mode:** Use `read_file` on the matching path from the Step 5 dispatch table in
-> `.github/prompts/implementation/governance.prompt.md`.
+> `.github/prompts/governance.prompt.md`.
 
 **Step 6 — Commit using Conventional Commits**
 
@@ -147,6 +152,7 @@ gh pr create \
 **Step 8 — Wait for all CI checks to pass**
 
 Do not merge until every check is green:
+
 - `Validate PR title (Conventional Commits)`
 - `Verify squash merge is enabled`
 - `Validate branch name`
@@ -165,6 +171,7 @@ gh pr merge <pr-number> --squash --delete-branch
 If you skipped any step, stop immediately, undo your changes (`git checkout main`), and restart from Step 1.
 
 **Non-negotiable rules:**
+
 - Never push directly to `main`
 - Never use `--force` on `main`
 - Never skip CI
@@ -175,11 +182,14 @@ issue (Step 2) adds it to **Todo**; pushing the branch moves it to **In Progress
 moves it to **In Review**; merge moves it to **Done**. Never move cards manually.
 
 **Dependabot PRs:** When Dependabot opens a PR, follow these steps without exception:
+
 1. Wait for all CI checks to pass.
 2. **Patch or minor bump + green CI** — merge immediately:
+
    ```bash
    gh pr merge <pr-number> --squash --delete-branch
    ```
+
 3. **Major version bump** — read the package changelog, check for breaking changes, update affected
    code and tests on a new branch (following Steps 1–9 above), then merge.
 4. Never merge a Dependabot PR with failing CI.
@@ -194,7 +204,11 @@ moves it to **In Review**; merge moves it to **Done**. Never move cards manually
 3. When adding a new stack, create `instructions/stacks/<stack>.md`, add a `mcp/<stack>.mcp.json` if applicable, and update `scripts/compose.sh`.
 4. Workflow files must use `workflow_call` trigger for reusable workflows.
 5. Follow conventional commits: `feat:`, `fix:`, `docs:`, `chore:`. Add a `scope` when applicable (e.g., `feat(frontend): add UI component`).
-6. Shell scripts must pass `shellcheck` with zero warnings and use `set -euo pipefail`. Never suppress a warning with `# shellcheck disable` as a first resort — fix the root cause. For SC2016 (dollar sign in single quotes), assign the string with double quotes and `\$` to produce a literal `$` without shell expansion (e.g. `Q="query(\$id:ID!){...}"`). Single-quoted assignment still triggers SC2016 — do not use it.
+6. Shell scripts must pass `shellcheck` with zero warnings and use `set -euo pipefail`. Never
+   suppress a warning with `# shellcheck disable` as a first resort — fix the root cause. For
+   SC2016 (dollar sign in single quotes), assign the string with double quotes and `\$` to produce
+   a literal `$` without shell expansion (e.g. `Q="query(\$id:ID!){...}"`). Single-quoted
+   assignment still triggers SC2016 — do not use it.
 
 ## Available prompts
 
@@ -206,12 +220,12 @@ scaffold prompts) and **Step 5** (review prompts). Use this table as a quick ref
 | Invoke | When to use |
 | ------ | ----------- |
 | `#governance` | **Before any change** — full pre-flight (issue → branch → implement → validate → PR → merge) |
-| `#implement-feature` | Implementing a new feature end-to-end |
-| `#fix-bug` | Diagnosing and fixing a bug — reproduce first, then trace root cause |
+| `#feature` | Implementing a new feature end-to-end |
+| `#bug` | Diagnosing and fixing a bug — reproduce first, then trace root cause |
 | `#write-tests` | Writing tests for existing code |
 | `#refactor` | Refactoring without changing observable behaviour |
-| `#write-docs` | Generating or updating README, API docs, ADRs, or changelogs |
-| `#create-adr` | Recording an architecture decision |
+| `#docs` | Generating or updating README, API docs, ADRs, or changelogs |
+| `#adr` | Recording an architecture decision |
 | `#deploy` | Deploying a service — pre-deploy checks, health verification, rollback plan |
 | `#project-kickoff` | Bootstrapping a brand-new project from scratch |
 

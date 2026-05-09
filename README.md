@@ -89,7 +89,7 @@ Key files to inspect: `.github/copilot-instructions.md`, `.vscode/mcp.json`,
 1. **Enable branch protection on `main`** — run the `gh api` commands printed by the script.
 2. **Fill in `.github/project-context.md`** — open it and fill in the project-specific sections.
 3. **Commit and push the bootstrapped files** — open a PR following the governance workflow
-   (`.github/prompts/implementation/governance.prompt.md`).
+   (`.github/prompts/governance.prompt.md`).
 4. **Verify CI is green** — confirm `pull-standards.yml` and any other new workflows pass.
 
 The script copies everything listed in the table below. Run it once; after that,
