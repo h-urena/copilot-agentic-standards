@@ -17,12 +17,42 @@ Q3: [0:None, 1:Arch, 2:Principal, 3:DevOps, 4:QA, 5:Product]
 
 ## 1. DISPATCH_MAP (read_file)
 
-| Key       | Logic        | Target Path                                         |
-| :-------- | :----------- | :-------------------------------------------------- |
-| **Q1**    | Match(n)     | `.github/prompts/implementation/{{file}}.prompt.md` |
-| **Q2**    | Match(n) > 0 | `.github/prompts/scaffolds/{{file}}.prompt.md`      |
-| **Q3**    | Match(n) > 0 | `.github/prompts/personas/{{file}}.prompt.md`       |
-| **Audit** | Always       | `.github/prompts/review/audit.prompt.md`            |
+**Q1** — implementation (always one):
+
+| n | File |
+| :- | :--- |
+| 1 | `.github/prompts/implementation/feature.prompt.md` |
+| 2 | `.github/prompts/implementation/bug.prompt.md` |
+| 3 | `.github/prompts/implementation/test.prompt.md` |
+| 4 | `.github/prompts/implementation/refactor.prompt.md` |
+| 5 | `.github/prompts/implementation/docs.prompt.md` |
+| 6 | `.github/prompts/implementation/adr.prompt.md` |
+| 7 | `.github/prompts/implementation/deploy.prompt.md` |
+| 8 | `.github/prompts/implementation/kickoff.prompt.md` |
+
+**Q2** — scaffold (skip if 0):
+
+| n | File |
+| :- | :--- |
+| 1 | `.github/prompts/scaffolds/crud-api.prompt.md` |
+| 2 | `.github/prompts/scaffolds/auth.prompt.md` |
+| 3 | `.github/prompts/scaffolds/database.prompt.md` |
+| 4 | `.github/prompts/scaffolds/frontend.prompt.md` |
+| 5 | `.github/prompts/scaffolds/background-jobs.prompt.md` |
+| 6 | `.github/prompts/scaffolds/notifications.prompt.md` |
+| 7 | `.github/prompts/scaffolds/monorepo.prompt.md` |
+
+**Q3** — persona(s) (skip if 0, multi-select):
+
+| n | File |
+| :- | :--- |
+| 1 | `.github/prompts/personas/architect.prompt.md` |
+| 2 | `.github/prompts/personas/principal-engineer.prompt.md` |
+| 3 | `.github/prompts/personas/devops-engineer.prompt.md` |
+| 4 | `.github/prompts/personas/qa-engineer.prompt.md` |
+| 5 | `.github/prompts/personas/product-manager.prompt.md` |
+
+**Audit** — always: `.github/prompts/review/audit.prompt.md`
 
 ## 2. DYNAMIC_TODO_GENERATION
 
@@ -31,7 +61,7 @@ Q3: [0:None, 1:Arch, 2:Principal, 3:DevOps, 4:QA, 5:Product]
 3. `git checkout -b <branch>`
 4. `read_file` all mapped prompts from Step 1.
 5. Execute implementation.
-6. `npm run validate` (lint/test).
+6. `shellcheck scripts/*.sh && ./scripts/compose.sh all && ./scripts/validate-composed.sh`
 7. Execute `audit.prompt.md` + conditional audits.
 8. `git commit -m` (Conventional).
 9. `gh pr create` + `gh pr merge --squash`.

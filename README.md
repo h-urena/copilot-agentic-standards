@@ -183,13 +183,13 @@ subfolders: `implementation/`, `review/`, `scaffolds/`, and `personas/`.
 | Prompt | Purpose |
 | ------ | ------- |
 | `governance.prompt.md` | Full governance workflow — run before any change (issue → branch → PR) |
-| `implement-feature.prompt.md` | End-to-end feature implementation: design, code, tests, PR |
-| `fix-bug.prompt.md` | Systematic bug fix: reproduce → root cause → targeted fix → regression test |
-| `write-tests.prompt.md` | Write comprehensive test suites for existing code |
-| `project-kickoff.prompt.md` | Bootstrap a new project: scaffold structure, tooling, CI, Docker |
+| `feature.prompt.md` | End-to-end feature implementation: design, code, tests, PR |
+| `bug.prompt.md` | Systematic bug fix: reproduce → root cause → targeted fix → regression test |
+| `test.prompt.md` | Write comprehensive test suites for existing code |
+| `kickoff.prompt.md` | Bootstrap a new project: scaffold structure, tooling, CI, Docker |
 | `refactor.prompt.md` | Systematic refactoring: preserve behaviour, incremental changes, no regressions |
-| `write-docs.prompt.md` | Generate/update documentation: README, API docs, ADRs, changelogs |
-| `create-adr.prompt.md` | Record an Architecture Decision: context, options, decision, consequences |
+| `docs.prompt.md` | Generate/update documentation: README, API docs, ADRs, changelogs |
+| `adr.prompt.md` | Record an Architecture Decision: context, options, decision, consequences |
 | `deploy.prompt.md` | Deploy a service: pre-deploy checks, migrations, health checks, rollback |
 
 **Review prompts** (`.github/prompts/review/`)

@@ -58,12 +58,12 @@ without it.
 | ---- | ------ |
 | Implementing a new feature | `#feature` |
 | Fixing a bug | `#bug` |
-| Writing or updating tests | `#write-tests` |
+| Writing or updating tests | `#test` |
 | Refactoring existing code | `#refactor` |
 | Writing documentation | `#docs` |
 | Recording an architecture decision | `#adr` |
 | Deploying a service | `#deploy` |
-| Bootstrapping a new project | `#project-kickoff` |
+| Bootstrapping a new project | `#kickoff` |
 
 **Scaffold prompts — invoke at the start of this step when building a new system component:**
 
@@ -222,12 +222,12 @@ scaffold prompts) and **Step 5** (review prompts). Use this table as a quick ref
 | `#governance` | **Before any change** — full pre-flight (issue → branch → implement → validate → PR → merge) |
 | `#feature` | Implementing a new feature end-to-end |
 | `#bug` | Diagnosing and fixing a bug — reproduce first, then trace root cause |
-| `#write-tests` | Writing tests for existing code |
+| `#test` | Writing tests for existing code |
 | `#refactor` | Refactoring without changing observable behaviour |
 | `#docs` | Generating or updating README, API docs, ADRs, or changelogs |
 | `#adr` | Recording an architecture decision |
 | `#deploy` | Deploying a service — pre-deploy checks, health verification, rollback plan |
-| `#project-kickoff` | Bootstrapping a brand-new project from scratch |
+| `#kickoff` | Bootstrapping a brand-new project from scratch |
 
 ### Review — run at Step 5 before opening the PR
 
