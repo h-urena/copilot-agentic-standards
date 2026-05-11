@@ -58,14 +58,14 @@ without it.
 
 | Task | Invoke |
 | ---- | ------ |
-| Implementing a new feature | `#implement-feature` |
-| Fixing a bug | `#fix-bug` |
-| Writing or updating tests | `#write-tests` |
+| Implementing a new feature | `#feature` |
+| Fixing a bug | `#bug` |
+| Writing or updating tests | `#test` |
 | Refactoring existing code | `#refactor` |
-| Writing documentation | `#write-docs` |
-| Recording an architecture decision | `#create-adr` |
+| Writing documentation | `#docs` |
+| Recording an architecture decision | `#adr` |
 | Deploying a service | `#deploy` |
-| Bootstrapping a new project | `#project-kickoff` |
+| Bootstrapping a new project | `#kickoff` |
 
 **Scaffold prompts — invoke at the start of this step when building a new system component:**
 
@@ -91,7 +91,7 @@ without it.
 
 > **Agent mode:** `#prompt-name` is human chat syntax. When running as an agent, use `read_file`
 > on each prompt's file path instead. The complete path-to-file dispatch tables for Steps 4 and 5
-> are in `.github/prompts/implementation/governance.prompt.md`.
+> are in `.github/prompts/governance.prompt.md`.
 
 **Implementation rules:**
 - Make only the changes required to resolve the issue.
@@ -111,7 +111,7 @@ Run all of the following in order. Zero errors allowed — do not proceed with a
    - `#dependency-audit` — any PR that adds, removes, or changes a dependency (lockfile, manifest, or version pin).
    - `#performance-audit` — any PR touching database queries, caching, pagination, or frontend bundle output.
    > **Agent mode:** Use `read_file` on the matching path from the Step 5 dispatch table in
-   > `.github/prompts/implementation/governance.prompt.md`.
+   > `.github/prompts/governance.prompt.md`.
 5. **Pre-commit hooks** — run `pre-commit run --all-files` if `.pre-commit-config.yaml` exists.
 6. **Composed files** — if the repo has `validate-composed.sh`, run it and commit any regenerated
    files before pushing.
@@ -306,14 +306,14 @@ scaffold prompts) and **Step 5** (review prompts). Use this table as a quick ref
 | Invoke | When to use |
 | ------ | ----------- |
 | `#governance` | **Before any change** — the full pre-flight workflow (issue → branch → implement → validate → PR → merge) |
-| `#implement-feature` | Implementing a new feature end-to-end |
-| `#fix-bug` | Diagnosing and fixing a bug — reproduce first, then trace root cause |
-| `#write-tests` | Writing tests for existing code |
+| `#feature` | Implementing a new feature end-to-end |
+| `#bug` | Diagnosing and fixing a bug — reproduce first, then trace root cause |
+| `#test` | Writing tests for existing code |
 | `#refactor` | Refactoring without changing observable behaviour |
-| `#write-docs` | Generating or updating README, API docs, ADRs, or changelogs |
-| `#create-adr` | Recording an architecture decision in `docs/decisions/` |
+| `#docs` | Generating or updating README, API docs, ADRs, or changelogs |
+| `#adr` | Recording an architecture decision in `docs/decisions/` |
 | `#deploy` | Deploying a service — pre-deploy checks, health verification, rollback plan |
-| `#project-kickoff` | Bootstrapping a brand-new project from scratch |
+| `#kickoff` | Bootstrapping a brand-new project from scratch |
 
 ### Review — run at Step 5 before opening the PR
 

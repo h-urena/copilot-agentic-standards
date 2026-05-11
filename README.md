@@ -72,7 +72,7 @@ git clone https://github.com/h-urena/copilot-agentic-standards.git
 ```
 
 The script is idempotent — it skips files that already exist. Pass `--force` to overwrite
-existing files (use with care if you have customised them).
+existing files (use with care if you have customized them).
 
 **Step 2 — Review what was added**
 
@@ -89,7 +89,7 @@ Key files to inspect: `.github/copilot-instructions.md`, `.vscode/mcp.json`,
 1. **Enable branch protection on `main`** — run the `gh api` commands printed by the script.
 2. **Fill in `.github/project-context.md`** — open it and fill in the project-specific sections.
 3. **Commit and push the bootstrapped files** — open a PR following the governance workflow
-   (`.github/prompts/implementation/governance.prompt.md`).
+   (`.github/prompts/governance.prompt.md`).
 4. **Verify CI is green** — confirm `pull-standards.yml` and any other new workflows pass.
 
 The script copies everything listed in the table below. Run it once; after that,
@@ -175,21 +175,26 @@ cp workflows/sync/pull-standards.yml ../my-project/.github/workflows/pull-standa
 ### Agent prompts
 
 All prompts in `.github/prompts/` are distributed to downstream repos and invocable from VS Code
-Copilot Chat with `#<prompt-name>` or via the Copilot agent mode. Prompts are organised into four
+Copilot Chat with `#<prompt-name>` or via the Copilot agent mode. Prompts are organized into four
 subfolders: `implementation/`, `review/`, `scaffolds/`, and `personas/`.
+
+**Governance prompt** (`.github/prompts/`)
+| Prompt | Purpose |
+| ------ | ------- |
+| `governance.prompt.md` | Full governance workflow — run before any change (issue → branch → PR) |
 
 **Implementation prompts** (`.github/prompts/implementation/`)
 
 | Prompt | Purpose |
 | ------ | ------- |
 | `governance.prompt.md` | Full governance workflow — run before any change (issue → branch → PR) |
-| `implement-feature.prompt.md` | End-to-end feature implementation: design, code, tests, PR |
-| `fix-bug.prompt.md` | Systematic bug fix: reproduce → root cause → targeted fix → regression test |
-| `write-tests.prompt.md` | Write comprehensive test suites for existing code |
-| `project-kickoff.prompt.md` | Bootstrap a new project: scaffold structure, tooling, CI, Docker |
-| `refactor.prompt.md` | Systematic refactoring: preserve behaviour, incremental changes, no regressions |
-| `write-docs.prompt.md` | Generate/update documentation: README, API docs, ADRs, changelogs |
-| `create-adr.prompt.md` | Record an Architecture Decision: context, options, decision, consequences |
+| `feature.prompt.md` | End-to-end feature implementation: design, code, tests, PR |
+| `bug.prompt.md` | Systematic bug fix: reproduce → root cause → targeted fix → regression test |
+| `test.prompt.md` | Write comprehensive test suites for existing code |
+| `kickoff.prompt.md` | Bootstrap a new project: scaffold structure, tooling, CI, Docker |
+| `refactor.prompt.md` | Systematic refactoring: preserve behavior, incremental changes, no regressions |
+| `docs.prompt.md` | Generate/update documentation: README, API docs, ADRs, changelogs |
+| `adr.prompt.md` | Record an Architecture Decision: context, options, decision, consequences |
 | `deploy.prompt.md` | Deploy a service: pre-deploy checks, migrations, health checks, rollback |
 
 **Review prompts** (`.github/prompts/review/`)
@@ -225,7 +230,7 @@ subfolders: `implementation/`, `review/`, `scaffolds/`, and `personas/`.
 
 ### Copilot Skill files — `skills/`
 
-Skill files give agents specialised domain knowledge for tasks like test generation, code analysis,
+Skill files give agents specialized domain knowledge for tasks like test generation, code analysis,
 API design review, performance profiling, and data migration. They live at the repo root in `skills/`
 because they are **complete, ready-to-use operational files** — agents load them directly, you
 never fill them in. They are distributed to downstream repos as `.github/skills/`.
@@ -284,8 +289,8 @@ workflows/
 templates/
   pull-request/        PR templates (default, hotfix) — fill in per project
   memory/              project-context.md — fill in during kickoff
-  vscode/              Stack-specific extensions.json — starting-point, customise as needed
-  docker/              Dockerfiles, .dockerignore, docker-compose.yml — starting-point
+  vscode/              Stack-specific extensions.json — starting-point, customize as needed
+  docker/              Docker files, .dockerignore, docker-compose.yml — starting-point
   ci/                  CI pipeline templates (ci, release, stale) — starting-point
   labeler.yml          Path-based PR labeling config
   .editorconfig        Consistent editor formatting rules
