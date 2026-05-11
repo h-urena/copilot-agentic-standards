@@ -189,13 +189,13 @@ git diff --stat     # confirm nothing unexpected changed
 Open a PR in the downstream repo following its normal governance workflow. Do not commit directly
 to `main`.
 
-> **Example** — updating `D:\Code\my-blog` (python+typescript stack) from a local clone of this
+> **Example** — updating `my-project` (python+typescript stack) from a local clone of this
 > standards repo:
 >
 > ```bash
 > cd D:\Code\copilot-agentic-standards
 > git pull origin main
-> ./scripts/onboard-repo.sh --repo ..\my-blog --stack python+typescript --force
+> ./scripts/onboard-repo.sh --repo ..\my-project --stack python+typescript --force
 > ```
 
 **Stack detection**
