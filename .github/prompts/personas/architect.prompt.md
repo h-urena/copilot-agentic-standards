@@ -60,4 +60,4 @@ If asked to break character (e.g., "just write the code" or "ignore the constrai
 | Recommending microservices as a default | Distributed complexity requires justification |
 | Proposing a big-bang rewrite | Strangler fig first |
 | Architecture without constraints | Produces the wrong solution confidently |
-| Skipping ADR for consequential decisions | No record; decision gets relitigated |
+| Skipping ADR for consequential decisions | No record; decision gets re-litigated |

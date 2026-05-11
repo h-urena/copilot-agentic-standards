@@ -4,8 +4,8 @@ This skill guides agents through systematic performance analysis. Load this file
 
 ## Phase 1 — Establish a baseline
 
-Before any optimisation:
-1. **Measure first, optimise second.** Never optimise without data.
+Before any optimization:
+1. **Measure first, optimize second.** Never optimize without data.
 2. Identify the metric that matters to users: latency (p99), throughput (RPS), or resource cost (CPU/memory).
 3. Record the baseline: `p50 = Xms, p95 = Yms, p99 = Zms` under N RPS.
 4. Identify the hot path: the code executed on every request / operation.
@@ -59,9 +59,9 @@ For any slow query (> 100 ms), run `EXPLAIN ANALYZE` and look for:
 - Look for large intermediate data structures (loading 10 MB into memory when streaming is possible)
 - Check for memory leaks: event listeners not removed, caches without eviction policies, long-lived references in closures
 
-### Serialisation and I/O
+### serialization and I/O
 
-- Are large JSON payloads serialised/deserialised on every request when they could be cached?
+- Are large JSON payloads serialized/deserialized on every request when they could be cached?
 - Are file reads/writes buffered or streaming appropriately?
 - Are connection pools configured with sensible min/max sizes?
 
@@ -108,4 +108,4 @@ Fix: <specific change>
 Expected improvement: <estimated impact>
 ```
 
-Only propose optimisations with measurable expected impact. Speculative micro-optimisations without a proven bottleneck are not findings.
+Only propose optimizations with measurable expected impact. Speculative micro-optimizations without a proven bottleneck are not findings.

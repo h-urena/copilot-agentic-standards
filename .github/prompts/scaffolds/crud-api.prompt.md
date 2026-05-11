@@ -70,7 +70,7 @@ List endpoint must support: pagination (`?page=1&limit=20`; default ≤ 20), fil
 | Pattern | Reason |
 |---|---|
 | DB queries in route handlers | Violates layering; untestable |
-| Unvalidated user input | Injection vector |
+| Un-validated user input | Injection vector |
 | Hardcoded pagination limit > 20 | Unbounded queries; DoS risk |
 | Missing 404 on unknown ID | Leaks existence information or crashes |
 | No IDOR check | Users can access other users' resources |

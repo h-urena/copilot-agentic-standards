@@ -89,7 +89,7 @@ Key files to inspect: `.github/copilot-instructions.md`, `.vscode/mcp.json`,
 1. **Enable branch protection on `main`** — run the `gh api` commands printed by the script.
 2. **Fill in `.github/project-context.md`** — open it and fill in the project-specific sections.
 3. **Commit and push the bootstrapped files** — open a PR following the governance workflow
-   (`.github/prompts/governance.prompt.md`).
+   (`.github/governance.prompt.md`).
 4. **Verify CI is green** — confirm `pull-standards.yml` and any other new workflows pass.
 
 The script copies everything listed in the table below. Run it once; after that,
@@ -152,13 +152,51 @@ anything in this standards repo changes. Running `onboard-repo.sh` installs it a
 - PR description and merge-rules reusable workflows
 - Runtime version pins in `ci.yml` and `Dockerfile` (Python, Node.js, .NET) from `versions.json`
 
-**How to apply latest changes manually**
+**How to apply latest changes via GitHub Actions (remote)**
 
 1. Go to your repo on GitHub → Actions → `pull-standards` workflow.
 2. Click **Run workflow** → **Run workflow** (no inputs needed).
 3. The workflow opens a PR titled `chore: update standards from h-urena/copilot-agentic-standards`.
 4. Review the diff in that PR — it shows exactly which files changed.
 5. Merge the PR. Standards are now up to date.
+
+**How to apply latest changes locally (without GitHub Actions)**
+
+Use this path when you have both repos cloned on your machine and want to apply changes immediately,
+without triggering a GitHub Actions run or opening a remote PR.
+
+```bash
+# 1. Pull the latest standards
+cd /path/to/copilot-agentic-standards
+git pull origin main
+
+# 2. Re-run onboard-repo.sh with --force against your downstream repo
+#    Replace --stack with your repo's stack (typescript, python, csharp, or a + combo)
+./scripts/onboard-repo.sh --repo /path/to/my-project --stack typescript --force
+```
+
+`--force` overwrites files that the script would otherwise skip when they already exist, so every
+standards file in the downstream repo is updated to the latest version.
+
+After the script finishes:
+
+```bash
+cd /path/to/my-project
+git status          # review the changed files
+git diff --stat     # confirm nothing unexpected changed
+```
+
+Open a PR in the downstream repo following its normal governance workflow. Do not commit directly
+to `main`.
+
+> **Example** — updating `my-project` (python+typescript stack) from a local clone of this
+> standards repo:
+>
+> ```bash
+> cd D:\Code\copilot-agentic-standards
+> git pull origin main
+> ./scripts/onboard-repo.sh --repo ..\my-project --stack python+typescript --force
+> ```
 
 **Stack detection**
 
@@ -176,7 +214,7 @@ cp workflows/sync/pull-standards.yml ../my-project/.github/workflows/pull-standa
 
 All prompts in `.github/prompts/` are distributed to downstream repos and invocable from VS Code
 Copilot Chat with `#<prompt-name>` or via the Copilot agent mode. Prompts are organized into four
-subfolders: `implementation/`, `review/`, `scaffolds/`, and `personas/`.
+sub-folders: `implementation/`, `review/`, `scaffolds/`, and `personas/`.
 
 **Governance prompt** (`.github/prompts/`)
 | Prompt | Purpose |
@@ -265,7 +303,7 @@ Use `project-context.md` for long-lived facts that survive between sessions.
 ## For maintainers of this repo
 
 > Before making any change, follow the full governance workflow in
-> `.github/prompts/implementation/governance.prompt.md`. Never push directly to `main`.
+> `.github/prompts/governance.prompt.md`. Never push directly to `main`.
 
 ### Repo structure
 
@@ -394,7 +432,7 @@ jobs:
 
 ### Contributing
 
-Follow `.github/prompts/implementation/governance.prompt.md` for the full workflow (create issue → branch → implement → validate → PR). The governance prompt is the single source of truth — do not add inline steps here that can drift.
+Follow `.github/prompts/governance.prompt.md` for the full workflow (create issue → branch → implement → validate → PR). The governance prompt is the single source of truth — do not add inline steps here that can drift.
 
 ## License
 

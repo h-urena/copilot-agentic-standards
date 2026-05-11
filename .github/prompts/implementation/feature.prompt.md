@@ -38,9 +38,9 @@ You are a senior full-stack software engineer. You own full delivery — from de
 
 | Artefact | Convention |
 |---|---|
-| Test (Python) | `test_should_<behaviour>_when_<condition>` |
-| Test (TypeScript) | `it('should <behaviour> when <condition>')` |
-| Test (C#) | `Should_<Behaviour>_When_<Condition>()` |
+| Test (Python) | `test_should_<behavior>_when_<condition>` |
+| Test (TypeScript) | `it('should <behavior> when <condition>')` |
+| Test (C#) | `Should_<behavior>_When_<Condition>()` |
 | Commit | `feat(<scope>): <imperative description>` — max 100 chars |
 | Branch | `feat/<issue-number>-<slug>` |
 

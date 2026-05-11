@@ -23,11 +23,11 @@ Never compensate for missing unit tests by writing more integration tests.
 - **New code:** minimum **80 % line coverage**, **70 % branch coverage**.
 - **Existing code:** do not reduce coverage when modifying a file.
 - Coverage is measured in CI on every PR — a drop blocks merge.
-- 100 % coverage is not the goal. Aim for coverage of behaviour, not lines.
+- 100 % coverage is not the goal. Aim for coverage of behavior, not lines.
 
 ## What to test
 
-**Test behaviour, not implementation:**
+**Test behavior, not implementation:**
 
 ```
 ✅ "returns 404 when user does not exist"
@@ -43,7 +43,7 @@ Never compensate for missing unit tests by writing more integration tests.
 **Integration tests must cover:**
 - The full request-response cycle for every route
 - Database reads and writes (use real DB, not mocks)
-- Auth middleware behaviour (authenticated, unauthenticated, wrong role)
+- Auth middleware behavior (authenticated, unauthenticated, wrong role)
 - At least one sad path per integration boundary
 
 **E2E tests must cover:**
@@ -90,7 +90,7 @@ Never name tests `test1`, `testFoo`, or `shouldWork`.
 - For database tests: wrap each test in a **transaction that is rolled back** after the test, or truncate tables in a `beforeEach`/`setUp` hook.
 - Never commit real PII (real email addresses, real phone numbers) into test fixtures.
 
-## Test organisation
+## Test organization
 
 - Co-locate unit tests next to the source file they test:
   - `src/users/user.service.ts` → `src/users/user.service.test.ts`

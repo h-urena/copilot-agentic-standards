@@ -14,7 +14,7 @@
 #
 # NOTE: Fine-grained PATs cannot be used here. The Projects v2 GraphQL API
 # requires the `project` scope which is only available on classic PATs for
-# personal (non-organisation) accounts.
+# personal (non-organization) accounts.
 #
 # -- Consumer repo usage -------------------------------------------------------
 # jobs:

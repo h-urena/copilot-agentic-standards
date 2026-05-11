@@ -17,7 +17,7 @@ These rules apply to any module that reads from or writes to a persistent data s
 - Never edit a migration that has already been applied to any shared environment — add a new one.
 - Document the intent of non-trivial migrations in a comment at the top of the file.
 
-## Parameterised queries only
+## Parameterized queries only
 
 No string concatenation or template literal interpolation for query values — ever.
 
@@ -58,7 +58,7 @@ var user = await db.Users.FromSqlRaw($"SELECT * FROM Users WHERE Id = '{id}'").F
   - SQLAlchemy: `session.execute(..., execution_options={"readonly": True})`
   - Prisma: default (no tracking); use `$transaction` only when needed
 - Wrap multi-step write operations in an explicit transaction.
-- Keep transactions short — commit or roll back as quickly as possible to minimise lock contention.
+- Keep transactions short — commit or roll back as quickly as possible to minimize lock contention.
 - Do not hold transactions open across HTTP calls or user interactions.
 
 ## N+1 prevention

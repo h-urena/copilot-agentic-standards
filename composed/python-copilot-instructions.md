@@ -38,7 +38,22 @@ git pull origin main
 - Record the issue number — you will need it for every subsequent step
 
 ```bash
-gh issue create --title "<type>(scope): short description" --body "Problem, solution, acceptance criteria" --assignee @me
+# Write the body to a temp file so newlines render correctly on GitHub
+cat > /tmp/issue-body.md << 'EOF'
+## Problem
+<describe the problem>
+
+## Proposed solution
+<describe the solution>
+
+## Acceptance criteria
+- [ ] <criterion 1>
+- [ ] <criterion 2>
+EOF
+
+gh issue create \
+  --title "<type>(scope): short description" \
+  --body-file /tmp/issue-body.md
 ```
 
 **Step 3 — Create a branch linked to that issue**
@@ -76,7 +91,7 @@ without it.
 | Building | Invoke |
 | -------- | ------ |
 | A new CRUD resource | `#crud-api` |
-| Authentication / authorisation | `#auth` |
+| Authentication / authorization | `#auth` |
 | A new database, ORM, or migrations | `#database` |
 | A new UI component | `#frontend` |
 | An async background worker | `#background-jobs` |
@@ -89,7 +104,7 @@ without it.
 | ------ | ------ |
 | System design, service decomposition, or ADR | `#architect` |
 | Architecture quality or long-term maintainability concerns | `#principal-engineer` |
-| CI/CD, infrastructure, containerisation, or deployment | `#devops-engineer` |
+| CI/CD, infrastructure, containerization, or deployment | `#devops-engineer` |
 | Test strategy, quality risks, or edge case coverage | `#qa-engineer` |
 | Requirements, user stories, or acceptance criteria | `#product-manager` |
 
@@ -99,7 +114,7 @@ without it.
 
 **Implementation rules:**
 - Make only the changes required to resolve the issue.
-- Do not refactor unrelated code or add unrequested features.
+- Do not refactor unrelated code or add un-requested features.
 - If modifying any source file that feeds a composed output, edit the source and regenerate.
 
 **Step 5 — Run local validation**
@@ -249,7 +264,7 @@ All card transitions are **automated by `project-automation.yml`** — never mov
 - Use `GITHUB_TOKEN` for all same-repo workflow operations. It is automatic, expires after the workflow run, and requires no secrets configuration.
 - Always declare an explicit `permissions:` block in every workflow. Use job-level permissions for maximum granularity. Grant only what is required.
 - For cross-repository or cross-organization write access, prefer a **GitHub App** (installation access token) over a personal access token. For lightweight cases, a **fine-grained PAT** stored as a repository secret is acceptable.
-- Never use classic PATs in workflows — they are over-scoped and deprecated. **Exception:** GitHub Projects v2 (`addProjectV2ItemById`) requires the `project` scope, which is only available on classic PATs for personal (non-organisation) accounts. In that specific case, a classic PAT with only the `project` scope is acceptable and should be stored as a repository secret.
+- Never use classic PATs in workflows — they are over-scoped and deprecated. **Exception:** GitHub Projects v2 (`addProjectV2ItemById`) requires the `project` scope, which is only available on classic PATs for personal (non-organization) accounts. In that specific case, a classic PAT with only the `project` scope is acceptable and should be stored as a repository secret.
 - Pin action versions using the major version tag (e.g., `actions/checkout@v6`), not floating tags like `@latest` or `@main`.
 - Use `lts/*` for language version inputs (Node.js) and the equivalent latest-stable selector for other runtimes — never hardcode a specific version number in workflow files.
 
@@ -313,7 +328,7 @@ scaffold prompts) and **Step 5** (review prompts). Use this table as a quick ref
 | `#feature` | Implementing a new feature end-to-end |
 | `#bug` | Diagnosing and fixing a bug — reproduce first, then trace root cause |
 | `#test` | Writing tests for existing code |
-| `#refactor` | Refactoring without changing observable behaviour |
+| `#refactor` | Refactoring without changing observable behavior |
 | `#docs` | Generating or updating README, API docs, ADRs, or changelogs |
 | `#adr` | Recording an architecture decision in `docs/decisions/` |
 | `#deploy` | Deploying a service — pre-deploy checks, health verification, rollback plan |
@@ -333,7 +348,7 @@ scaffold prompts) and **Step 5** (review prompts). Use this table as a quick ref
 | Invoke | When to use |
 | ------ | ----------- |
 | `#crud-api` | Scaffolding a new CRUD resource (routes, models, validation, tests, migrations) |
-| `#auth` | Wiring authentication and authorisation into a project |
+| `#auth` | Wiring authentication and authorization into a project |
 | `#database` | Setting up a new database, ORM, migrations, and health checks |
 | `#frontend` | Scaffolding a new UI component (structure, a11y, state management, tests) |
 | `#background-jobs` | Scaffolding an async worker (queue, retry policy, dead-letter handling) |
@@ -346,13 +361,13 @@ scaffold prompts) and **Step 5** (review prompts). Use this table as a quick ref
 | ------ | ----------- |
 | `#architect` | System design, service decomposition, ADR facilitation |
 | `#principal-engineer` | Architecture review, abstraction quality, long-term maintainability |
-| `#devops-engineer` | CI/CD, containerisation, IaC, secrets management, deployment reliability |
+| `#devops-engineer` | CI/CD, containerization, IaC, secrets management, deployment reliability |
 | `#qa-engineer` | Test coverage, quality risks, edge cases, regression strategy |
 | `#product-manager` | PRDs, user stories, acceptance criteria, feature scoping |
 
 ## Available skills
 
-Skills are specialised knowledge files. Load the relevant file at the start of any task in that
+Skills are specialized knowledge files. Load the relevant file at the start of any task in that
 domain — do not rely on general knowledge alone. Skills live in `.github/skills/`.
 
 | Load this file | When |

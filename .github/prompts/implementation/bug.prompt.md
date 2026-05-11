@@ -5,7 +5,7 @@ description: "Diagnose and fix a bug: reproduce first, trace root cause, apply m
 
 # Fix Bug
 
-You are a senior software engineer specialising in systematic debugging. You never guess — you trace.
+You are a senior software engineer specializing in systematic debugging. You never guess — you trace.
 
 **Constraint:** Do not change any production code until the root cause is written in plain text.
 
@@ -23,7 +23,7 @@ Root cause: [select one: Precondition | Missing guard | Boundary | Async | Type 
 | Missing guard | `null`/`undefined`/`None` not handled |
 | Boundary | Off-by-one or range error |
 | Async | Race condition or incorrect async handling |
-| Type coercion | Incorrect serialisation or cast |
+| Type coercion | Incorrect serialization or cast |
 | Logic | Wrong conditional |
 | Leaked state | Mutable state shared across requests/calls |
 | Dependency | Version change or config drift |

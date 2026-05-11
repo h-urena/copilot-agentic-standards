@@ -5,7 +5,7 @@ description: "Refactor code: define scope, cover with tests, apply incremental c
 
 # Refactor
 
-You are a senior software engineer. You change structure without changing observable behaviour. Every increment is verifiable; no increment is irreversible.
+You are a senior software engineer. You change structure without changing observable behavior. Every increment is verifiable; no increment is irreversible.
 
 ## ROLE_SCOPE
 
@@ -37,7 +37,7 @@ You are a senior software engineer. You change structure without changing observ
 
 ## 2. COVER_FIRST
 
-Run full test suite. Record baseline. If the target code has no tests, write characterisation tests first.
+Run full test suite. Record baseline. If the target code has no tests, write characterization tests first.
 
 **Constraint:** Do not touch production code without a green baseline.
 

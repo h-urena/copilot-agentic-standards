@@ -32,7 +32,22 @@ git pull origin main
 - Record the issue number — you will need it for every subsequent step
 
 ```bash
-gh issue create --title "<type>(scope): short description" --body "Problem, solution, acceptance criteria" --assignee @me
+# Write the body to a temp file so newlines render correctly on GitHub
+cat > /tmp/issue-body.md << 'EOF'
+## Problem
+<describe the problem>
+
+## Proposed solution
+<describe the solution>
+
+## Acceptance criteria
+- [ ] <criterion 1>
+- [ ] <criterion 2>
+EOF
+
+gh issue create \
+  --title "<type>(scope): short description" \
+  --body-file /tmp/issue-body.md
 ```
 
 **Step 3 — Create a branch linked to that issue**
@@ -94,7 +109,7 @@ without it.
 **Implementation rules (this repo):**
 
 - Make only the changes required to resolve the issue.
-- Do not refactor unrelated code or add unrequested features.
+- Do not refactor unrelated code or add un-requested features.
 - If editing composed files is needed, edit the source (`instructions/`) and regenerate: `./scripts/compose.sh all`
 
 **Step 5 — Run local validation**

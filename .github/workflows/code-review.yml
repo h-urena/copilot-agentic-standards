@@ -143,7 +143,7 @@ jobs:
               critical.push(
                 `**Possible PII pattern(s) found in non-test source files:**\n` +
                 piiFiles.map(p => `  - ${p}`).join('\n') + '\n' +
-                `  > Verify no real personal data is committed. Use fixtures or anonymised values in tests.`
+                `  > Verify no real personal data is committed. Use fixtures or anonymized values in tests.`
               );
             }
 

@@ -12,7 +12,7 @@ description: "Scaffold a notifications system: channels, queuing, retry, opt-out
 <schema>
 Channels:  [Email | Webhook | Web push | Mobile push | SMS | Slack]
 Trigger:   [User action | Scheduled digest | Threshold alert]
-Templates: [System-defined | User-customisable]
+Templates: [System-defined | User-customizable]
 Opt-out:   [Yes (per channel + per type) | No]
 Delivery:  [At-most-once (fire-and-forget) | At-least-once (queue + retry)]
 </schema>

@@ -34,7 +34,7 @@ Never use GET for operations with side effects.
 | No content (DELETE / action with no body) | `204` |
 | Validation error (malformed request) | `400` |
 | Unauthenticated | `401` |
-| Forbidden (authenticated but not authorised) | `403` |
+| Forbidden (authenticated but not authorized) | `403` |
 | Not found | `404` |
 | Conflict (duplicate / business rule violation) | `409` |
 | Unprocessable entity (semantic validation) | `422` |
@@ -91,8 +91,8 @@ Never use GET for operations with side effects.
 ## Security
 
 - Authenticate every non-public endpoint.
-- Authorise at the resource level — verify the caller owns or has permission on the **specific resource**, not just that they are logged in (prevent IDOR).
+- Authorize at the resource level — verify the caller owns or has permission on the **specific resource**, not just that they are logged in (prevent IDOR).
 - Rate-limit all public and authenticated endpoints.
-- Sanitise all inputs; reject unknown fields at the schema level (`additionalProperties: false` / `model_config = ConfigDict(extra="forbid")` / `[JsonExtensionData]` avoided).
+- Sanitize all inputs; reject unknown fields at the schema level (`additionalProperties: false` / `model_config = ConfigDict(extra="forbid")` / `[JsonExtensionData]` avoided).
 - CORS: explicit allow-list origins; never `*` in production for credentialed requests.
 - `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options` on all browser-facing responses.

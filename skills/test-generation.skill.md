@@ -136,5 +136,5 @@ beforeEach(async () => {
 - [ ] No shared mutable state between tests
 - [ ] No `sleep` / `Thread.Sleep` calls
 - [ ] No vacuous assertions (`expect(true).toBe(true)`)
-- [ ] Test names describe behaviour, not implementation
+- [ ] Test names describe behavior, not implementation
 - [ ] No test marked as skipped without a linked issue
