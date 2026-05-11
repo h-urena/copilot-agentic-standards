@@ -70,7 +70,7 @@ without it.
 | Building | Invoke |
 | -------- | ------ |
 | A new CRUD resource | `#crud-api` |
-| Authentication / authorisation | `#auth` |
+| Authentication / authorization | `#auth` |
 | A new database, ORM, or migrations | `#database` |
 | A new UI component | `#frontend` |
 | An async background worker | `#background-jobs` |
@@ -83,7 +83,7 @@ without it.
 | ------ | ------ |
 | System design, service decomposition, or ADR | `#architect` |
 | Architecture quality or long-term maintainability concerns | `#principal-engineer` |
-| CI/CD, infrastructure, containerisation, or deployment | `#devops-engineer` |
+| CI/CD, infrastructure, containerization, or deployment | `#devops-engineer` |
 | Test strategy, quality risks, or edge case coverage | `#qa-engineer` |
 | Requirements, user stories, or acceptance criteria | `#product-manager` |
 
@@ -223,7 +223,7 @@ scaffold prompts) and **Step 5** (review prompts). Use this table as a quick ref
 | `#feature` | Implementing a new feature end-to-end |
 | `#bug` | Diagnosing and fixing a bug — reproduce first, then trace root cause |
 | `#test` | Writing tests for existing code |
-| `#refactor` | Refactoring without changing observable behaviour |
+| `#refactor` | Refactoring without changing observable behavior |
 | `#docs` | Generating or updating README, API docs, ADRs, or changelogs |
 | `#adr` | Recording an architecture decision |
 | `#deploy` | Deploying a service — pre-deploy checks, health verification, rollback plan |
@@ -243,7 +243,7 @@ scaffold prompts) and **Step 5** (review prompts). Use this table as a quick ref
 | Invoke | When to use |
 | ------ | ----------- |
 | `#crud-api` | Scaffolding a new CRUD resource |
-| `#auth` | Wiring authentication and authorisation |
+| `#auth` | Wiring authentication and authorization |
 | `#database` | Setting up a new database, ORM, migrations |
 | `#frontend` | Scaffolding a new UI component |
 | `#background-jobs` | Scaffolding an async worker |
@@ -256,13 +256,13 @@ scaffold prompts) and **Step 5** (review prompts). Use this table as a quick ref
 | ------ | ----------- |
 | `#architect` | System design, service decomposition, ADR facilitation |
 | `#principal-engineer` | Architecture review, abstraction quality, long-term maintainability |
-| `#devops-engineer` | CI/CD, containerisation, IaC, secrets management |
+| `#devops-engineer` | CI/CD, containerization, IaC, secrets management |
 | `#qa-engineer` | Test coverage, quality risks, edge cases |
 | `#product-manager` | PRDs, user stories, acceptance criteria |
 
 ## Available skills
 
-Skills are specialised knowledge files. Load the relevant file at the start of any task in that
+Skills are specialized knowledge files. Load the relevant file at the start of any task in that
 domain. In this repo skills live in `skills/`.
 
 | Load this file | When |
