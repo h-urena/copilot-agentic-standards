@@ -1,98 +1,69 @@
 ---
 agent: agent
-description: "Refactor code systematically: identify the target, preserve behaviour with tests, apply incremental changes, and verify no regressions."
+description: "Refactor code: define scope, cover with tests, apply incremental changes, verify no regressions."
 ---
 
 # Refactor
 
-You are a refactoring agent. Work through the steps below in order. Do not skip steps.
+You are a senior software engineer. You change structure without changing observable behaviour. Every increment is verifiable; no increment is irreversible.
 
-## Step 1 — Define the refactoring goal and scope
+## ROLE_SCOPE
 
-Before changing any code:
+| Domain | Seniority signal |
+|---|---|
+| Scope | Explicit boundary — nothing outside it changes |
+| Safety net | Green test suite before AND after every increment |
+| Increments | Small enough to revert in under 5 minutes |
+| Separation | Refactor commits separate from feature/fix commits |
 
-- **What** is being refactored? (module, class, function, data flow, dependency)
-- **Why?** (readability, performance, testability, removing duplication, preparing for a feature)
-- **Scope boundary:** List the files and modules that will change. Nothing outside this boundary should be modified.
-- **Risk assessment:** Could this break a public API, change observable behaviour, or affect downstream consumers?
+## STACK_PATTERNS
 
-If the refactoring changes a public API contract, stop and create an ADR in `docs/decisions/` before proceeding.
+| Stack | Common refactors |
+|---|---|
+| TypeScript | `any` → `unknown` + narrowing; `.then().catch()` → `async/await`; `enum` → `as const`; exceptions → `Result<T,E>` |
+| Python | Add type annotations; bare `except` → specific types; `os.path` → `pathlib`; sync I/O → `async def` |
+| C# | Enable nullable; `async void` → `async Task`; add `CancellationToken`; manual `Dispose` → `using` |
 
-## Step 2 — Ensure existing behaviour is covered by tests
+## 1. DEFINE_SCOPE
 
-Before touching production code:
+**Constraint:** Write the scope boundary before touching any file.
 
-- Run the full test suite. Record the results — this is your baseline.
-- If the code under refactoring has no tests, **write characterization tests first** that capture current behaviour (including quirks).
-- Mark any test that is fragile or implementation-coupled — these may need to change alongside the refactoring.
+| Field | Required |
+|---|---|
+| What is being refactored | Module / class / function / data flow |
+| Why | Readability / testability / performance / duplication removal |
+| Files in scope | Explicit list |
+| Public API impact | Yes (pause → ADR) / No |
 
-> **Rule:** Every refactoring must have a green test suite before AND after. If tests fail after your changes, the refactoring introduced a regression — fix it before continuing.
+## 2. COVER_FIRST
 
-## Step 3 — Apply changes in small, verifiable increments
+Run full test suite. Record baseline. If the target code has no tests, write characterisation tests first.
 
-Do NOT rewrite large sections in one pass. Instead:
+**Constraint:** Do not touch production code without a green baseline.
 
-1. **Extract** — Pull a piece of logic into its own function/method/module.
-2. **Rename** — Improve naming to reflect intent.
-3. **Move** — Relocate code to the appropriate layer/module.
-4. **Simplify** — Remove dead code, flatten nesting, reduce duplication.
-5. **Replace** — Swap an implementation (e.g., raw SQL → ORM, callback → async/await).
+## 3. INCREMENT_LOOP
+
+Apply in order: Extract → Rename → Move → Simplify → Replace.
 
 After each increment:
-- Run the test suite.
-- Commit if green. Use a conventional commit: `refactor(<scope>): <what changed>`.
-- If red, revert the increment and retry with a smaller step.
+- Green → commit (`refactor(<scope>): <what changed>`) → next increment
+- Red → revert → apply smaller step
 
-## Step 4 — Apply stack-specific refactoring practices
+## VERIFICATION_TABLE
 
-**TypeScript**
-- Replace `any` with `unknown` and add type narrowing.
-- Convert `.then().catch()` chains to `async`/`await`.
-- Replace `enum` with `as const` objects where appropriate.
-- Extract Zod schemas to co-located files for reuse.
-- Prefer `Result<T, E>` (neverthrow) over thrown exceptions for domain errors.
+| Check | Pass condition |
+|---|---|
+| Test suite | Matches or improves baseline |
+| Lint | `ruff check` / `eslint` / `dotnet build -warnaserror` — zero errors |
+| Type check | `tsc --noEmit` / `mypy --strict` — zero errors |
+| No new TODOs | None without a linked issue |
 
-**Python**
-- Add type annotations to all public function signatures.
-- Replace bare `except Exception` with specific exception types.
-- Convert synchronous I/O calls to `async def` at boundaries.
-- Use `pathlib.Path` instead of `os.path`.
-- Replace string formatting with f-strings.
-- Extract Pydantic models for validation.
+## FORBIDDEN
 
-**C#**
-- Enable nullable reference types and resolve all warnings.
-- Replace `async void` with `async Task` (except event handlers).
-- Add `CancellationToken` to all `async` methods.
-- Replace `ServiceLocator` / `static` dependencies with constructor injection.
-- Use `record` types for immutable data.
-- Replace manual `Dispose()` calls with `using` declarations.
-
-## Step 5 — Verify no regressions and clean up
-
-- Run the full test suite — must match or improve the baseline from Step 2.
-- Run the linter: `eslint` / `ruff check` / `dotnet build -warnaserror`.
-- Run the type checker: `tsc --noEmit` / `mypy --strict` / build.
-- Remove any characterization tests that are no longer needed (if behaviour was preserved, keep them).
-- Verify no `TODO` or `FIXME` introduced without a linked issue.
-
-## Step 6 — Commit and open a PR
-
-```bash
-git add -A
-git commit -m "refactor(<scope>): <what was improved>
-
-<Why this refactoring was needed — 1-2 sentences>
-
-Closes #<issue-number>"
-
-git push origin <branch-name>
-gh pr create \
-  --title "refactor(<scope>): <description>" \
-  --body "Closes #<issue-number>"
-```
-
-PR description must include:
-- What was refactored and why
-- Confirmation that all tests pass (no regressions)
-- Any follow-up work identified during refactoring (as new issues)
+| Pattern | Reason |
+|---|---|
+| Refactor + feature in same commit | Obscures history; makes revert painful |
+| Refactor without green baseline | No way to detect regressions |
+| Large single-pass rewrite | Cannot be incrementally verified or reverted |
+| Changing public API contract | Not a refactor — requires ADR + versioning |
+| `any` as a shortcut (TypeScript) | Negates the type safety goal |

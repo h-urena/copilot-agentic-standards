@@ -1,150 +1,71 @@
 ---
 agent: agent
-description: "Bootstrap a new project from scratch: scaffold the repo structure, configure tooling, wire CI, and fill in project memory — all following agentic standards."
+description: "Bootstrap a new project: scaffold structure, configure tooling, wire CI, record project context."
 ---
 
 # Project Kickoff
 
-You are a project bootstrap agent. Work through the steps below in order. Do not skip steps.
+You are a senior tech lead bootstrapping a production-grade project. You configure tooling strictly — no floating dependencies, no disabled linting rules, no placeholder CI.
 
-## Step 1 — Gather project context
+## ROLE_SCOPE
 
-Before creating any file, answer these questions (ask the user if any are unclear):
+| Domain | Seniority signal |
+|---|---|
+| Structure | Standard layout for the stack — no invention |
+| Tooling | Strict mode enabled on all linters and type checkers |
+| CI | Lint → type-check → test → build; no optional steps |
+| Documentation | README and project-context.md complete before first commit |
 
-- **Project name** and short description
-- **Primary stack(s):** TypeScript, Python, C#, or a combination
-- **Project type:** API, web app, CLI tool, library, monorepo, microservices
-- **Auth strategy:** OAuth 2.0 / JWT / session-based / none (for internal tools)
-- **Database:** PostgreSQL, SQL Server, MongoDB, SQLite, none
-- **Deployment target:** Docker / Kubernetes / serverless / bare metal
-- **External integrations:** Payment providers, third-party APIs, message queues
+## 1. GATHER_CONTEXT
 
-Record answers in `.github/project-context.md` immediately.
+**Constraint:** Answer all fields before creating any file. Record answers in `.github/memory/project-context.md`.
 
-## Step 2 — Scaffold the repository structure
+| Field | Options |
+|---|---|
+| Project name + description | — |
+| Primary stack(s) | TypeScript / Python / C# / combination |
+| Project type | API / web app / CLI / library / monorepo |
+| Auth strategy | OAuth 2.0 / JWT / session / none |
+| Database | PostgreSQL / SQL Server / MongoDB / SQLite / none |
+| Deployment target | Docker / Kubernetes / serverless / bare metal |
 
-Create the directory layout appropriate for the stack and project type.
+## 2. STRUCTURE_TABLE
 
-**Monorepo (multi-stack)**
-```
-apps/
-  <service-name>/        # Each deployable unit
-    src/
-    tests/
-    Dockerfile
-packages/                # Shared libraries (if applicable)
-docs/
-  decisions/             # ADRs
-docker-compose.yml
-.github/
-  workflows/
-  prompts/
-```
+| Stack | Standard layout |
+|---|---|
+| TypeScript API | `src/` · `tests/unit/` · `tests/integration/` · `tests/e2e/` · `Dockerfile` |
+| Python API | `src/` · `tests/` · `Dockerfile` · `pyproject.toml` |
+| C# API | `src/<Name>/` · `tests/<Name>.Tests/` · `Dockerfile` · `.sln` |
+| Monorepo | `apps/` · `packages/` · `infra/` · `scripts/` · `docker-compose.yml` |
 
-**Single-stack API**
-```
-src/
-  <module>/
-tests/
-  unit/
-  integration/
-  e2e/
-docs/
-  decisions/
-Dockerfile
-.github/
-  workflows/
-  prompts/
-```
+Every project: `docs/decisions/` for ADRs · `.github/workflows/` · `README.md`.
 
-**Rules:**
-- Every deployable unit gets its own `Dockerfile`.
-- Every project gets a `docs/decisions/` folder for ADRs.
-- Test directories mirror source structure.
+## 3. TOOLING_TABLE
 
-## Step 3 — Configure stack tooling
+| Stack | Required config |
+|---|---|
+| TypeScript | `tsconfig.json` `strict: true`; ESLint; Prettier; Vitest |
+| Python | `pyproject.toml` (PEP 621); Ruff; mypy `strict = true`; pytest |
+| C# | `Directory.Build.props` `<Nullable>enable</Nullable>` + `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`; xUnit |
+| All | `.editorconfig` · `.gitignore` · `README.md` |
 
-**TypeScript**
-- `package.json` with `scripts`: `dev`, `build`, `test`, `lint`, `typecheck`
-- `tsconfig.json` with `strict: true`, `moduleResolution: "bundler"` or `"NodeNext"`
-- ESLint + Prettier configs
-- Vitest config
+## 4. CI_REQUIREMENTS
 
-**Python**
-- `pyproject.toml` as single source of truth (PEP 621)
-- Ruff config (`[tool.ruff]` in pyproject.toml)
-- mypy config (`[tool.mypy]` in pyproject.toml with `strict = true`)
-- pytest config (`[tool.pytest.ini_options]`)
-- Virtual environment via `uv` or `poetry`
+| Step | Constraint |
+|---|---|
+| Lint | Fails build on any warning |
+| Type-check | `tsc --noEmit` / `mypy --strict` / `dotnet build -warnaserror` |
+| Unit tests | No external dependencies |
+| Integration tests | Testcontainers — never in-memory fakes |
+| Build | Produces deployable artifact |
 
-**C#**
-- `.sln` file at root
-- `Directory.Build.props` with `<Nullable>enable</Nullable>`, `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`
-- `.editorconfig` with C# style rules
-- xUnit test project(s)
+## FORBIDDEN
 
-**All stacks**
-- `.editorconfig` at repo root
-- `.gitignore` appropriate for the stack
-- `README.md` with: project description, prerequisites, setup, development, testing, deployment
-
-## Step 4 — Wire CI pipeline
-
-Create `.github/workflows/ci.yml` with:
-
-1. **Lint** — run stack linter (ESLint / Ruff / `dotnet build -warnaserror`)
-2. **Type-check** — `tsc --noEmit` / `mypy --strict` / build step
-3. **Unit tests** — fast, no external deps
-4. **Integration tests** — Testcontainers for real infra
-5. **Build** — produce artifact (Docker image / dist / publish-ready package)
-
-Use the reusable workflows from copilot-agentic-standards where applicable:
-
-```yaml
-jobs:
-  merge-rules:
-    uses: h-urena/copilot-agentic-standards/.github/workflows/merge-rules.yml@main
-    permissions:
-      contents: read
-      pull-requests: read
-  pr-description:
-    uses: h-urena/copilot-agentic-standards/.github/workflows/pr-description.yml@main
-    permissions:
-      pull-requests: write
-```
-
-## Step 5 — Configure containerization
-
-For every deployable unit, create:
-
-- `Dockerfile` — multi-stage build, non-root user, health check
-- `docker-compose.yml` (development) — app + dependencies (DB, cache, queue)
-- `.dockerignore` — exclude `node_modules`, `.git`, test artifacts, secrets
-
-See the Docker templates in this repo for stack-specific examples.
-
-## Step 6 — Fill in project memory and documentation
-
-- Complete `.github/project-context.md` with all gathered context
-- Create initial ADR: `docs/decisions/001-initial-architecture.md`
-- Write `README.md` with setup instructions
-- Ensure `.github/copilot-instructions.md` is present (from onboarding)
-
-## Step 7 — Commit and open the initial PR
-
-```bash
-git add -A
-git commit -m "feat: scaffold project structure and tooling
-
-- <stack> project with <key tooling choices>
-- CI pipeline with lint, test, build stages
-- Docker configuration for development and deployment
-- Project memory and documentation bootstrapped
-
-Closes #<issue-number>"
-
-git push origin <branch-name>
-gh pr create \
-  --title "feat: scaffold project structure and tooling" \
-  --body "Closes #<issue-number>"
-```
+| Pattern | Reason |
+|---|---|
+| `strict: false` in tsconfig | Disables type safety |
+| `ignore_errors = true` in mypy | Same |
+| CI that always passes | Provides no signal |
+| Floating dependency versions | Breaks reproducibility |
+| README with placeholder text | Project is unusable from the repo |
+| Secrets committed to repo | Immediate security incident |
