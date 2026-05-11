@@ -3,7 +3,7 @@ agent: governance-engine
 description: "Deterministic dispatch & context collector."
 ---
 
-# Governance Protocol: [v2.0-Deterministic]
+# Governance Protocol:
 
 ## 0. CONTEXT_COLLECTION_SCHEMA
 
@@ -13,7 +13,7 @@ Q2: [0:None, 1:CRUD, 2:Auth, 3:DB, 4:UI, 5:Job, 6:Notify, 7:Mono]
 Q3: [0:None, 1:Arch, 2:Principal, 3:DevOps, 4:QA, 5:Product]
 </schema>
 
-**Constraint:** Infer values from chat history. Only ask for missing values using the shorthand: `Identify [Q1, Q2, Q3]`.
+**Constraint:** Infer values from history. Ask missing via: `Identify [Q1, Q2, Q3]`.
 
 ## 1. DISPATCH_MAP (read_file)
 
@@ -25,15 +25,19 @@ Q3: [0:None, 1:Arch, 2:Principal, 3:DevOps, 4:QA, 5:Product]
 | **Audit** | Always       | `.github/prompts/review/audit.prompt.md`            |
 
 ## 2. DYNAMIC_TODO_GENERATION
-
 1. `git checkout main && git pull`
 2. `gh issue create`
 3. `git checkout -b <branch>`
-4. `read_file` all mapped prompts from Step 1.
-5. Execute implementation.
-6. `shellcheck scripts/*.sh && ./scripts/compose.sh all && ./scripts/validate-composed.sh`
-7. Execute `audit.prompt.md` + conditional audits.
-8. `git commit -m` (Conventional).
-9. `gh pr create` + `gh pr merge --squash`.
+4. `read_file` all mapped prompts (Q1, Q2, Q3).
+5. **Execution:** Implement feature/fix based on loaded prompts.
+6. **Shell Validation:** `shellcheck scripts/*.sh && ./scripts/compose.sh all && ./scripts/validate-composed.sh`.
+7. **Gatekeeper:** `read_file ./review/audit.prompt.md` + conditional audits -> Execute review. 
+   - *Constraint:* If "Critical" or "Major" issues found, **loop back to Step 5** and fix.
+8. **Commit:** `git commit -m` (Conventional).
+9. **Promotion:** `gh pr create --body "Audit Passed: [Summary]"` -> Output PR URL.
 
-**Wait for 'y' after presenting the Todo List.**
+**STOP EXECUTION. OUTPUT TODO LIST AS MARKDOWN CHECKBOXES. DO NOT PROCEED UNTIL USER REPLIES 'y'.**
+
+## 3. STEP_9_SAFETY_CONTROLS
+- **Post-PR:** After successfully creating the PR, ask: *"Enable `gh pr merge --auto --squash`? (y/n)"*. 
+- **Constraint:** Do not execute merge or auto-merge flags until this second specific 'y' is received.
