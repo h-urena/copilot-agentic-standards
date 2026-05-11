@@ -154,7 +154,7 @@ jobs:
               if (hasPIIIssue) {
                 lines.push('**PII pattern detected in source code**');
                 lines.push('- [ ] Verify no real email addresses, phone numbers, or SSNs are committed.');
-                lines.push('- [ ] Replace real values with anonymised fixtures (e.g. `user@example.com`, `555-0100`).');
+                lines.push('- [ ] Replace real values with anonymized fixtures (e.g. `user@example.com`, `555-0100`).');
                 lines.push('');
               }
 

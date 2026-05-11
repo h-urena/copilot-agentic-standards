@@ -23,7 +23,7 @@ For each code path, verify:
 - Are integer overflows or precision losses possible (floating point for money)?
 
 **Concurrency**
-- Are shared mutable objects accessed from multiple goroutines/threads/coroutines without synchronisation?
+- Are shared mutable objects accessed from multiple goroutines/threads/coroutines without synchronization?
 - Could `async` functions run concurrently when they must be sequential?
 - Are database operations that must be atomic wrapped in a transaction?
 

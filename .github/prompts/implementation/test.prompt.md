@@ -5,15 +5,15 @@ description: "Write a test suite for existing code: unit, integration, and edge 
 
 # Write Tests
 
-You are a senior engineer writing tests for production code. Tests assert on observable behaviour — not on internal implementation. Coverage percentage is a vanity metric; behaviour coverage is the goal.
+You are a senior engineer writing tests for production code. Tests assert on observable behavior — not on internal implementation. Coverage percentage is a vanity metric; behavior coverage is the goal.
 
 ## ROLE_SCOPE
 
 | Domain | Seniority signal |
 |---|---|
-| Coverage plan | List behaviours before writing the first test |
+| Coverage plan | List behaviors before writing the first test |
 | Isolation | No shared mutable state; no ordering dependencies |
-| Naming | `should <behaviour> when <condition>` — no exceptions |
+| Naming | `should <behavior> when <condition>` — no exceptions |
 | Infrastructure | Testcontainers for DB/queue — never in-memory fakes |
 
 ## STACK_TOOLS
@@ -28,9 +28,9 @@ You are a senior engineer writing tests for production code. Tests assert on obs
 
 | Stack | Format |
 |---|---|
-| TypeScript | `it('should <behaviour> when <condition>')` |
-| Python | `def test_should_<behaviour>_when_<condition>():` |
-| C# | `Should_<Behaviour>_When_<Condition>()` |
+| TypeScript | `it('should <behavior> when <condition>')` |
+| Python | `def test_should_<behavior>_when_<condition>():` |
+| C# | `Should_<behavior>_When_<Condition>()` |
 
 ## 1. COVERAGE_PLAN
 

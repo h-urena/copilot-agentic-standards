@@ -68,5 +68,5 @@ A11y:        [ARIA roles needed, keyboard interactions required]
 | `useEffect + fetch` for server state | Use React Query |
 | `any` in props or event handlers | Defeats type safety |
 | `<div onClick>` | Not keyboard-accessible |
-| Hardcoded strings in JSX | Blocks internationalisation |
+| Hardcoded strings in JSX | Blocks internationalization |
 | Global state for local UI state | Unnecessary complexity |

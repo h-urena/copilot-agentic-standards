@@ -2,7 +2,7 @@
 applyTo: "**"
 ---
 
-# Authentication & Authorisation Patterns
+# Authentication & authorization Patterns
 
 These rules apply to any service that manages identity, sessions, tokens, or access control.
 
@@ -66,12 +66,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
   - `SameSite=Strict` or `SameSite=Lax` cookies mitigate most CSRF.
   - Add a CSRF token for state-changing requests when using `SameSite=None`.
 
-## Authorisation
+## authorization
 
-- Enforce authorisation at the **service / use-case layer**, not only at the controller/route layer.
+- Enforce authorization at the **service / use-case layer**, not only at the controller/route layer.
 - Use RBAC (roles → permissions) or ABAC (attribute-based) — not ad-hoc `if user.isAdmin` conditions scattered through code.
 - Principle of least privilege: grant only what the operation requires.
-- **Resource-level authorisation**: after authenticating a request, verify the caller owns or has explicit permission on the **specific resource** being accessed. This prevents IDOR (Insecure Direct Object Reference).
+- **Resource-level authorization**: after authenticating a request, verify the caller owns or has explicit permission on the **specific resource** being accessed. This prevents IDOR (Insecure Direct Object Reference).
 
 ```python
 # Python — always check ownership

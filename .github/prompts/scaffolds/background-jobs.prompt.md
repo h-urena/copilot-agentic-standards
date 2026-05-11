@@ -31,7 +31,7 @@ Retry:      [max attempts | backoff strategy | dead-letter destination]
 | Rule | Constraint |
 |---|---|
 | Payload content | IDs only — no domain objects or DB entities |
-| Serialisation | JSON only |
+| serialization | JSON only |
 | Idempotency key | Required — job must be safe to run twice with same input |
 | Payload schema | Typed: `interface` (TS) / `BaseModel` (Python) / `record` (C#) |
 
@@ -66,7 +66,7 @@ Retry:      [max attempts | backoff strategy | dead-letter destination]
 
 | Pattern | Reason |
 |---|---|
-| Domain objects in job payload | Serialisation drift; stale data |
+| Domain objects in job payload | serialization drift; stale data |
 | No idempotency | Double-processing on retry causes data corruption |
 | No dead-letter queue | Failed jobs disappear silently |
 | Inline job logic in queue setup | Untestable |

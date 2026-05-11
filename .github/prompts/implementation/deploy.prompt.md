@@ -107,4 +107,4 @@ After rollback: confirm health checks pass, open a GitHub issue for root cause, 
 | Migrations after app deployment | Schema mismatch causes runtime failures |
 | Skipping health check | No signal that the deploy succeeded |
 | `@latest` or `latest` image tags | Not reproducible; unpredictable content |
-| Deploy to production without staging soak | No validation of real-world behaviour |
+| Deploy to production without staging soak | No validation of real-world behavior |

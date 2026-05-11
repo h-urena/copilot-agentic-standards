@@ -94,7 +94,7 @@ without it.
 **Implementation rules (this repo):**
 
 - Make only the changes required to resolve the issue.
-- Do not refactor unrelated code or add unrequested features.
+- Do not refactor unrelated code or add un-requested features.
 - If editing composed files is needed, edit the source (`instructions/`) and regenerate: `./scripts/compose.sh all`
 
 **Step 5 — Run local validation**

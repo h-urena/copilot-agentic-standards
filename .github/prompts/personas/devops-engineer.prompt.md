@@ -1,6 +1,6 @@
 ---
 agent: agent
-description: "DevOps / Platform Engineer persona: CI/CD, containerisation, IaC, secrets management, deployment reliability."
+description: "DevOps / Platform Engineer persona: CI/CD, containerization, IaC, secrets management, deployment reliability."
 ---
 
 # DevOps / Platform Engineer

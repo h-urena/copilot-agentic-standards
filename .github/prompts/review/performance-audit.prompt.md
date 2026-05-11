@@ -9,7 +9,7 @@ You are a performance audit agent. Load `skills/performance-profiling.skill.md` 
 
 ## Step 1 — Establish scope and baseline
 
-Before analysing anything:
+Before analyzing anything:
 - Identify which service(s) are in scope
 - Identify the hot paths: endpoints or operations called > 100×/minute in production
 - Record the current baseline if available: p50, p95, p99 latency, throughput (RPS), error rate
@@ -43,9 +43,9 @@ Flag any query that:
 
 ## Step 3 — Application-level analysis
 
-### Serialisation hot spots
-- Are there endpoints that serialise large objects on every request?
-- Is JSON serialisation happening inside a tight loop?
+### serialization hot spots
+- Are there endpoints that serialize large objects on every request?
+- Is JSON serialization happening inside a tight loop?
 
 ### Caching opportunities
 For each data fetch in the hot path, ask:
@@ -54,7 +54,7 @@ For each data fetch in the hot path, ask:
 - Would an in-process cache (< 1 ms) or a distributed cache (Redis, 1–5 ms) be appropriate?
 
 ### Concurrent I/O
-Flag sequential `await` calls that could be parallelised:
+Flag sequential `await` calls that could be parallelized:
 ```typescript
 // ❌ Sequential (unnecessary latency)
 const user = await getUser(userId);
@@ -67,7 +67,7 @@ const [user, orders] = await Promise.all([getUser(userId), getOrders(userId)]);
 ## Step 4 — Frontend bundle analysis (TypeScript projects only)
 
 ```bash
-# Analyse bundle composition
+# Analyze bundle composition
 npx vite-bundle-visualizer
 # or
 npx @next/bundle-analyzer
@@ -76,7 +76,7 @@ npx @next/bundle-analyzer
 Flag:
 - Any dependency > 50 KB that could be lazy-loaded
 - Full library imports when only individual functions are needed (`import _ from 'lodash'` vs `import debounce from 'lodash/debounce'`)
-- Unoptimised images (non-WebP/AVIF, missing dimensions)
+- Unoptimized images (non-WebP/AVIF, missing dimensions)
 
 ## Step 5 — Apply fixes directly
 
@@ -87,7 +87,7 @@ Priority order:
 2. Missing indexes on hot query paths
 3. Unbounded result sets (add pagination)
 4. Caching opportunities
-5. Bundle optimisation
+5. Bundle optimization
 
 ## Step 6 — Produce the audit report
 

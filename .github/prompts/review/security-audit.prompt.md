@@ -45,7 +45,7 @@ git --no-pager diff main...HEAD > audit_diff.txt
 
 ---
 
-### 🔐 Authentication and authorisation
+### 🔐 Authentication and authorization
 
 | Check | Pass condition |
 |---|---|
@@ -63,11 +63,11 @@ git --no-pager diff main...HEAD > audit_diff.txt
 
 | Vector | Pass condition |
 |---|---|
-| SQL | Parameterised queries or ORM only — no string concatenation |
+| SQL | Parameterized queries or ORM only — no string concatenation |
 | XSS | Input escaped before HTML render; CSP headers configured |
 | Command | No user input in `exec`/`subprocess`/`Process.Start`; allowlist if unavoidable |
 | Path traversal | File paths from user input validated; no `../`; allowlisted directories |
-| Deserialisation | No `pickle.loads`, `BinaryFormatter`, `eval` on untrusted data |
+| Deserialization | No `pickle.loads`, `BinaryFormatter`, `eval` on untrusted data |
 
 **Prose rationale — XSS auto-escaping:** React/Angular/Blazor auto-escaping is bypassed by `dangerouslySetInnerHTML`, `[innerHTML]`, and `MarkupString`. Flag any use of these on user-controlled content.
 

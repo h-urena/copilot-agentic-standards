@@ -61,7 +61,7 @@
 
 ## Key decisions (ADRs)
 
-<!-- Link or summarise the most important architectural decisions -->
+<!-- Link or summarize the most important architectural decisions -->
 | Decision | Rationale | Date |
 |----------|-----------|------|
 |          |           |      |
