@@ -1,146 +1,115 @@
 ---
-agent: agent
-description: "Audit project dependencies for known vulnerabilities, outdated packages, license risks, and supply-chain hygiene."
+agent: audit-engine
+description: "Audit project dependencies: vulnerabilities, outdated packages, license risks, supply-chain hygiene."
 ---
 
 # Dependency Audit
 
-You are a dependency audit agent. Work through each step in order. Apply all Critical and High fixes directly.
+## Step 0 — Governance
 
-## Step 1 — Run vulnerability scanners
+Flag any violation as a blocker before continuing.
 
 ```bash
-# TypeScript / Node.js
-npm audit --audit-level=moderate
-
-# Python
-pip-audit --desc --output json
-# or: uv pip audit
-
-# C# / .NET
-dotnet list package --vulnerable --include-transitive
+git rev-parse --abbrev-ref HEAD
+gh issue view <issue-number>
+gh pr view --json body -q .body
 ```
 
-Record output. Do not proceed until you have scanner results.
+| Check | Pass condition |
+|---|---|
+| Branch name | Matches `^(feat\|fix\|docs\|style\|refactor\|perf\|test\|build\|ci\|chore\|hotfix)/\d+-[a-z0-9-]+$` |
+| Linked issue | Exists and is open, or was closed by this PR |
+| PR body | Contains `Closes #N`, `Fixes #N`, or `Resolves #N` |
 
-## Step 2 — Triage scanner findings
+---
 
-For each vulnerability:
+## Step 1 — Scan
 
-| Field | What to check |
-|-------|--------------|
+```bash
+npm audit --audit-level=moderate                        # TypeScript / Node.js
+pip-audit --desc --output json                          # Python
+dotnet list package --vulnerable --include-transitive   # C#
+```
+
+---
+
+## Step 2 — Triage findings
+
+| Field | Constraint |
+|---|---|
 | Severity | Critical / High / Moderate / Low |
-| CVSS score | ≥ 9.0 = Critical; 7.0–8.9 = High; 4.0–6.9 = Medium |
-| Exploitability | Is the vulnerable code path reachable in this project? |
+| CVSS | ≥ 9.0 = Critical; 7.0–8.9 = High; 4.0–6.9 = Medium |
+| Reachability | Is the vulnerable code path reachable in this project? |
 | Fix available | Is there a patched version? |
-| Breaking change | Does upgrading introduce breaking API changes? |
+| Breaking change | Does upgrading break API compatibility? |
 
-**Do not blindly `npm audit fix --force`** — review each change before applying.
+**Constraint:** Do not run `npm audit fix --force` — review each change before applying.
 
-## Step 3 — Fix Critical and High vulnerabilities
+---
 
-For each Critical or High CVE with an available fix:
-
-1. Upgrade the dependency:
-   ```bash
-   # npm
-   npm install package@latest
-
-   # uv / pip
-   uv add "package>=X.Y.Z"
-
-   # .NET
-   dotnet add package Package --version X.Y.Z
-   ```
-
-2. Run the test suite after each upgrade — do not batch all upgrades into one commit.
-
-3. If upgrading is not possible (no fix, breaking change, vendor constraint):
-   - Document the exception in a `SECURITY.md` or in-repo threat model
-   - Apply a mitigating control (WAF rule, input validation, disable the vulnerable feature)
-   - Open a tracking issue
-
-## Step 4 — Outdated dependency review
-
-Identify packages significantly behind latest:
+## Step 3 — Fix Critical and High
 
 ```bash
-# Node.js
-npm outdated
-
-# Python
-uv pip list --outdated
-
-# .NET
-dotnet outdated  # requires dotnet-outdated-tool
+npm install package@X.Y.Z            # TypeScript
+uv add "package>=X.Y.Z"              # Python
+dotnet add package Package --version X.Y.Z   # C#
 ```
 
-Flag packages that are:
-- More than 2 **major** versions behind
-- On a version with announced end-of-life
-- Known to have performance or security improvements in newer versions
+Run the test suite after **each** upgrade — do not batch.
+
+If no fix is available:
+
+| Action | Required |
+|---|---|
+| Document exception | `SECURITY.md` or in-repo threat model |
+| Apply mitigating control | WAF rule, input validation, or feature disable |
+| Open tracking issue | Link in exception documentation |
+
+---
+
+## Step 4 — Outdated review
+
+| Flag | Condition |
+|---|---|
+| Major version lag | More than 2 major versions behind latest |
+| End of life | Version has announced EOL |
+| Known improvements | Newer version has documented security or performance gains |
+
+---
 
 ## Step 5 — Supply chain hygiene
 
-### Lockfile integrity
-- [ ] `package-lock.json` / `yarn.lock` / `uv.lock` / `packages.lock.json` is committed
-- [ ] CI uses the lockfile (`npm ci`, `uv sync --frozen`, `dotnet restore --locked-mode`)
-- [ ] Lockfile is regenerated from scratch periodically and reviewed
+| Check | Pass condition |
+|---|---|
+| Lockfile committed | `package-lock.json` / `uv.lock` / `packages.lock.json` present |
+| CI uses lockfile | `npm ci` / `uv sync --frozen` / `dotnet restore --locked-mode` |
+| Registry | All packages from official registry only |
+| No URL installs | No GitHub raw URLs or file paths in CI |
+| Dependabot | `.github/dependabot.yml` configured for all ecosystems |
+| License compliance | No GPL in a proprietary project; all licenses documented |
 
-### Dependency source validation
-- [ ] All dependencies come from the official registry (npmjs.com, PyPI, NuGet.org)
-- [ ] No packages installed from GitHub raw URLs, private URLs, or file paths in CI
-- [ ] No typosquatted package names (check names similar to popular packages)
+**License prose:** GPL / AGPL / LGPL in a proprietary codebase requires legal review. SSPL may restrict commercial SaaS use. CC-BY-NC prohibits commercial use. Use `npx license-checker` / `pip-licenses` to enumerate.
 
-### Dependabot / Renovate
-- [ ] `.github/dependabot.yml` is configured for all ecosystems in use
-- [ ] Dependabot PRs are reviewed and merged promptly (not left open for weeks)
-- [ ] Auto-merge is configured for patch-level updates with passing tests
+---
 
-### License compliance
-Flag any package with a restrictive license that may conflict with the project's license:
-- **GPL / AGPL / LGPL** in a proprietary codebase — requires legal review
-- **SSPL** (MongoDB, Elasticsearch) — may restrict commercial SaaS use
-- **CC-BY-NC** — prohibits commercial use
+## Step 6 — Report findings
 
-```bash
-# Node.js license check
-npx license-checker --onlyAllow "MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;Unlicense"
-
-# Python
-pip-licenses --format=table
+```
+🏛️ Governance: <finding> — <fix>
+🔒 Critical CVE: <CVE-ID> in <package>@<version> — <fix>
+⚠️ High CVE: <CVE-ID> in <package>@<version> — <fix>
+📦 Outdated: <package> at <current> — latest <version> — <action>
+🔗 Supply chain: <finding> — <fix>
+📄 License: <package> uses <license> — <risk>
+✅ Refactored Snippet: <only when a code change is required>
 ```
 
-## Step 6 — Produce the audit report
+If no findings in a category, write `PASS`. Apply all Critical and High fixes directly.
 
-```markdown
-## Dependency Audit Report
+---
 
-**Project:** <name>
-**Date:** <date>
-**Ecosystems audited:** <npm / pip / NuGet>
+## Step 7 — Cleanup
 
-### Critical CVEs (fix immediately)
-| Package | Version | CVE | CVSS | Fix |
-|---------|---------|-----|------|-----|
-
-### High CVEs (fix this sprint)
-| Package | Version | CVE | CVSS | Fix |
-|---------|---------|-----|------|-----|
-
-### Outdated packages (review)
-| Package | Current | Latest | Status |
-|---------|---------|--------|--------|
-
-### Supply chain
-- Lockfile committed: ✅ / ❌
-- Dependabot configured: ✅ / ❌
-- License issues: <list or "none">
-
-### Passed checks
-- [ ] No Critical CVEs
-- [ ] No High CVEs
-- [ ] Lockfile is committed and used in CI
-- [ ] All licenses are permissive
-- [ ] Dependabot is configured
+```bash
+rm -f pip-audit-output.json
 ```

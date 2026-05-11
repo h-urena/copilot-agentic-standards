@@ -1,178 +1,80 @@
 ---
 agent: agent
-description: "Wire authentication and authorization into a project: configure the identity provider, implement middleware, protect routes, and add auth tests."
+description: "Scaffold auth integration: identity provider, middleware, route protection, and auth tests."
 ---
 
 # Scaffold Auth Integration
 
-You are an auth integration agent. Work through the steps below in order. Do not skip steps.
+**Constraint:** Do not write any code until all required fields in Step 0 are confirmed.
 
-## Step 1 — Determine auth requirements
+## 0. REQUIREMENTS_SCHEMA
 
-Before writing any code, confirm:
+<schema>
+IdP:        [Auth0 | Azure AD/Entra ID | Keycloak | Firebase | Supabase | Custom]
+Flow:       [Authorization Code | Client Credentials | Device Code]
+Token type: [JWT (access + refresh) | Opaque session]
+Roles:      [list all role names]
+Tenancy:    [Single | Multi]
+</schema>
 
-- **Identity provider:** Auth0, Azure AD / Entra ID, Keycloak, Firebase Auth, Supabase Auth, or custom
-- **Auth flow:** Authorization Code (web apps), Client Credentials (service-to-service), Device Code (CLI)
-- **Token type:** JWT (access + refresh) or opaque session tokens
-- **Roles/permissions:** What roles exist? (e.g., `user`, `admin`, `editor`)
-- **Multi-tenancy:** Single tenant or multi-tenant?
+## 1. DEPENDENCY_TABLE
 
-## Step 2 — Install dependencies and configure the provider
+| Stack | Required packages |
+|---|---|
+| TypeScript | `jose` `jwks-rsa` (pinned with `--save-exact`); IdP SDK if applicable |
+| Python | `pyjwt[crypto]` `httpx` `authlib` (pinned via `uv add`) |
+| C# | `Microsoft.AspNetCore.Authentication.JwtBearer`; `Microsoft.Identity.Web` (Azure AD) |
 
-**TypeScript**
-```bash
-# Use --save-exact to pin to a specific version; commit the resulting package-lock.json.
-# CI must use `npm ci` (not `npm install`) to install from the lockfile.
-npm install --save-exact jose jwks-rsa                # JWT validation
-npm install --save-exact @auth0/nextjs-auth0          # Auth0 (if applicable)
-npm install --save-exact passport passport-jwt        # Express/Fastify (if applicable)
-```
+**Constraint:** CI must use `npm ci` / `uv sync --frozen` / `dotnet restore --locked-mode`. Never `npm install` in CI.
 
-**Python** (project standard: `uv`)
-```bash
-# uv add pins to the resolved version in uv.lock; commit the lockfile.
-# CI uses `uv sync --frozen` to install from the lockfile.
-uv add pyjwt[crypto] httpx        # JWT validation
-uv add authlib                    # OAuth 2.0 client
-```
+## 2. ENV_VAR_SCHEMA
 
-**C#**
-```bash
-dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer
-dotnet add package Microsoft.Identity.Web      # Azure AD (if applicable)
-```
+| Variable | Required | Description |
+|---|---|---|
+| `AUTH_ISSUER` | Yes | Token issuer URL |
+| `AUTH_AUDIENCE` | Yes | Expected audience claim |
+| `AUTH_JWKS_URI` | Yes (RS256) | JWKS endpoint |
+| `AUTH_CLIENT_ID` | OAuth flows | OAuth client ID |
+| `AUTH_CLIENT_SECRET` | OAuth flows | OAuth client secret |
 
-**Configuration (all stacks):**
-- Store IdP settings in environment variables — never hardcode:
-  - `AUTH_ISSUER` — Token issuer URL
-  - `AUTH_AUDIENCE` — Expected audience claim
-  - `AUTH_JWKS_URI` — JWKS endpoint (for RS256 validation)
-  - `AUTH_CLIENT_ID` / `AUTH_CLIENT_SECRET` — OAuth client credentials
-- Validate all config at startup — fail fast if missing.
+**Constraint:** All config from environment variables — never hardcoded. Validate at startup; fail fast if missing.
 
-## Step 3 — Implement auth middleware
+## 3. MIDDLEWARE_REQUIREMENTS
 
-Create middleware that runs before protected routes:
+JWT validation must check, in order:
 
-**JWT validation must check:**
-1. **Signature** — Verify against JWKS (RS256) or shared secret (HS256)
-2. **Expiry** — Reject expired tokens (`exp` claim)
-3. **Audience** — Matches expected `AUTH_AUDIENCE`
-4. **Issuer** — Matches expected `AUTH_ISSUER`
+| Check | Failure response |
+|---|---|
+| Signature (JWKS/RS256 or shared secret/HS256) | 401 Unauthorized |
+| Expiry (`exp` claim) | 401 Unauthorized |
+| Audience (`aud` claim) | 401 Unauthorized |
+| Issuer (`iss` claim) | 401 Unauthorized |
+| Role (if required for route) | 403 Forbidden |
 
-**TypeScript (Express/Fastify)**
-```typescript
-// src/middleware/auth.ts
-export function requireAuth(requiredRoles?: string[]) {
-  return async (req, res, next) => {
-    // 1. Extract token from Authorization header
-    // 2. Validate JWT (signature, exp, aud, iss)
-    // 3. Attach user context to request
-    // 4. Check roles if requiredRoles specified
-  };
-}
-```
+## 4. OUTPUT_STRUCTURE
 
-**Python (FastAPI)**
-```python
-# src/middleware/auth.py
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
-    """Validate JWT and return the authenticated user."""
-    # 1. Decode and validate token
-    # 2. Extract user claims
-    # 3. Return user context
+| Stack | File | Purpose |
+|---|---|---|
+| TypeScript | `src/middleware/auth.ts` | `requireAuth(roles?)` middleware |
+| Python | `src/middleware/auth.py` | `get_current_user` dependency + `require_roles` |
+| C# | `Program.cs` (configure) + `[Authorize]` attributes | JwtBearer setup |
 
-def require_roles(*roles: str):
-    """Dependency that checks the user has required roles."""
-```
+## 5. TEST_REQUIREMENTS
 
-**C# (ASP.NET Core)**
-```csharp
-// Configure in Program.cs
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options => {
-        options.Authority = config["Auth:Issuer"];
-        options.Audience = config["Auth:Audience"];
-    });
+| Test | Required coverage |
+|---|---|
+| Valid token | 200 + user context attached |
+| Expired token | 401 |
+| Wrong audience | 401 |
+| Missing token | 401 |
+| Insufficient role | 403 |
 
-// Protect endpoints with [Authorize(Roles = "admin")]
-```
+## FORBIDDEN
 
-## Step 4 — Protect routes with authorization
-
-Apply auth to all routes by default, then explicitly mark public routes:
-
-- **Public routes** — login, register, health check, public API docs
-- **Authenticated routes** — everything else (require valid token)
-- **Role-protected routes** — admin endpoints, destructive operations
-
-**Resource-level authorization (IDOR prevention):**
-```
-GET /api/v1/orders/:id → Verify order.userId === currentUser.id
-```
-Never rely on path parameters alone — always verify ownership in the service layer.
-
-## Step 5 — Implement token refresh and session management
-
-- **Access tokens:** Short-lived (5–15 minutes).
-- **Refresh tokens:** Longer-lived (7–30 days), stored securely.
-- **Token storage:**
-  - Web apps: HttpOnly, Secure, SameSite=Strict cookies
-  - SPAs: In-memory only (not localStorage)
-  - Mobile: Secure storage (Keychain / KeyStore)
-- **Session regeneration:** Regenerate session ID on login, logout, and privilege escalation.
-- **Logout:** Invalidate refresh token server-side; clear cookies.
-
-## Step 6 — Add audit logging
-
-Log all auth events with structured logging:
-
-```json
-{
-  "event": "auth.login.success",
-  "userId": "user-123",
-  "ip": "203.0.113.1",
-  "userAgent": "Mozilla/5.0...",
-  "timestamp": "2026-01-15T10:30:00Z"
-}
-```
-
-Events to log:
-- `auth.login.success` / `auth.login.failure`
-- `auth.logout`
-- `auth.token.refresh`
-- `auth.password.change`
-- `auth.role.change`
-- `auth.access.denied` (unauthorized resource access attempts)
-
-## Step 7 — Write auth tests
-
-**Unit tests:**
-- Valid token → user context extracted
-- Expired token → 401
-- Invalid signature → 401
-- Missing token → 401
-- Insufficient role → 403
-- Resource ownership check → 403 for non-owner
-
-**Integration tests:**
-- Full login flow (if custom auth)
-- Protected endpoint with valid/invalid/missing token
-- Role-based access control
-- Token refresh flow
-
-## Step 8 — Commit auth integration
-
-```bash
-git add -A
-git commit -m "feat(auth): wire <provider> authentication and authorization
-
-- JWT validation middleware with signature, expiry, audience checks
-- Role-based access control on protected endpoints
-- Resource-level authorization (IDOR prevention)
-- Audit logging for all auth events
-- Unit and integration tests for auth flows
-
-Closes #<issue-number>"
-```
+| Pattern | Reason |
+|---|---|
+| Hardcoded secrets or client IDs | Immediate security incident |
+| `localStorage` for tokens | XSS-accessible |
+| Algorithm `none` accepted | JWT bypass |
+| Skipping `aud` or `iss` validation | Accepts tokens from other services |
+| Role check inside business logic | Bypassed by different entry points |

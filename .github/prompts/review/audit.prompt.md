@@ -1,51 +1,41 @@
 ---
-agent: agent
+agent: audit-engine
 description: "Senior Agentic Standards Auditor — run against any branch diff to validate compliance."
 ---
 
 # Senior Agentic Standards Audit
 
-## Step 0 — Verify governance compliance
+## Step 0 — Governance
 
-Before evaluating the code, verify the branch itself followed process. Flag any violation as a
-blocker — code correctness is irrelevant if the process was bypassed.
+Flag any violation as a blocker before continuing.
 
 ```bash
-# 1. Confirm branch name follows <type>/<issue-number>-<slug>
 git rev-parse --abbrev-ref HEAD
-
-# 2. Confirm a linked issue exists for the issue number in the branch name
 gh issue view <issue-number>
-
-# 3. Confirm the PR body contains Closes/Fixes/Resolves #<issue-number>
 gh pr view --json body -q .body
 ```
 
 | Check | Pass condition |
-|-------|---------------|
+|---|---|
 | Branch name | Matches `^(feat\|fix\|docs\|style\|refactor\|perf\|test\|build\|ci\|chore\|hotfix)/\d+-[a-z0-9-]+$` |
-| Linked issue | Issue exists and is open or was closed by this PR |
+| Linked issue | Exists and is open, or was closed by this PR |
 | PR body | Contains `Closes #N`, `Fixes #N`, or `Resolves #N` |
 
 ---
 
-## Step 1 — Generate the branch diff for analysis
+## Step 1 — Generate diff
 
 ```bash
 git --no-pager diff main...HEAD > audit_diff.txt
 ```
 
-Then analyze `audit_diff.txt` against all criteria below.
-
 ---
 
-## Review Criteria
+## Step 2 — Review criteria
 
-### 🔍 Doc Compliance (2026 Standards)
+### 🔍 Doc Compliance
 
-Every `.yml` change **must** use the absolute latest action versions. Flag anything older than:
-
-| Action | Minimum Version |
+| Action | Minimum version |
 |---|---|
 | `actions/checkout` | `@v6` |
 | `actions/setup-node` | `@v6` |
@@ -56,84 +46,83 @@ Every `.yml` change **must** use the absolute latest action versions. Flag anyth
 | `actions/setup-python` | `@v6` |
 | `actions/setup-dotnet` | `@v5` |
 
-**Node runtime:** Flag any action pinned to a version that bundles a Node 20 runtime when a Node 24-compatible release exists. Note: `actions/github-script` bundles its own Node runtime — it cannot be overridden via a `node-version` input (that parameter does not exist; it is silently ignored). Upgrading requires a major version bump of the action itself (e.g., `@v10` when a Node 24 release ships). Do not add `node-version:` as an input to `actions/github-script`.
-
-**Modern syntax:** Enforce `$GITHUB_OUTPUT`. Flag `set-output`, `save-state`, and `get-state` as deprecated.
-
-**Shell:** All `.sh` blocks must start with `set -euo pipefail`. All variables must be quoted.
-
-**Line length:** All `.yml` files are linted with `yamllint` at max 130 characters per line. Flag any line exceeding 130 characters — break long shell lines with `\` continuations and extract long strings into variables.
+| Rule | Constraint |
+|---|---|
+| Node runtime | Flag actions bundling Node 20 when a Node 24-compatible release exists |
+| `actions/github-script` | Bundles its own Node runtime — `node-version:` is silently ignored; upgrade via major version bump only |
+| Modern syntax | Enforce `$GITHUB_OUTPUT`; flag `set-output`, `save-state`, `get-state` as deprecated |
+| Shell safety | All `.sh` blocks must open with `set -euo pipefail`; all variables quoted |
+| Line length | Max 130 chars per `.yml` line; break with `\`; extract long strings into variables |
 
 ---
 
 ### 🔄 Logic & Redundancy
 
-- **Sequence Audit:** Flag redundant installs or steps that override previous state.
-- **Contradiction Check:** Ensure new steps do not break subsequent logic.
-- **Idempotency:** Steps that run on every push should be idempotent (re-runnable without side effects).
-- **Embedded script correctness:** For any inline JS/shell that classifies files by path (e.g. sensitive paths, test file detection), verify the regex does not produce false positives against documentation, configuration, or instruction files (`.md`, `.yml`, `.json`). A pattern like `/(auth|secret)/i` will match `auth-patterns.instructions.md` — always scope path-matching regexes to source code extensions or add explicit exclusions for non-code file types.
-- **`workflow_call` input completeness:** For every workflow that exposes `workflow_call`, verify that every value accessed via `context.payload.*` or `${{ inputs.* }}` inside the job steps is either: (a) declared as a `workflow_call` input with a sensible default, or (b) guarded with a null-check that prevents `core.setFailed` when the payload is absent. A bare `workflow_call: {}` with no inputs is a red flag — check that inline scripts do not silently fail when called externally.
+| Check | Constraint |
+|---|---|
+| Sequence | Flag redundant installs or steps that override previous state |
+| Contradiction | New steps must not break subsequent logic |
+| Idempotency | Steps running on every push must be re-runnable without side effects |
+
+**Regex false positives:** Path-classifying regexes must not match `.md`, `.yml`, or `.json` files — e.g. `/(auth|secret)/i` matches `auth-patterns.instructions.md`. Scope to source extensions or add explicit exclusions.
+
+**`workflow_call` inputs:** Every `context.payload.*` or `${{ inputs.* }}` value must be declared as a `workflow_call` input with a default, or null-checked. A bare `workflow_call: {}` with inline scripts is a red flag.
 
 ---
 
 ### 🤖 Agentic Clarity (rate 1–10)
 
-- **Semantic Intent:** `name:` fields at **all three levels** must describe *intent*, not just *action*:
-  - **Workflow `name:`** (top of file) — describes the policy the workflow enforces
-  - **Job `jobs.<id>.name:`** — describes the outcome the job ensures
-  - **Step `steps[*].name:`** — describes what is being verified or enforced, not the tool being run
-  - ❌ `"Check merge method"` / `"PR Description Generator"` — action or noun
-  - ✅ `"Enforce squash-only merge policy"` / `"Auto-populate PR Body From Branch Commits"` — policy statement
-  - ✅ `"Auto-assign PR to its author"` — policy statement
-  - ⚠️ **Exception — branch protection contracts:** Job names registered as required status checks
-    in branch protection rules **must not be renamed**. Renaming breaks the check permanently
-    (GitHub shows "Expected — Waiting for status to be reported"). Before renaming a job, verify
-    it is not listed under Settings → Branches → required status checks.
-- **Atomic Instructions:** Markdown must be chronological — Step 5 cannot make Step 2 redundant.
-- **No ambiguity:** Step names readable by an LLM with no surrounding context.
+`name:` fields at all three levels (workflow, job, step) must be policy statements, not nouns or action verbs — e.g. `Enforce squash-only merge policy`, not `Merge Rules`.
+
+**Branch protection exception:** Job names registered as required status checks must not be renamed — verify under Settings → Branches → Required status checks before flagging.
+
+| Check | Constraint |
+|---|---|
+| Atomic steps | Chronological only — a later step must not make an earlier one redundant |
+| No ambiguity | Each step name self-explanatory with no surrounding context |
 
 ---
 
 ### 🔒 Zero Hardcoding
 
-Flag **any** hardcoded values that should be dynamic:
-
-- Hardcoded IDs, tokens, or secrets → must use `${{ secrets.NAME }}`
-- Hardcoded repo owner/org names → must use `${{ github.repository_owner }}` or `${{ vars.NAME }}`
-- Hardcoded branch names → must use `${{ github.event.repository.default_branch }}` or inputs
-- Hardcoded paths that vary by environment → must use `${{ vars.NAME }}`
+| Hardcoded value | Required replacement |
+|---|---|
+| IDs, tokens, secrets | `${{ secrets.NAME }}` |
+| Repo owner / org | `${{ github.repository_owner }}` or `${{ vars.NAME }}` |
+| Branch names | `${{ github.event.repository.default_branch }}` or inputs |
+| Environment paths | `${{ vars.NAME }}` |
 
 ---
 
 ### 🎯 Deterministic Behavior
 
-- Actions must be pinned to a specific version (no `@latest`, no `-y` without a version)
-- MCP configs must pin package versions
-- `npm install` in CI must use `npm ci` (not `npm install`)
-- No floating dependencies
+| Rule | Constraint |
+|---|---|
+| Action pinning | No `@latest`; pin to a specific version |
+| Package installs | No `-y` without a version; MCP configs must pin versions |
+| CI installs | `npm ci` only, never `npm install` |
+| Dependencies | No floating dependencies |
 
 ---
 
-## Output Format
-
-For each finding:
+## Step 3 — Report findings
 
 ```
 🏛️ Governance: <finding> — <fix>
 🔍 Doc Compliance: <finding> in <file>:<line> — <fix>
 🔄 Logic & Redundancy: <finding> — <fix>
-🤖 Agentic Clarity: <rating>/10 — <specific name: level and value to improve>
-✅ Refactored Snippet: <only if a code change is needed>
+🤖 Agentic Clarity: <rating>/10 — <level and current name to improve>
+🔒 Zero Hardcoding: <finding> in <file>:<line> — <fix>
+🎯 Deterministic Behavior: <finding> in <file>:<line> — <fix>
+✅ Refactored Snippet: <only when a code change is required>
 ```
 
-If no findings in a category, write `PASS`.
-
-Apply all fixes directly. Do not just report — fix.
+If no findings in a category, write `PASS`. Apply all fixes directly.
 
 ---
 
-## Step 3 — Remove temporary audit artifacts
+## Step 4 — Cleanup
 
 ```bash
-rm -force audit_diff.txt
+rm -f audit_diff.txt
 ```

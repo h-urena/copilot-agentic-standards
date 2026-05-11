@@ -1,102 +1,71 @@
 ---
 agent: agent
-description: "Diagnose and fix a bug systematically: reproduce with a failing test, trace to the root cause, apply the minimal fix, add a regression test, and open a PR."
+description: "Diagnose and fix a bug: reproduce first, trace root cause, apply minimal fix, add regression test."
 ---
 
 # Fix Bug
 
-You are a debugging agent. Never guess — always trace to the root cause before changing any code.
+You are a senior software engineer specialising in systematic debugging. You never guess — you trace.
 
-## Step 1 — Reproduce before touching production code
+**Constraint:** Do not change any production code until the root cause is written in plain text.
 
-Write a **failing test** that demonstrates the bug first. This is non-negotiable.
+## ROOT_CAUSE_SCHEMA
 
-- The test should fail in the current state of the code.
-- The test should pass once the bug is fixed.
-- If the bug is non-deterministic (race condition, timing-dependent), note this and describe the reproduction conditions manually instead.
+<schema>
+Symptom:    [observable wrong output / exception / no response / data corruption]
+Call chain: [trace from symptom to origin]
+Root cause: [select one: Precondition | Missing guard | Boundary | Async | Type coercion | Logic | Leaked state | Dependency]
+</schema>
 
-```bash
-# Run only the new test to confirm it fails
-pytest tests/test_foo.py::test_should_<behaviour>_when_<condition> -v
-vitest run src/__tests__/foo.test.ts
-dotnet test --filter "Should_<Behaviour>_When_<Condition>"
-```
+| Category | Description |
+|---|---|
+| Precondition | Wrong assumption; input not validated |
+| Missing guard | `null`/`undefined`/`None` not handled |
+| Boundary | Off-by-one or range error |
+| Async | Race condition or incorrect async handling |
+| Type coercion | Incorrect serialisation or cast |
+| Logic | Wrong conditional |
+| Leaked state | Mutable state shared across requests/calls |
+| Dependency | Version change or config drift |
 
-Do not proceed to Step 3 until this failing test exists.
+## 1. REPRODUCE_FIRST
 
-## Step 2 — Identify the root cause before writing any fix
-
-Trace the execution path from the symptom to the root cause:
-
-1. What is the observable symptom? (wrong output, exception thrown, no response, data corruption)
-2. Where in the call chain does the failure originate?
-3. What is the **root cause**? Choose one:
-   - Wrong assumption (precondition not validated)
-   - Missing guard (null/undefined/None not handled)
-   - Off-by-one or boundary error
-   - Race condition or incorrect async handling
-   - Incorrect type coercion / serialisation
-   - Logic error in a conditional
-   - Leaked state between requests / calls
-   - Dependency behaving unexpectedly (version change, config drift)
-4. Write the root cause in 1–3 sentences. You will include this in the PR description.
-
-**Do not move to Step 3 until you can state the root cause clearly.**
-
-## Step 3 — Apply a targeted fix scoped to the confirmed root cause
-
-- Change **only** the code required to fix the root cause.
-- Do not refactor, rename, or clean up unrelated code in the same commit.
-- If a refactor is needed to safely apply the fix, do it in a separate commit on the same branch.
-- Ensure the fix handles all variants of the bug (different inputs, edge cases, related code paths).
-
-**Stack-specific considerations**
-- TypeScript: check for `null` / `undefined` with proper narrowing — not `!` assertion.
-- Python: use `is None` checks; avoid bare `except`; use `raise ... from err` for chained exceptions.
-- C#: use `ArgumentNullException.ThrowIfNull()`; check `CancellationToken` propagation for async bugs.
-
-## Step 4 — Confirm the fix holds and add regression coverage
-
-- The failing test from Step 1 must now pass.
-- Add tests for any **additional edge cases** surfaced during root-cause analysis.
-- If the bug was in a code path with no existing tests, add unit coverage for the surrounding logic too.
-- Ensure the **full existing test suite** still passes — no regressions.
+Write a **failing test** before touching production code. Run it to confirm it fails.
 
 ```bash
-# Full suite
-pytest
-vitest run
-dotnet test
+pytest tests/test_foo.py::test_should_<behavior>_when_<condition> -v
+vitest run src/__tests__/foo.test.ts --reporter=verbose
+dotnet test --filter "Should_<Behavior>_When_<Condition>"
 ```
 
-## Step 5 — Verify fix correctness and no regressions
+**Constraint:** Do not proceed past this step until the failing test exists.
 
-- [ ] The failing test from Step 1 now passes
-- [ ] No existing tests are broken
-- [ ] No debug logging (`console.log`, `print()`, `Debug.WriteLine()`) left in production code
-- [ ] The fix does not introduce new linting errors: `ruff check` / `eslint` / `dotnet build -warnaserror`
-- [ ] The root cause is clearly understood (not just symptoms patched)
+## 2. APPLY_FIX
 
-## Step 6 — Record the fix and open it for peer review
+Change **only** the code required to address the root cause. No refactoring in the same commit.
 
-```bash
-git add -A
-git commit -m "fix(<scope>): <what was wrong and what the fix does>
+| Stack | Guard pattern |
+|---|---|
+| TypeScript | Type narrowing — not `!` assertion |
+| Python | `is None`; `raise ... from err`; no bare `except` |
+| C# | `ThrowIfNull()`; propagate `CancellationToken` |
 
-Root cause: <1-sentence root cause>
-Fix: <1-sentence description of the change>
+## 3. VERIFICATION_SCHEMA
 
-Closes #<issue-number>"
+| Check | Pass condition |
+|---|---|
+| Failing test | Now passes |
+| Full suite | No regressions (`pytest` / `vitest run` / `dotnet test`) |
+| Debug logging | None in production code |
+| Lint | `ruff check` / `eslint` / `dotnet build -warnaserror` — zero errors |
+| Root cause | Stated clearly in PR description |
 
-git push origin <branch-name>
-gh pr create \
-  --title "fix(<scope>): <description>" \
-  --body "Closes #<issue-number>"
-```
+## FORBIDDEN
 
-> **Title constraint:** The commit subject and PR title must be **≤ 100 characters** — `commitlint` enforces `header-max-length` in CI and will block the PR if exceeded.
-
-**PR description must include:**
-- **Root cause** — what was wrong and why
-- **Fix applied** — what was changed
-- **How tested** — which failing test now passes, any additional coverage added
+| Pattern | Reason |
+|---|---|
+| Fix without failing test | Cannot verify the fix addresses the actual bug |
+| Refactoring in the fix commit | Mixes concerns; harder to revert |
+| `!` non-null assertion (TypeScript) | Masks the root cause |
+| Bare `except` (Python) | Swallows unrelated exceptions |
+| Patching symptoms without root cause | Bug resurfaces |
